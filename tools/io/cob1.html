@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZeroDays • Media Player</title>
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon" href="https://via.placeholder.com/192/000000/FFFFFF?text=ZD">
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            min-height: 100vh;
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            color: #d6d6d6;
+            background: #0a0a0a;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* BACKGROUND VIDEO */
+        .bg-video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; opacity: 0.4; }
+        .overlay { position: fixed; inset: 0; background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%); z-index: -1; }
+
+        header {
+            padding: 30px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+        }
+        header h1 { letter-spacing: 4px; font-size: 2rem; text-transform: uppercase; }
+        header span { color: #888; font-size: 12px; display: block; margin-top: 5px; }
+
+        .container { max-width: 900px; margin: 20px auto; padding: 0 20px; padding-bottom: 100px; }
+
+        .section { margin-bottom: 40px; }
+        .section h2 {
+            font-size: 14px; text-transform: uppercase; letter-spacing: 2px;
+            margin-bottom: 15px; border-left: 3px solid #666;
+            padding-left: 10px; color: #aaa;
+        }
+
+        input[type="text"], input[type="url"] {
+            width: 100%; padding: 15px; background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff;
+            margin-bottom: 12px; font-size: 14px; outline: none; transition: 0.3s;
+        }
+        input:focus { border-color: #888; background: rgba(255,255,255,0.1); }
+
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        button {
+            padding: 12px 20px; background: rgba(255,255,255,0.05);
+            border: 1px solid #444; color: #aaa; border-radius: 8px;
+            cursor: pointer; transition: 0.3s; font-size: 13px; font-weight: bold;
+        }
+        button:hover { background: #eee; color: #000; transform: translateY(-2px); }
+        button.primary { border-color: #888; color: #fff; }
+
+        #installBtn { display: none; margin: 10px auto; background: #222; border-color: #00ff88; color: #00ff88; }
+
+        .playlist {
+            background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; padding: 10px; font-family: 'Courier New', monospace;
+            max-height: 250px; overflow-y: auto; margin-bottom: 20px;
+        }
+        .track-item {
+            padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer; transition: 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .track-item:hover { background: rgba(255,255,255,0.1); }
+        .current-track { color: #00ff88; background: rgba(0,255,136,0.1); border-left: 3px solid #00ff88; }
+
+        .player-wrapper {
+            background: rgba(0,0,0,0.6); padding: 20px; border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        audio, video { width: 100%; margin-bottom: 15px; border-radius: 6px; }
+        iframe { width: 100%; aspect-ratio: 16/9; border-radius: 8px; margin-bottom: 15px; background: #000; }
+
+        .visualizer { width: 100%; height: 80px; background: rgba(0,0,0,0.3); border-radius: 8px; margin-bottom: 15px; }
+
+        .controls-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px; margin-top: 15px;
+        }
+
+        .volume-box { margin-top: 20px; display: flex; align-items: center; gap: 15px; font-size: 12px; color: #888; }
+        input[type="range"] { flex: 1; accent-color: #888; }
+
+        footer { text-align: center; padding: 40px; color: #555; font-size: 11px; letter-spacing: 1px; }
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.4rem; }
+            .controls-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+    <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+    <h1>ZERO DAYS</h1>
+    <span>Media Player & PWA</span>
+    <button id="installBtn">INSTALL APP</button>
+</header>
+
+<div class="container">
+
+    <div class="section">
+        <h2>Add Media</h2>
+        <input id="mediaUrl" type="text" placeholder="Drop URL here or paste (YouTube, MP4, MP3, Spotify Previews)">
+        <div class="btn-group">
+            <button class="primary" onclick="addMedia()">Add to Playlist</button>
+            <button onclick="shufflePlaylist()">Shuffle</button>
+            <button onclick="clearPlaylist()">Clear All</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Playlist</h2>
+        <div class="playlist" id="playlist"></div>
+    </div>
+
+    <div class="section">
+        <h2>Now Playing</h2>
+        <div class="player-wrapper">
+            <audio id="audioPlayer" controls></audio>
+            <video id="videoPlayer" controls style="display:none;"></video>
+            <iframe id="youtubePlayer" style="display:none;" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+            <canvas id="visualizer" class="visualizer"></canvas>
+
+            <div class="controls-grid">
+                <button onclick="prevTrack()">PREV</button>
+                <button onclick="playMedia()">PLAY</button>
+                <button onclick="pauseMedia()">PAUSE</button>
+                <button onclick="nextTrack()">NEXT</button>
+                <button id="repeatBtn" onclick="toggleRepeat()">REPEAT: OFF</button>
+                <button onclick="removeMedia()">REMOVE</button>
+            </div>
+
+            <div class="volume-box">
+                VOL <input type="range" min="0" max="1" step="0.01" value="1" oninput="setVolume(this.value)">
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<footer>
+    ZERODAYS PROJECT • NO BACKEND • PRIVACY FIRST
+</footer>
+
+<script>
+/* --- CORE PLAYER LOGIC --- */
+let playlist = [];
+let currentIndex = -1;
+let repeat = false;
+
+const playlistDiv = document.getElementById("playlist");
+const audioPlayer = document.getElementById("audioPlayer");
+const videoPlayer = document.getElementById("videoPlayer");
+const youtubePlayer = document.getElementById("youtubePlayer");
+const canvas = document.getElementById("visualizer");
+const ctx = canvas.getContext("2d");
+let audioCtx, analyser, source;
+
+function addMedia(url) {
+    let input = url || document.getElementById("mediaUrl").value.trim();
+    if (!input) return;
+
+    if (input.includes("spotify.com") && input.includes("preview")) {
+        input = input.replace("open.spotify.com/track", "p.scdn.co/mp3-preview");
+    }
+
+    playlist.push(input);
+    renderPlaylist();
+    document.getElementById("mediaUrl").value = "";
+    savePlaylist();
+}
+
+function renderPlaylist() {
+    playlistDiv.innerHTML = "";
+    playlist.forEach((url, i) => {
+        const div = document.createElement("div");
+        div.className = "track-item " + (i === currentIndex ? "current-track" : "");
+        div.textContent = `${i + 1}. ${url.split('/').pop().split('?')[0] || url}`;
+        div.onclick = () => playFromIndex(i);
+        playlistDiv.appendChild(div);
+    });
+}
+
+function playFromIndex(index) {
+    if (index < 0 || index >= playlist.length) return;
+    currentIndex = index;
+    const url = playlist[index];
+
+    audioPlayer.pause(); audioPlayer.style.display = "none";
+    videoPlayer.pause(); videoPlayer.style.display = "none";
+    youtubePlayer.style.display = "none"; youtubePlayer.src = "";
+
+    if (url.includes("youtube.com") || url.includes("youtu.be")) {
+        youtubePlayer.style.display = "block";
+        let videoId = url.split("v=")[1] || url.split("youtu.be/")[1];
+        if (videoId && videoId.includes("&")) videoId = videoId.split("&")[0];
+        youtubePlayer.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    } else if (url.match(/\.(mp4|webm|ogg)$/i)) {
+        videoPlayer.style.display = "block";
+        videoPlayer.src = url;
+        videoPlayer.play().catch(e => console.log("Auto-play blocked"));
+    } else {
+        audioPlayer.style.display = "block";
+        audioPlayer.src = url;
+        audioPlayer.play().catch(e => console.log("Auto-play blocked"));
+        initVisualizer(audioPlayer);
+    }
+    renderPlaylist();
+}
+
+function playMedia() {
+    if (currentIndex === -1 && playlist.length > 0) playFromIndex(0);
+    else { audioPlayer.play(); videoPlayer.play(); }
+}
+
+function pauseMedia() { audioPlayer.pause(); videoPlayer.pause(); }
+
+function nextTrack() {
+    if (playlist.length === 0) return;
+    let next = repeat ? currentIndex : (currentIndex + 1) % playlist.length;
+    playFromIndex(next);
+}
+
+function prevTrack() {
+    if (playlist.length === 0) return;
+    let prev = (currentIndex - 1 + playlist.length) % playlist.length;
+    playFromIndex(prev);
+}
+
+function toggleRepeat() {
+    repeat = !repeat;
+    document.getElementById("repeatBtn").textContent = "REPEAT: " + (repeat ? "ON" : "OFF");
+}
+
+function setVolume(v) { audioPlayer.volume = v; videoPlayer.volume = v; }
+
+function clearPlaylist() { playlist = []; currentIndex = -1; renderPlaylist(); savePlaylist(); }
+
+function removeMedia() {
+    if (currentIndex > -1) {
+        playlist.splice(currentIndex, 1);
+        currentIndex = -1;
+        renderPlaylist();
+        savePlaylist();
+    }
+}
+
+function shufflePlaylist() {
+    playlist.sort(() => Math.random() - 0.5);
+    renderPlaylist();
+}
+
+function savePlaylist() { localStorage.setItem("zd_playlist", JSON.stringify(playlist)); }
+function loadPlaylist() {
+    const saved = localStorage.getItem("zd_playlist");
+    if (saved) { playlist = JSON.parse(saved); renderPlaylist(); }
+}
+
+/* --- VISUALIZER --- */
+function initVisualizer(audio) {
+    if (audioCtx) return; 
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    source = audioCtx.createMediaElementSource(audio);
+    source.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    analyser.fftSize = 64;
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    function draw() {
+        requestAnimationFrame(draw);
+        analyser.getByteFrequencyData(dataArray);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const barWidth = (canvas.width / bufferLength) * 2.5;
+        let x = 0;
+        for (let i = 0; i < bufferLength; i++) {
+            let barHeight = dataArray[i] / 2;
+            ctx.fillStyle = `rgba(255, 255, 255, ${barHeight/100})`;
+            ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+            x += barWidth + 2;
+        }
+    }
+    draw();
+}
+
+/* --- DRAG & DROP --- */
+document.addEventListener("dragover", e => e.preventDefault());
+document.addEventListener("drop", e => {
+    e.preventDefault();
+    const url = e.dataTransfer.getData("text");
+    if (url) addMedia(url);
+});
+
+/* --- PWA INSTALLATION LOGIC --- */
+let deferredPrompt;
+const installBtn = document.getElementById('installBtn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'block';
+});
+
+installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') installBtn.style.display = 'none';
+        deferredPrompt = null;
+    }
+});
+
+// Create Manifest dynamically for single-file PWA
+const manifest = {
+    "name": "ZeroDays Media Player",
+    "short_name": "ZeroDays",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#0a0a0a",
+    "theme_color": "#0a0a0a",
+    "icons": [{
+        "src": "https://via.placeholder.com/192/000000/FFFFFF?text=ZD",
+        "sizes": "192x192",
+        "type": "image/png"
+    }]
+};
+const manifestStr = JSON.stringify(manifest);
+const blob = new Blob([manifestStr], {type: 'application/json'});
+const manifestURL = URL.createObjectURL(blob);
+document.querySelector('head').insertAdjacentHTML('beforeend', `<link rel="manifest" href="${manifestURL}">`);
+
+// Register simple Service Worker
+if ('serviceWorker' in navigator) {
+    const swCode = `
+        self.addEventListener('fetch', (event) => {
+            event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+        });
+    `;
+    const swBlob = new Blob([swCode], {type: 'text/javascript'});
+    const swURL = URL.createObjectURL(swBlob);
+    navigator.serviceWorker.register(swURL);
+}
+
+window.onload = loadPlaylist;
+</script>
+</body>
+</html>

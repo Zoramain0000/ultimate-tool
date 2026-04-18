@@ -1,0 +1,209 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NGL Username Finder</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Courier New', monospace;
+    }
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+    .container {
+      background: #000000;
+      border-radius: 8px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 0 20px rgba(0, 255, 64, 0.4);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      font-size: 1.8rem;
+      color: #00ff0d;
+    }
+    .username {
+      background: #333333;
+      border: none;
+      border-radius: 4px;
+      padding: 0.75rem 1rem;
+      width: 100%;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      color: #ffffff;
+    }
+    .btn {
+      background: #f50000;
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 4px;
+      font-size: 1rem;
+      color: #ffffff;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .btn:hover {
+      background: #ff0000;
+    }
+    .output {
+      margin-top: 1.5rem;
+      background: #222222;
+      padding: 1rem;
+      border-radius: 4px;
+      text-align: center;
+      word-wrap: break-word;
+    }
+    .link {
+      color: #00ff0d;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+    .log {
+      margin-top: 1.5rem;
+      background: #444444;
+      padding: 1rem;
+      border-radius: 4px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    .log-item {
+      color: #ffffff;
+      margin: 0.2rem 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>NGL Username Finder</h1>
+    <input type="text" id="usernameInput" class="username" placeholder="Enter username to generate">
+    <button class="btn" onclick="generateUsername()">Generate Username</button>
+    <button class="btn" onclick="reloadPage()">Reload</button>
+    <div class="output" id="outputBox">
+      <p>Your NGL link:</p>
+      <p class="link" id="nglLink">https://ngl.link/yourusername</p>
+    </div>
+    <div class="log" id="logBox">
+      <p>Generated Usernames:</p>
+    </div>
+  </div>
+  <script>
+    const namesMale = [
+      "Aaron", "Ab", "Abe", "Abel", "Abner", "Abraham", "Absalom", "Ace", "Adam", 
+      "Addison", "Adel", "Adlai", "Adolf", "Adrian", "Adrien", "Ælfweard", "Aidan", 
+      "Aidin", "Al", "Alan", "Albert", "Aldred", "Alec", "Alex", "Alexander", 
+      "Alexis", "Alfred", "Algernon", "Alison", "Alistair", "Allan", "Allen", 
+      "Alton", "Alvin", "Amadeus", "Ambrose", "Andrew", "Andy", "Angus", "Anthony", 
+      "Antony", "Archibald", "Archie", "Arliss", "Arlo", "Armand", "Armistead", 
+      "Arnaut", "Arnie", "Arnold", "Art", "Arthur", "Asa", "Ash", "Asher", 
+      "Ashley", "Ashton", "August", "Austen", "Austin", "Bardil", "Baron", 
+      "Barry", "Bart", "Bartholomew", "Basil", "Bayard", "Beau", "Ben", 
+      "Benedict", "Benjamin", "Benn", "Benson", "Beresford", "Bernard", "Bernie", 
+      "Bert", "Bertie", "Bertram", "Bertrand", "Bill", "Billy", "Blair", "Blake", 
+      "Bo", "Bob", "Bobby", "Booth", "Brad", "Braden", "Bradley", "Bram", 
+      "Bramwell", "Branden", "Brandon", "Braxton", "Brian", "Bridger", "Brock", 
+      "Brody", "Brooks", "Bruce", "Bruno", "Bryan", "Bubba", "Bubby", "Bud", 
+      "Buddy", "Burt", "Burton", "Butch", "Byron", "Cade", "Caden", "Caesar", 
+      "Caleb", "Callum", "Calvin", "Cameron", "Canute", "Cardew", "Carl", 
+      "Carlie", "Carlile", "Carlisle", "Carlton", "Carroll", "Carson", "Carter", 
+      "Cary", "Casey", "Cassidy", "Cecil", "Cedric", "Chad", "Chadwick", 
+      "Chance", "Chandler", "Chandos", "Charl", "Charlee", "Charles", "Charley", 
+      "Charli", "Charlie", "Charlton", "Charly", "Chas", "Chase", "Chaz", 
+      "Chazz", "Chester", "Chet", "Chip", "Chris", "Christian", "Christopher", 
+      "Chuck", "Chucky", "Ciarán", "Claire", "Clare", "Clarence", "Clark", 
+      "Claude", "Clay", "Clayton", "Cletus", "Cleve", "Cliff", "Clifford", 
+      "Clifton", "Clint", "Clinton", "Clive", "Clyde", "Cody", "Colby", 
+      "Cole", "Colin", "Collin", "Colman", "Coloman", "Colton", "Connor", 
+      "Conor", "Conrad", "Conway", "Cooper", "Corey", "Cosmo", "Courtney", 
+      "Craig", "Curtis", "Curtley", "Cuthbert", "Cwichelm", "Cy", "Cyril", 
+      "Cyrus"
+    ];
+
+    const namesFemale = [
+      "Alondra", "Hanna", "Rhea", "Bristol", "Amalia", "Katie", "Monroe", "Emelia", 
+      "Maliyah", "Kora", "Ariya", "Mariam", "Lyric", "Makenzie", "Frankie", "Jacqueline", 
+      "Jazlyn", "Legacy", "Margo", "Clementine", "Maren", "Paislee", "Alejandra", 
+      "Sevyn", "Jolene", "Averie", "Briar", "Yaretzi", "Gabrielle", "Jessica", "Rylie", 
+      "Alia", "Zahra", "Emerie", "Lilian", "Arleth", "Virginia", "Avianna", "Royalty", 
+      "Azariah", "Kenzie", "Kyla", "Sierra", "Halo", "Holland", "Reyna", "Thalia", 
+      "Keira", "Capri", "Marina", "Noemi", "Amber", "Miranda", "Sariyah", "Rosalia", 
+      "Indie", "Oaklyn", "Anne", "Mara", "Lina", "Wrenlee", "Mina", "Louise", 
+      "Beatrice", "Jovie", "Ivanna", "Nalani", "Journi", "Marceline", "Ailani", "Myra", 
+      "Mavis", "Aliana", "Kinley", "Ainsley", "Jaylani", "Eve", "Iyla", "Leyla", 
+      "Alexa", "Arlet", "Lylah", "Charleigh", "Chaya", "Cleo", "Tiana", "Estella", 
+      "Nellie", "Winnie", "Yara", "Mikayla", "Dallas", "Sasha", "Scottie", "Hadassah", 
+      "Amani", "Ila", "Kaitlyn", "Ellianna", "Abby", "Skyler", "Amaia", "Freyja", 
+      "Romina", "Lennox", "Jenna", "Kennedi", "Kayleigh", "Melany", "Amoura", "Mckinley", 
+      "Angelica", "Keilani", "Michaela", "Zariyah", "Cassandra", "Noah", "Remy", "Nia", 
+      "Reina", "Milan", "Jazmin", "Davina", "Della", "Dylan", "Marie", "Galilea", 
+      "Violeta", "Jaliyah", "Jenesis", "Melina", "Isabela", "Priscilla", "Emberly", 
+      "Erin", "Aliza", "Eileen", "Shelby", "Kelsey", "Laney", "Siena", "Braelynn", 
+      "Analia", "Elliott", "Rosa", "Aleena", "Leslie", "Gloria", "Kataleya", "Martha", 
+      "Irene", "Clover", "Penny", "Ryan", "Kaeli", "Taytum", "Karsyn", "Kathryn", 
+      "Estrella", "Adrianna", "Flora", "Goldie", "Halle", "Haley", "Sloan", "Fallon", 
+      "Macy", "Vienna", "Janelle", "Elowyn", "Megan", "Azari", "Maci", "Aya", "Kyra", 
+      "Lillie", "Milena", "Birdie", "Liv", "Christina", "Novah", "Zelda", "Paula", 
+      "Julie", "Selene", "Khaleesi", "Chelsea", "Estelle", "Karla", "Chana", "Marigold", 
+      "Laurel", "Promise", "Rayna", "Alisson", "Bethany", "Jemma", "Yareli", "Adalee", 
+      "Andi", "Coraline", "Hana", "Kiana", "Madilynn", "Monica", "Charley", "Dior", 
+      "Arlette", "Lara", "Whitley", "Love", "Zaniyah", "Inaya", "Angie", "Elodie", 
+      "Nola", "Rivka", "Kendra", "Marilyn", "Aleah", "Emerald", "Persephone", "Addilyn", 
+      "Amayah", "Bridget", "Giana", "Johanna", "Kenna", "Milana", "Baylor", "Brynleigh", 
+      "Kensley", "Zaria", "Ellis", "Aviana", "Lacey", "Leilany", "Drew", "Ezra", 
+      "Lenora", "Loretta", "Adley", "Novalee", "Aila", "Karina", "Adhara", "Georgina", 
+      "Emmie", "Theodora", "Kelly", "Kylee", "Lottie", "Malaysia", "Paulina", "Lakelynn", 
+      "Dani", "Denver", "Dulce", "Jamie", "Sky", "Carly", "Kinslee", "Marisol", 
+      "Henley", "Jayleen", "Jream", "Cheyenne", "Maisy", "Noor", "Robin", "Savanna", 
+      "Ramona", "Aileen", "Kaiya", "Emberlynn", "Jessie", "Zayla", "Lea", "Samira", 
+      "Araceli", "Azaria", "Pearl", "Elyse", "Hunter", "Kori", "Louisa", "Kamari", 
+      "Nyomi", "Skyla", "Treasure", "Alexia", "Gwen", "Alena", "Tallulah", "Veda", 
+      "Mikaela", "Kya", "Scout", "Valery", "Adele", "Livia", "Naya", "Ocean", 
+      "Iliana", "Bellamy", "Celia", "Vada", "Zaylee", "Ashlyn", "Mercy", "Zendaya", 
+      "Berkley", "Marlowe", "Arely", "Aspyn", "Maddie", "Avani", "Belen", "Linda", 
+      "Luz", "Teresa", "Meilani", "Nala", "Malaya", "Amiri", "Anais", "Lisa", "Ivey", 
+      "Katelyn", "Dania", "Zoya"
+    ];
+
+    const availableUsernames = [...namesMale, ...namesFemale];
+    const uniqueUsernames = new Set();
+
+    function generateUsername() {
+      const randomIndex = Math.floor(Math.random() * availableUsernames.length);
+      const username = availableUsernames[randomIndex];
+      uniqueUsernames.add(username);
+      updateLink(username);
+      logUsername(username);
+    }
+
+    function updateLink(username) {
+      const link = `https://ngl.link/${username}`;
+      document.getElementById('nglLink').textContent = link;
+    }
+
+    function logUsername(username) {
+      const logBox = document.getElementById('logBox');
+      const logItem = document.createElement('p');
+      logItem.className = 'log-item';
+      logItem.textContent = username;
+      logBox.appendChild(logItem);
+    }
+
+    function reloadPage() {
+      location.reload();
+    }
+
+    document.getElementById('usernameInput').addEventListener('input', function(e) {
+      updateLink(e.target.value.trim());
+    });
+  </script>  
+</body>
+</html>

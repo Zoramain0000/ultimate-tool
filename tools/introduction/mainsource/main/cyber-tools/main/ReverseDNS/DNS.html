@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Reverse DNS Tool</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Courier New', monospace;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      color: #00ff00;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      background: #111;
+      padding: 2rem;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 700px;
+      box-shadow: 0 0 20px red;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #00ff00;
+    }
+    .input-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    input {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 5px;
+      background: #222;
+      color: #0f0;
+      font-size: 1rem;
+    }
+    button {
+      background: red;
+      color: #0f0;
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: darkred;
+    }
+    .output, .history, #aiTips {
+      background: #000;
+      margin-top: 1rem;
+      padding: 1rem;
+      border: 1px solid #333;
+      border-radius: 5px;
+      white-space: pre-wrap;
+    }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 1rem;
+      gap: 0.5rem;
+    }
+    .toolbar button {
+      background: #222;
+      color: #0f0;
+      border: 1px solid #0f0;
+    }
+    #aiTips {
+      color: #88ff88;
+      font-style: italic;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔁 AI Reverse DNS Lookup</h1>
+    <div class="input-group">
+      <input type="text" id="ipInput" placeholder="Enter IPv4 or IPv6 address">
+      <button onclick="performReverseDNS()">Query</button>
+    </div>
+    <div class="toolbar">
+      <button onclick="copyResult()">📋 Copy</button>
+      <button onclick="exportResult()">⬇️ Export</button>
+    </div>
+    <div class="output" id="result">Result will appear here...</div>
+    <div id="aiTips">💡 AI Tips will appear here...</div>
+    <div class="history">
+      <strong>History</strong>
+      <ul id="historyList"></ul>
+    </div>
+  </div>
+
+  <script>
+    function isValidIPv4(ip) {
+      return /^(\d{1,3}\.){3}\d{1,3}$/.test(ip);
+    }
+
+    function isValidIPv6(ip) {
+      return /^[\da-fA-F:]+$/.test(ip) && ip.includes(":");
+    }
+
+    function ipv6ToArpa(ip) {
+      const expanded = expandIPv6(ip);
+      return expanded
+        .replace(/:/g, '')
+        .split('')
+        .reverse()
+        .join('.') + '.ip6.arpa';
+    }
+
+    function expandIPv6(address) {
+      let full = '';
+      const parts = address.split('::');
+      const left = parts[0].split(':');
+      const right = parts[1] ? parts[1].split(':') : [];
+      const missing = 8 - (left.filter(Boolean).length + right.filter(Boolean).length);
+      full = [...left, ...Array(missing).fill('0'), ...right]
+        .map(part => part.padStart(4, '0')).join(':');
+      return full;
+    }
+
+    function performReverseDNS() {
+      const ip = document.getElementById('ipInput').value.trim();
+      const resultBox = document.getElementById('result');
+      let reverseName;
+
+      if (isValidIPv4(ip)) {
+        reverseName = ip.split('.').reverse().join('.') + '.in-addr.arpa';
+      } else if (isValidIPv6(ip)) {
+        reverseName = ipv6ToArpa(ip);
+      } else {
+        resultBox.textContent = "❌ Invalid IP address format.";
+        return;
+      }
+
+      resultBox.textContent = "🔄 Querying DNS...";
+
+      fetch(`https://dns.google/resolve?name=${reverseName}&type=PTR`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.Answer && data.Answer.length > 0) {
+            const ptrRecord = data.Answer.map(a => `📄 ${a.data}`).join('\n');
+            resultBox.textContent = `✅ Reverse DNS for ${ip}:\n${ptrRecord}`;
+            saveToHistory(ip, ptrRecord);
+            localStorage.setItem("lastResult", resultBox.textContent);
+          } else {
+            simulateFallback(ip);
+          }
+        })
+        .catch(() => simulateFallback(ip));
+    }
+
+    function simulateFallback(ip) {
+      const simulated = `🤖 Simulated PTR for ${ip}:\nserver-${ip.replace(/[:.]/g, "-")}.simulated.com`;
+      document.getElementById('result').textContent = simulated;
+      saveToHistory(ip, simulated);
+    }
+
+    function copyResult() {
+      navigator.clipboard.writeText(document.getElementById('result').textContent)
+        .then(() => alert("Copied to clipboard!"));
+    }
+
+    function exportResult() {
+      const text = document.getElementById('result').textContent;
+      const blob = new Blob([text], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "reverse_dns_result.txt";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function saveToHistory(ip, result) {
+      const list = document.getElementById('historyList');
+      const li = document.createElement('li');
+      li.textContent = `${new Date().toLocaleTimeString()} — ${ip}`;
+      list.prepend(li);
+
+      const history = JSON.parse(localStorage.getItem("dnsHistory") || "[]");
+      history.unshift({ time: new Date().toLocaleString(), ip });
+      localStorage.setItem("dnsHistory", JSON.stringify(history.slice(0, 10)));
+    }
+
+    function loadHistory() {
+      const history = JSON.parse(localStorage.getItem("dnsHistory") || "[]");
+      const list = document.getElementById('historyList');
+      history.forEach(entry => {
+        const li = document.createElement('li');
+        li.textContent = `${entry.time} — ${entry.ip}`;
+        list.appendChild(li);
+      });
+    }
+
+    const aiTips = [
+      "🧠 Tip: Reverse DNS helps map IPs back to hostnames.",
+      "💡 IPv6 is supported using the .ip6.arpa format!",
+      "🔍 Some IPs may not have PTR records — this is normal.",
+      "✨ Simulated PTRs help with testing private/internal IPs.",
+      "🧪 Tool uses Google's DNS-over-HTTPS for fast lookups!",
+    ];
+
+    let tipIndex = 0;
+    setInterval(() => {
+      document.getElementById("aiTips").textContent = aiTips[tipIndex];
+      tipIndex = (tipIndex + 1) % aiTips.length;
+    }, 5000);
+
+    loadHistory();
+  </script>
+</body>
+</html>

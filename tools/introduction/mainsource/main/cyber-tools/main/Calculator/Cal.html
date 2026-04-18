@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Calculator</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+            background-color: white;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            width: 400px;
+            text-align: left;
+        }
+        input[type="text"] {
+            width: 95%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #333;
+            color: #ffffff;
+            font-size: 1.2rem;
+        }
+        button {
+            padding: 10px;
+            background: #007acc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            width: 70px;
+            font-family: 'Courier New', monospace;
+        }
+        button:hover {
+            background: #005a9c;
+        }
+        .output {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: #00ff00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Terminal Calculator</h1>
+        <input type="text" id="expression" placeholder="Enter expression" oninput="updateOutput()" />
+        <div>
+            <button onclick="appendToExpression('1')">1</button>
+            <button onclick="appendToExpression('2')">2</button>
+            <button onclick="appendToExpression('3')">3</button>
+            <button onclick="appendToExpression('+')">+</button>
+        </div>
+        <div>
+            <button onclick="appendToExpression('4')">4</button>
+            <button onclick="appendToExpression('5')">5</button>
+            <button onclick="appendToExpression('6')">6</button>
+            <button onclick="appendToExpression('-')">-</button>
+        </div>
+        <div>
+            <button onclick="appendToExpression('7')">7</button>
+            <button onclick="appendToExpression('8')">8</button>
+            <button onclick="appendToExpression('9')">9</button>
+            <button onclick="appendToExpression('*')">x</button>
+        </div>
+        <div>
+            <button onclick="appendToExpression('0')">0</button>
+            <button onclick="calculateResult()">=</button>
+            <button onclick="clearExpression()">C</button>
+            <button onclick="appendToExpression('/')">÷</button>
+        </div>
+        <div class="output" id="output">Result: </div>
+    </div>
+
+    <script>
+        function appendToExpression(value) {
+            const expressionInput = document.getElementById('expression');
+            expressionInput.value += value;
+            updateOutput();
+        }
+
+        function clearExpression() {
+            document.getElementById('expression').value = '';
+            updateOutput();
+        }
+
+        function calculateResult() {
+            const expression = document.getElementById('expression').value;
+            try {
+                const result = eval(expression);
+                document.getElementById('output').textContent = `Result: ${result}`;
+            } catch (error) {
+                document.getElementById('output').textContent = 'Error!';
+            }
+        }
+
+        function updateOutput() {
+            const expression = document.getElementById('expression').value;
+            document.getElementById('output').textContent = `Result: ${expression}`;
+        }
+    </script>
+</body>
+</html>

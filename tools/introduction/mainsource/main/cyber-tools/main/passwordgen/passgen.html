@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>SecurePass - Password Generator</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+            background-color: #F5F5F5;
+            color: #01ff41;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: rgb(0, 0, 0);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(11, 248, 118, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .settings {
+            margin-bottom: 20px;
+        }
+
+        .output {
+            text-align: middle;
+        }
+
+        #password {
+            width: 98%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        #strengthIndicator {
+            height: 10px;
+            margin-top: 5px;
+            background-color: green; /* Default strength color */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SecurePass - Your Password Generator</h1>
+        <div class="settings">
+            <label for="length">Password Length: <span id="lengthValue">12</span></label>
+            <input type="range" id="length" min="8" max="20" value="12">
+            <div>
+                <input type="checkbox" id="uppercase" checked> Uppercase Letters
+                <input type="checkbox" id="lowercase" checked> Lowercase Letters
+                <input type="checkbox" id="numbers" checked> Numbers
+                <input type="checkbox" id="special" checked> Special Characters
+            </div>
+            <button id="generate">Generate Password</button>
+        </div>
+        <div class="output">
+            <input type="text" id="password" readonly>
+            <button id="copy">Copy to Clipboard</button>
+            <div id="strengthIndicator"></div>
+        </div>
+    </div>
+    <script>
+        const generateButton = document.getElementById('generate');
+        const passwordField = document.getElementById('password');
+        const lengthSlider = document.getElementById('length'); 
+        const lengthValue = document.getElementById('lengthValue'); 
+        const strengthIndicator = document.getElementById('strengthIndicator');
+
+        lengthSlider.addEventListener('input', function() {
+            lengthValue.textContent = this.value;
+        });
+
+        generateButton.addEventListener('click', function() {
+            const length = lengthSlider.value; 
+            const includeUppercase = document.getElementById('uppercase').checked; 
+            const includeLowercase = document.getElementById('lowercase').checked; 
+            const includeNumbers = document.getElementById('numbers').checked; 
+            const includeSpecial = document.getElementById('special').checked;
+
+            passwordField.value = generatePassword(length, includeUppercase, includeLowercase, includeNumbers, includeSpecial);
+            updateStrengthIndicator(passwordField.value);
+        });
+
+        function generatePassword(length, upper, lower, number, special) { 
+            const upperChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'; 
+            const lowerChars = 'abcdefghijklmnopqrstuvwxyz'; 
+            const numberChars = '0123456789'; 
+            const specialChars = '!@#$%^&*()_+[]{}|;:,.<>?'; 
+            let validChars = ''; 
+
+            if (upper) validChars += upperChars; 
+            if (lower) validChars += lowerChars; 
+            if (number) validChars += numberChars; 
+            if (special) validChars += specialChars;
+
+            if (validChars.length === 0) return '';
+
+            let password = '';
+            for (let i = 0; i < length; i++) {
+                const randomIndex = Math.floor(Math.random() * validChars.length);
+                password += validChars[randomIndex];
+            }
+            return password;
+        }
+
+        function updateStrengthIndicator(password) { 
+            const strength = calculateStrength(password); 
+            strengthIndicator.style.backgroundColor = strength.color; 
+        }
+
+        function calculateStrength(password) { 
+            let strength = { score: 0, color: 'red' }; 
+            if (password.length >= 8) strength.score++; 
+            if (/[A-Z]/.test(password)) strength.score++; 
+            if (/[a-z]/.test(password)) strength.score++; 
+            if (/[0-9]/.test(password)) strength.score++; 
+            if (/[^A-Za-z0-9]/.test(password)) strength.score++;
+
+            switch (strength.score) {
+                case 0:
+                case 1:
+                    strength.color = 'red';
+                    break;
+                case 2:
+                    strength.color = 'orange';
+                    break;
+                case 3:
+                case 4:
+                    strength.color = 'green';
+                    break;
+            }
+            return strength;
+        }
+
+        document.getElementById('copy').addEventListener('click', function() {
+            passwordField.select();
+            document.execCommand('copy');
+            alert('Password copied to clipboard!');
+        });
+    </script>
+</body>
+</html>

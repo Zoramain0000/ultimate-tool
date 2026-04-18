@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy QR Code Generator</title>
+    <link rel="stylesheet" href="qr.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+            text-align: center;
+            margin: 50px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            color: #333;
+        }
+        #optionSelect, #textInput, #generateBtn {
+            padding: 10px;
+            margin: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        #generateBtn {
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+        #generateBtn:hover {
+            background-color: #218838;
+        }
+        #qrCode {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 20px;
+            background-color: white;
+            display: inline-block;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        #wifiContainer, #smsContainer, #bitcoinContainer, #paypalContainer, #vcardContainer, #eventContainer, #whatsappContainer, #skypeContainer, #zoomContainer {
+            margin-top: 40px;
+            border: 1px solid #ccc;
+            padding: 20px;
+            background-color: #e9ecef;
+        }
+        #wifiInputSSID, #wifiInputPassword, #wifiInputEncryption, #smsInputNumber, #smsInputMessage, #bitcoinInputAddress, #bitcoinInputAmount, #paypalInputEmail, #paypalInputAmount, #vcardInputName, #vcardInputPhone, #vcardInputEmail, #eventInputTitle, #eventInputDate, #eventInputLocation, #whatsappInputNumber, #whatsappInputMessage, #skypeInputUsername, #zoomInputMeetingID {
+            padding: 10px;
+            margin: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        #wifiGenerateBtn, #smsGenerateBtn, #bitcoinGenerateBtn, #paypalGenerateBtn, #vcardGenerateBtn, #eventGenerateBtn, #whatsappGenerateBtn, #skypeGenerateBtn, #zoomGenerateBtn {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        #wifiGenerateBtn:hover, #smsGenerateBtn:hover, #bitcoinGenerateBtn:hover, #paypalGenerateBtn:hover, #vcardGenerateBtn:hover, #eventGenerateBtn:hover, #whatsappGenerateBtn:hover, #skypeGenerateBtn:hover, #zoomGenerateBtn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Easy QR Code Generator</h1>
+    <select id="optionSelect">
+        <option value="text">Text</option>
+        <option value="url">URL</option>
+        <option value="email">Email</option>
+        <option value="phone">Phone Number</option>
+        <option value="whatsapp">WhatsApp</option>
+        <option value="skype">Skype</option>
+        <option value="zoom">Zoom</option>
+    </select>
+    <input type="text" id="textInput" placeholder="Enter your input here" />
+    <button id="generateBtn">Generate QR Code</button>
+    <div id="qrCode"></div>
+    <div class="error" id="errorMessage"></div>
+
+    <div id="wifiContainer">
+        <h2>WiFi QR Code Generator</h2>
+        <input type="text" id="wifiInputSSID" placeholder="Enter your WiFi SSID" />
+        <input type="text" id="wifiInputPassword" placeholder="Enter your WiFi Password" />
+        <input type="text" id="wifiInputEncryption" placeholder="Enter encryption type (WPA/WEP)" />
+        <button id="wifiGenerateBtn">Generate WiFi QR Code</button>
+        <div id="wifiQrCode"></div>
+    </div>
+
+    <div id="smsContainer">
+        <h2>SMS QR Code Generator</h2>
+        <input type="text" id="smsInputNumber" placeholder="Enter recipient's phone number" />
+        <input type="text" id="smsInputMessage" placeholder=" Enter your message" />
+        <button id="smsGenerateBtn">Generate SMS QR Code</button>
+        <div id="smsQrCode"></div>
+    </div>
+
+    <div id="bitcoinContainer">
+        <h2>Bitcoin QR Code Generator</h2>
+        <input type="text" id="bitcoinInputAddress" placeholder="Enter Bitcoin Address" />
+        <input type="text" id="bitcoinInputAmount" placeholder="Enter Amount (optional)" />
+        <button id="bitcoinGenerateBtn">Generate Bitcoin QR Code</button>
+        <div id="bitcoinQrCode"></div>
+    </div>
+
+    <div id="paypalContainer">
+        <h2>PayPal QR Code Generator</h2>
+        <input type="text" id="paypalInputEmail" placeholder="Enter PayPal Email" />
+        <input type="text" id="paypalInputAmount" placeholder="Enter Amount" />
+        <button id="paypalGenerateBtn">Generate PayPal QR Code</button>
+        <div id="paypalQrCode"></div>
+    </div>
+
+    <div id="vcardContainer">
+        <h2>vCard QR Code Generator</h2>
+        <input type="text" id="vcardInputName" placeholder="Enter Name" />
+        <input type="text" id="vcardInputPhone" placeholder="Enter Phone Number" />
+        <input type="text" id="vcardInputEmail" placeholder="Enter Email" />
+        <button id="vcardGenerateBtn">Generate vCard QR Code</button>
+        <div id="vcardQrCode"></div>
+    </div>
+
+    <div id="eventContainer">
+        <h2>Event QR Code Generator</h2>
+        <input type="text" id="eventInputTitle" placeholder="Enter Event Title" />
+        <input type="text" id="eventInputDate" placeholder="Enter Event Date (YYYY-MM-DD)" />
+        <input type="text" id="eventInputLocation" placeholder="Enter Event Location" />
+        <button id="eventGenerateBtn">Generate Event QR Code</button>
+        <div id="eventQrCode"></div>
+    </div>
+
+    <div id="whatsappContainer">
+        <h2>WhatsApp QR Code Generator</h2>
+        <input type="text" id="whatsappInputNumber" placeholder="Enter recipient's phone number" />
+        <input type="text" id="whatsappInputMessage" placeholder="Enter your message" />
+        <button id="whatsappGenerateBtn">Generate WhatsApp QR Code</button>
+        <div id="whatsappQrCode"></div>
+    </div>
+
+    <div id="skypeContainer">
+        <h2>Skype QR Code Generator</h2>
+        <input type="text" id="skypeInputUsername" placeholder="Enter Skype Username" />
+        <button id="skypeGenerateBtn">Generate Skype QR Code</button>
+        <div id="skypeQrCode"></div>
+    </div>
+
+    <div id="zoomContainer">
+        <h2>Zoom QR Code Generator</h2>
+        <input type="text" id="zoomInputMeetingID" placeholder="Enter Meeting ID" />
+        <button id="zoomGenerateBtn">Generate Zoom QR Code</button>
+        <div id="zoomQrCode"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.qrcode/1.0/jquery.qrcode.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#optionSelect').change(function() {
+                if ($(this).val() === 'wifi') {
+                    $('#textInput').val('WIFI:S:<SSID>;T:<WPA/WEP>;P:<password>;;');
+                } else if ($(this).val() === 'sms') {
+                    $('#textInput').val('SMSTO:<number>:<message>');
+                } else if ($(this).val() === 'bitcoin') {
+                    $('#textInput').val('bitcoin:<address>?amount=<amount>');
+                } else if ($(this).val() === 'paypal') {
+                    $('#textInput').val('paypal.me/<username>?amount=<amount>');
+                } else if ($(this).val() === 'vcard') {
+                    $('#textInput').val('BEGIN:VCARD\nVERSION:3.0\nN:<name>\nTEL:<phone>\nEMAIL:<email>\nEND:VCARD');
+                } else if ($(this).val() === 'event') {
+                    $('#textInput').val('BEGIN:VEVENT\nSUMMARY:<title>\nDTSTART:<date>\nLOCATION:<location>\nEND:VEVENT');
+                } else if ($(this).val() === 'whatsapp') {
+                    $('#textInput').val('https ://wa.me/<number>?text=<message>');
+                } else if ($(this).val() === 'skype') {
+                    $('#textInput').val('skype:<username>?chat');
+                } else if ($(this).val() === 'zoom') {
+                    $('#textInput').val('https://zoom.us/j/<meetingID>');
+                } else {
+                    $('#textInput').val('');
+                }
+            });
+
+            $('#generateBtn').click(function() {
+                var text = $('#textInput').val().trim();
+                var option = $('#optionSelect').val();
+                var formattedText;
+                $('#errorMessage').text('');
+
+                if (text === '') {
+                    $('#errorMessage').text('Please enter a valid input.');
+                    return;
+                }
+
+                if (option === 'url' && !/^https?:\/\//i.test(text)) {
+                    $('#errorMessage').text('Please enter a valid URL starting with http:// or https://.');
+                    return;
+                }
+
+                if (option === 'email' && !/\S+@\S+\.\S+/.test(text)) {
+                    $('#errorMessage').text('Please enter a valid email address.');
+                    return;
+                }
+
+                if (option === 'phone' && !/^\d+$/.test(text)) {
+                    $('#errorMessage').text('Please enter a valid phone number.');
+                    return;
+                }
+
+                switch(option) {
+                    case 'url':
+                        formattedText = text;
+                        break;
+                    case 'email':
+                        formattedText = 'mailto:' + text;
+                        break;
+                    case 'phone':
+                        formattedText = 'tel:' + text;
+                        break;
+                    case 'sms':
+                        formattedText = 'SMSTO:' + text.split(':')[1] + ':' + text.split(':')[2];
+                        break;
+                    case 'whatsapp':
+                        var number = $('#whatsappInputNumber').val().trim();
+                        var message = $('#whatsappInputMessage').val().trim();
+                        formattedText = 'https://wa.me/' + number + '?text=' + encodeURIComponent(message);
+                        break;
+                    case 'skype':
+                        var username = $('#skypeInputUsername').val().trim();
+                        formattedText = 'skype:' + username + '?chat';
+                        break;
+                    case 'zoom':
+                        var meetingID = $('#zoomInputMeetingID').val().trim();
+                        formattedText = 'https://zoom.us/j/' + meetingID;
+                        break;
+                    case 'bitcoin':
+                        var address = $('#bitcoinInputAddress').val().trim();
+                        var amount = $('#bitcoinInputAmount').val().trim();
+                        formattedText = 'bitcoin:' + address + (amount ? '?amount=' + amount : '');
+                        break;
+                    case 'paypal':
+                        var email = $('#paypalInputEmail').val().trim();
+                        var amount = $('#paypalInputAmount').val().trim();
+                        formattedText = 'paypal.me/' + email + (amount ? '?amount=' + amount : '');
+                        break;
+                    case 'vcard':
+                        var name = $('#vcardInputName').val().trim();
+                        var phone = $('#vcardInputPhone').val().trim();
+                        var email = $('#vcardInputEmail').val().trim();
+                        formattedText = 'BEGIN:VCARD\nVERSION:3.0\nN:' + name + '\nTEL:' + phone + '\nEMAIL:' + email + '\nEND:VCARD';
+                        break;
+                    case 'event':
+                        var title = $('#eventInputTitle').val().trim();
+                        var date = $('#eventInputDate').val().trim();
+                        var location = $('#eventInputLocation').val().trim();
+                        formattedText = 'BEGIN:VEVENT\nSUMMARY:' + title + '\nDTSTART:' + date + '\nLOCATION:' + location + '\nEND:VEVENT';
+                        break;
+                    default:
+                        formattedText = text;
+                }
+
+                $('#qrCode').empty();
+                $('#qrCode').qrcode(formattedText);
+            });
+
+            $('#wifiGenerateBtn').click(function() {
+                var ssid = $('#wifiInputSSID').val().trim();
+                var password = $('#wifiInputPassword').val().trim();
+                var encryption = $('#wifiInputEncryption').val().trim();
+                if (ssid === '' || password === '' || encryption === '') {
+                    alert('Please enter valid WiFi details.');
+                    return;
+                }
+                var wifiText = 'WIFI:S:' + ssid + ';T:' + encryption + ';P:' + password + ';;';
+                $('#wifiQrCode').empty();
+                $('#wifiQrCode').qrcode(wifiText);
+            });
+
+            $('#smsGenerateBtn').click(function() {
+                var number = $('#smsInputNumber').val().trim();
+                var message = $('#smsInputMessage').val().trim();
+                if (number === '' || message === '') {
+                    alert('Please enter valid SMS details.');
+                    return;
+                }
+                var smsText = 'SMSTO:' + number + ':' + message;
+                $('#smsQr Code').empty();
+                $('#smsQrCode').qrcode(smsText);
+            });
+
+            $('#bitcoinGenerateBtn').click(function() {
+                var address = $('#bitcoinInputAddress').val().trim();
+                var amount = $('#bitcoinInputAmount').val().trim();
+                if (address === '') {
+                    alert('Please enter a valid Bitcoin address.');
+                    return;
+                }
+                var bitcoinText = 'bitcoin:' + address + (amount ? '?amount=' + amount : '');
+                $('#bitcoinQrCode').empty();
+                $('#bitcoinQrCode').qrcode(bitcoinText);
+            });
+
+            $('#paypalGenerateBtn').click(function() {
+                var email = $('#paypalInputEmail').val().trim();
+                var amount = $('#paypalInputAmount').val().trim();
+                if (email === '' || amount === '') {
+                    alert('Please enter valid PayPal details.');
+                    return;
+                }
+                var paypalText = 'paypal.me/' + email + '?amount=' + amount;
+                $('#paypalQrCode').empty();
+                $('#paypalQrCode').qrcode(paypalText);
+            });
+
+            $('#vcardGenerateBtn').click(function() {
+                var name = $('#vcardInputName').val().trim();
+                var phone = $('#vcardInputPhone').val().trim();
+                var email = $('#vcardInputEmail').val().trim();
+                if (name === '' || phone === '' || email === '') {
+                    alert('Please enter valid vCard details.');
+                    return;
+                }
+                var vcardText = 'BEGIN:VCARD\nVERSION:3.0\nN:' + name + '\nTEL:' + phone + '\nEMAIL:' + email + '\nEND:VCARD';
+                $('#vcardQrCode').empty();
+                $('#vcardQrCode').qrcode(vcardText);
+            });
+
+            $('#eventGenerateBtn').click(function() {
+                var title = $('#eventInputTitle').val().trim();
+                var date = $('#eventInputDate').val().trim();
+                var location = $('#eventInputLocation').val().trim();
+                if (title === '' || date === '' || location === '') {
+                    alert('Please enter valid event details.');
+                    return;
+                }
+                var eventText = 'BEGIN:VEVENT\nSUMMARY:' + title + '\nDTSTART:' + date + '\nLOCATION:' + location + '\nEND:VEVENT';
+                $('#eventQrCode').empty();
+                $('#eventQrCode').qrcode(eventText);
+            });
+
+            $('#whatsappGenerateBtn').click(function() {
+                var number = $('#whatsappInputNumber').val().trim();
+                var message = $('#whatsappInputMessage').val().trim();
+                if (number === '' || message === '') {
+                    alert('Please enter valid WhatsApp details.');
+                    return;
+                }
+                var whatsappText = 'https://wa.me/' + number + '?text=' + encodeURIComponent(message);
+                $('#whatsappQrCode').empty();
+                $('#whatsappQrCode').qrcode(whatsappText);
+            });
+
+            $('#skypeGenerateBtn').click(function() {
+                var username = $('#skypeInputUsername').val().trim();
+                if (username === '') {
+                    alert('Please enter a valid Skype username.');
+                    return;
+                }
+                var skypeText = 'skype:' + username + '?chat';
+                $('#skypeQrCode').empty();
+                $('#skypeQrCode').qrcode(skypeText);
+            });
+
+            $('#zoomGenerateBtn').click(function() {
+                var meetingID = $('#zoomInputMeetingID').val().trim();
+                if (meetingID === '') {
+                    alert('Please enter a valid Meeting ID.');
+                    return;
+                }
+                var zoomText = 'https://zoom.us/j/' + meetingID;
+                $('#zoomQrCode').empty();
+                $('#zoomQrCode').qrcode(zoomText);
+            });
+        });
+    </script>
+</body>
+</html>

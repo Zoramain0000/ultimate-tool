@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays Password Generator</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:Arial,sans-serif;color:#d1d1d1;overflow-x:hidden}
+
+.bg-video{position:fixed;inset:0;object-fit:cover;z-index:-2;filter:brightness(.3)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:-1}
+
+header{background:rgba(0,0,0,.7);padding:18px;text-align:center;border-bottom:1px solid #1f1f1f}
+header h1{font-size:26px;letter-spacing:2px}
+
+.container{max-width:950px;margin:30px auto;padding:20px;background:rgba(0,0,0,.65);border-radius:10px;box-shadow:0 0 25px rgba(0,0,0,.8)}
+
+.section{margin-bottom:25px}
+.section h2{font-size:18px;margin-bottom:10px;color:#9f9f9f;border-left:4px solid #555;padding-left:10px}
+
+input,select{
+  width:100%;padding:12px;border-radius:6px;border:1px solid #444;
+  background:black;color:#fff;margin-bottom:10px
+}
+
+button{
+  padding:12px 20px;background:black;border:1px solid #333;
+  color:white;cursor:pointer;border-radius:6px;transition:.3s;margin-right:6px
+}
+button:hover{background:#111;transform:scale(1.05)}
+
+.card{background:rgba(15,15,15,.85);padding:14px;border-radius:8px;border:1px solid #222;font-size:14px}
+
+pre{white-space:pre-wrap;word-break:break-all}
+
+.log{background:black;padding:12px;border-radius:6px;font-family:monospace;font-size:13px;color:#8aff8a;max-height:220px;overflow:auto;border:1px solid #222}
+
+footer{background:rgba(0,0,0,.7);text-align:center;padding:15px;font-size:13px;color:#777}
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • ADVANCED PASSWORD SYSTEM</h1>
+</header>
+
+<div class="container">
+
+<div class="section">
+<h2>Generation Settings</h2>
+<input type="number" id="length" value="16" min="8" max="128">
+<input type="number" id="bulk" value="1" min="1" max="1000">
+<select id="mode">
+  <option value="random">Random Password</option>
+  <option value="passphrase">Passphrase Mode</option>
+</select>
+<button id="generateBtn">Generate</button>
+<button id="exportTxtBtn">Export TXT</button>
+<button id="exportJsonBtn">Export JSON</button>
+</div>
+
+<div class="section">
+<h2>Generated Passwords</h2>
+<div class="card"><pre id="output">-</pre></div>
+</div>
+
+<div class="section">
+<h2>Password History (Session)</h2>
+<div class="card"><pre id="history">Empty</pre></div>
+</div>
+
+<div class="section">
+<h2>Security Analysis</h2>
+<div class="card">
+Entropy: <span id="entropy">-</span> bits<br>
+Crack Time: <span id="crack">-</span><br>
+Status: <span id="status">-</span>
+</div>
+</div>
+
+<div class="section">
+<h2>Activity Log</h2>
+<div class="log" id="log"></div>
+</div>
+
+</div>
+
+<footer>Educational & ethical use only</footer>
+
+<script>
+/* DOM */
+const lengthEl=document.getElementById("length")
+const bulkEl=document.getElementById("bulk")
+const modeEl=document.getElementById("mode")
+const outputEl=document.getElementById("output")
+const historyEl=document.getElementById("history")
+const entropyEl=document.getElementById("entropy")
+const crackEl=document.getElementById("crack")
+const statusEl=document.getElementById("status")
+const logEl=document.getElementById("log")
+
+const genBtn=document.getElementById("generateBtn")
+const txtBtn=document.getElementById("exportTxtBtn")
+const jsonBtn=document.getElementById("exportJsonBtn")
+
+/* DATA */
+let history=[]
+const keyboardWalks=["12345","qwerty","asdf","zxcv","password","admin"]
+
+const sets={
+  all:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{}<>?"
+}
+
+const words=[
+"zero","crypto","ghost","secure","vault","cipher","node","hash","dark","quantum",
+"matrix","signal","binary","shadow","kernel","vector","entropy","protocol","socket","payload",
+"firewall","sandbox","exploit","packet","gateway","neuron","buffer","compile","runtime","process",
+"thread","daemon","memory","archive","backup","cluster","console","monitor","virtual","docker",
+"cloud","token","access","policy","identity","fingerprint","biometric","algorithm","checksum","integer",
+"hex","ascii","unicode","binary","random","salt","nonce","keyring","keystore","certificate",
+"private","public","trusted","signed","encrypted","secured","isolated","distributed","redundant","hardened",
+"observer","scanner","forensic","trace","audit","compliance","integrity","availability","resilience","defense"
+]
+
+
+/* HELPERS */
+const log=m=>{
+  logEl.innerHTML+=`[${new Date().toLocaleTimeString()}] ${m}<br>`
+  logEl.scrollTop=logEl.scrollHeight
+}
+
+const entropyCalc=(len,pool)=>Math.round(len*Math.log2(pool))
+const crackTime=e=>e<40?"Instant":e<60?"Hours":e<80?"Years":"Centuries+"
+const weak=p=>keyboardWalks.some(w=>p.toLowerCase().includes(w))
+
+const randPass=len=>{
+  let p=""
+  for(let i=0;i<len;i++) p+=sets.all[Math.random()*sets.all.length|0]
+  return p
+}
+
+const phrasePass=()=>words.sort(()=>.5-Math.random()).slice(0,4).join("-")+Math.floor(Math.random()*100)
+
+/* GENERATE */
+genBtn.onclick=()=>{
+  let count=Math.max(1,Math.min(1000,bulkEl.value|0))
+  let len=Math.max(8,lengthEl.value|0)
+  let out=[]
+
+  for(let i=0;i<count;i++){
+    let p=modeEl.value==="passphrase"?phrasePass():randPass(len)
+    if(weak(p)){i--;continue}
+    out.push(p)
+    history.push(p)
+  }
+
+  outputEl.textContent=out.join("\n")
+  historyEl.textContent=history.join("\n")
+
+  let e=entropyCalc(out[0].length,90)
+  entropyEl.textContent=e
+  crackEl.textContent=crackTime(e)
+  statusEl.textContent=e>80?"Very Strong":"Strong"
+
+  navigator.clipboard.writeText(out[0])
+  log(`Generated ${out.length} password(s)`)
+}
+
+/* EXPORT */
+const download=(data,name,type)=>{
+  const a=document.createElement("a")
+  a.href=URL.createObjectURL(new Blob([data],{type}))
+  a.download=name
+  a.click()
+}
+
+txtBtn.onclick=()=>download(history.join("\n"),"passwords.txt","text/plain")
+jsonBtn.onclick=()=>download(JSON.stringify(history,null,2),"passwords.json","application/json")
+</script>
+
+</body>
+</html>

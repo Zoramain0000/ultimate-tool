@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Legal Stress Testing Tool</title>
+  <style>
+    /* Your existing styles */
+    body {
+      font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: grey;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: green;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    input, select {
+      width: 98%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid red;
+      border-radius: 5px;
+      font-size: 1em;
+    }
+
+    .protocols {
+      margin-top: 10px;
+    }
+
+    .protocols label {
+      display: inline-block;
+      margin-right: 10px;
+    }
+
+    .protocols input[type="checkbox"] {
+      margin-right: 5px;
+    }
+
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      background-color: red;
+      color: green;
+      border: none;
+      border-radius: 5px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: green;
+    }
+
+    pre {
+      margin-top: 20px;
+      background-color: #1e1e1e;
+      color: #00ff88;
+      padding: 15px;
+      border-radius: 10px;
+      font-family: 'Courier New', monospace;
+      height: 250px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    .disclaimer {
+      margin-top: 20px;
+      background-color: red;
+      border: 1px solid green;
+      padding: 10px;
+      font-size: 0.9em;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>DDoS-Test-Tools</h1>
+
+    <!-- Disclaimer for Legal and Authorized Use -->
+    <div class="disclaimer">
+      <strong>Disclaimer:</strong> This tool is for educational purposes only. Use it exclusively for authorized and ethical testing on systems you own or have explicit permission to test. Unauthorized use may be illegal and cause harm to systems.
+    </div>
+
+    <label for="ip">Target IP / Domain:</label>
+    <input type="text" id="ip" placeholder="e.g., example.com or 192.168.1.1" required>
+
+    <label for="ports">Port(s):</label>
+    <input type="text" id="ports" placeholder="e.g., 80, 443 or 21-25">
+
+    <label for="packetSize">Packet Size (bytes):</label>
+    <input type="number" id="packetSize" value="1024">
+
+    <label for="processes">Processes:</label>
+    <input type="number" id="processes" value="30">
+
+    <label for="threads">Threads per Process:</label>
+    <input type="number" id="threads" value="40">
+
+    <div class="protocols">
+      <label><input type="checkbox" value="TCP" /> TCP</label>
+      <label><input type="checkbox" value="UDP" /> UDP</label>
+      <label><input type="checkbox" value="ICMP" /> ICMP</label>
+      <label><input type="checkbox" value="HTTP" /> HTTP</label>
+      <label><input type="checkbox" value="HTTPS" /> HTTPS</label>
+      <label><input type="checkbox" value="ALL" /> All</label>
+    </div>
+
+    <!-- New checkbox for permission acknowledgment -->
+    <div>
+      <label><input type="checkbox" id="permission" /> I have explicit permission to test this target</label>
+    </div>
+
+    <button onclick="startSimulation()" id="startBtn">Start Test</button>
+    
+    <!-- Refresh Button to Reload the Page -->
+    <button onclick="refreshPage()" id="refreshBtn">Refresh</button>
+
+    <pre id="output">[ Ready to simulate stress test (with legal permission)... ]</pre>
+  </div>
+  
+  <script>
+    function startSimulation() {
+      const ip = document.getElementById("ip").value.trim();
+      const ports = document.getElementById("ports").value.trim();
+      const processes = parseInt(document.getElementById("processes").value);
+      const threads = parseInt(document.getElementById("threads").value);
+      const packetSize = parseInt(document.getElementById("packetSize").value);
+      const output = document.getElementById("output");
+      const selected = [...document.querySelectorAll('.protocols input:checked')].map(cb => cb.value);
+      const hasPermission = document.getElementById("permission").checked;
+
+      if (!ip || selected.length === 0) {
+        alert("Please provide a valid IP and select at least one protocol.");
+        return;
+      }
+
+      if (!hasPermission) {
+        alert("You must have explicit permission to perform a stress test on this target.");
+        return;
+      }
+
+      const protocols = selected.includes("ALL") ? ["TCP", "UDP", "ICMP", "HTTP", "HTTPS"] : selected;
+
+      output.innerText = `🚀 Starting legal stress test simulation...\n`;
+      output.innerText += `Target: ${ip} | Ports: ${ports || "Default"}\n`;
+      output.innerText += `Processes: ${processes}, Threads: ${threads}, Packet Size: ${packetSize} bytes\n`;
+      output.innerText += `Protocols: ${protocols.join(", ")}\n\n`;
+
+      // Simulate each protocol
+      protocols.forEach(protocol => {
+        if (protocol === "HTTP" || protocol === "HTTPS") {
+          const url = `${protocol.toLowerCase()}://${ip}${ports ? `:${ports}` : ''}`;
+          output.innerText += `[${protocol}] Connecting to ${url}...\n`;
+          fetch(url)
+            .then(res => res.text().then(text => {
+              output.innerText += `[${protocol}] Status: ${res.status} ${res.statusText}\n`;
+              output.innerText += `[${protocol}] Response Preview:\n${text.slice(0, 300)}\n\n`;
+            }))
+            .catch(err => {
+              output.innerText += `[${protocol}] Error: ${err.message}\n\n`;
+            });
+        } else {
+          simulateProtocol(protocol, ip, ports, output);
+        }
+      });
+    }
+
+    function simulateProtocol(protocol, ip, ports, output) {
+      let count = 0;
+      const max = 999999;
+      const interval = setInterval(() => {
+        count++;
+        const portInfo = ports ? `:${ports}` : '';
+        output.innerText += `[${protocol}] Packet ${count} sent to ${ip}${portInfo}\n`;
+        output.scrollTop = output.scrollHeight;
+        if (count >= max) {
+          clearInterval(interval);
+          output.innerText += `[${protocol}] Finished sending ${max} packets.\n\n`;
+        }
+      }, 300);
+    }
+
+    // Function to refresh the page
+    function refreshPage() {
+      window.location.reload();  // Reloads the current page
+    }
+  </script>
+</body>
+</html>

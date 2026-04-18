@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ZeroDaysAI | Google Search + AI + Risk</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', sans-serif;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');  
+      margin: 0;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 220px;
+      background: #1e293b;
+      padding: 20px;
+      border-right: 1px solid #334155;
+    }
+
+    .sidebar h2 {
+      color: #60a5fa;
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 10px 0;
+      color: #cbd5e1;
+      text-decoration: none;
+    }
+
+    .sidebar a:hover {
+      color: #93c5fd;
+    }
+
+    .container {
+      flex: 1;
+      padding: 20px;
+    }
+
+    .search-wrapper {
+      max-width: 800px;
+      margin: auto;
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+
+    h1 {
+      text-align: center;
+      color: #60a5fa;
+    }
+
+    #search-box {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    #search-input {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      background: #334155;
+      color: white;
+    }
+
+    #search-button {
+      padding: 12px 16px;
+      background: #2563eb;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+    }
+
+    #search-button:hover {
+      background: #1d4ed8;
+    }
+
+    .result-item {
+      background: #334155;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+    }
+
+    .result-item h3 {
+      margin: 0 0 6px;
+      color: #93c5fd;
+    }
+
+    .result-item p {
+      margin: 0;
+    }
+
+    .settings-panel {
+      margin-top: 20px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 15px;
+      display: none;
+    }
+
+    .toggle-settings {
+      background: none;
+      color: #60a5fa;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      text-align: left;
+      padding: 10px 0;
+      display: block;
+      width: 100%;
+      text-align: left;
+    }
+
+    .toggle-settings:hover {
+      color: #93c5fd;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>☣️ ZeroDays</h2>
+    <a href="#">🏠 Home</a>
+    <button class="toggle-settings">⚙️ Settings</button>
+    <a href="#">📁 Saved</a>
+    <a href="#">📡 Live Scan</a>
+     <a href="#">🧠 AI Mode</a>
+    <div style="margin-left: 10px; font-size: 14px; color: #94a3b8;">
+      <a href="Tools/SubdomainFinder.html"> ⌛ domainFinder</a> 
+      <a href="Tools/ipgeov2.html"> ⌛ IP Geolocation</a>
+      <a href="Tools/DNSv2.html"> ⌛ Reverse DNS</a>
+      <a href="Tools/Bruteforceattack.html">⌛ Crack test</a>
+      <a href="Tools/Malware.html">⌛ Malware scanner</a>
+      <a href="Tools/CSPanalyzing.html">⌛ CSPAnalyzer</a>
+      </div>
+
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+      <h3 style="color:#60a5fa;">⚙️ Settings</h3>
+
+      <p><strong>AI Mode:</strong> <input type="checkbox" id="aiMode" /></p>
+      <p><strong>Dark Theme:</strong> <input type="checkbox" id="darkTheme" checked /></p>
+      <p><strong>Safe Search:</strong> <input type="checkbox" id="safeSearch" /></p>
+
+      <hr style="border-color:#334155; margin: 15px 0;">
+
+      <p><strong>Default Search Engine:</strong><br>
+        <select id="searchEngine" style="margin-top:5px; background:#1e293b; color:white; border:1px solid #334155; padding:5px; border-radius:4px;">
+          <option value="google">Google</option>
+          <option value="bing">Bing</option>
+          <option value="duckduckgo">DuckDuckGo</option>
+          <option value="zeroDaysAI" selected>ZeroDays  (Default)</option>
+        </select>
+      </p>
+
+      <p><strong>On Startup:</strong><br>
+        <label><input type="radio" name="startup" value="newTab" checked /> Open new tab</label><br>
+        <label><input type="radio" name="startup" value="continue" /> Continue where you left off</label><br>
+        <label><input type="radio" name="startup" value="custom" /> Open specific page</label>
+      </p>
+
+      <p><strong>Privacy:</strong><br>
+        <label><input type="checkbox" id="dnt" /> Send “Do Not Track” request</label><br>
+        <label><input type="checkbox" id="blockCookies" /> Block third-party cookies</label>
+      </p>
+
+      <button onclick="resetSettings()" style="margin-top: 10px; background: #ef4444; color: white; padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer;">
+        ♻️ Reset to Defaults
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container">
+    <div class="search-wrapper">
+      <h1>🔍 ZeroDays Search Engine</h1>
+
+      <!-- Search Box -->
+      <div id="search-box">
+        <input type="text" id="search-input" placeholder="Type something like 'XSS' or 'CVE-2023-'" />
+        <button id="search-button">Search</button>
+      </div>
+
+      <div id="results"></div>
+    </div>
+  </div>
+
+  <script>
+    // Toggle settings panel visibility
+    document.querySelectorAll('.toggle-settings').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const panel = document.getElementById('settingsPanel');
+        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+      });
+    });
+
+    // Save and load settings from localStorage
+    const settings = [ 'darkTheme', 'safeSearch', 'dnt', 'blockCookies'];
+
+    window.onload = () => {
+      settings.forEach(id => {
+        const el = document.getElementById(id);
+        if (localStorage.getItem(id) !== null) {
+          el.checked = localStorage.getItem(id) === 'true';
+        }
+        el.addEventListener('change', () => {
+          localStorage.setItem(id, el.checked);
+        });
+      });
+
+      // Load dropdown
+      const engine = document.getElementById('searchEngine');
+      if (localStorage.getItem('searchEngine')) {
+        engine.value = localStorage.getItem('searchEngine');
+      }
+      engine.addEventListener('change', () => {
+        localStorage.setItem('searchEngine', engine.value);
+      });
+
+      // Startup radio
+      const startupRadios = document.querySelectorAll('input[name="startup"]');
+      const savedStartup = localStorage.getItem('startup');
+      if (savedStartup) {
+        startupRadios.forEach(r => r.checked = (r.value === savedStartup));
+      }
+      startupRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+          localStorage.setItem('startup', radio.value);
+        });
+      });
+    };
+
+    function resetSettings() {
+      settings.forEach(id => {
+        document.getElementById(id).checked = false;
+        localStorage.removeItem(id);
+      });
+      document.getElementById('darkTheme').checked = true;
+      localStorage.setItem('darkTheme', 'true');
+      localStorage.removeItem('searchEngine');
+      localStorage.removeItem('startup');
+      document.getElementById('searchEngine').value = 'zeroDaysAI';
+      document.querySelector('input[value="newTab"]').checked = true;
+      alert("Settings reset to default...");
+    }
+
+    // Function to handle search based on selected engine
+    async function search(query, engine) {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '';
+      if (!query) {
+        resultsDiv.innerHTML = '<p>Please type something to search!</p>';
+        return;
+      }
+
+      let results = [];
+
+      if (engine === 'google') {
+        // Use Google search URL (simple implementation)
+        results.push(`<p><a href="https://www.google.com/search?q=${query}" target="_blank">Search Google for: ${query}</a></p>`);
+      } else if (engine === 'bing') {
+        // Use Bing search URL (simple implementation)
+        results.push(`<p><a href="https://www.bing.com/search?q=${query}" target="_blank">Search Bing for: ${query}</a></p>`);
+      } else if (engine === 'duckduckgo') {
+        results.push(`<p><a href="https://duckduckgo.com/?q=${query}" target="_blank">Search DuckDuckGo for: ${query}</a></p>`);
+      } else if (engine === 'zeroDaysAI') {
+        results.push(`<p><a href="https://zeroDaysAI.search/${query}" target="_blank">ZeroDays AI Search Results for: ${query}</a></p>`);
+      }
+
+      resultsDiv.innerHTML = results.join('');
+    }
+
+    // Event listener for search button
+    document.getElementById('search-button').addEventListener('click', () => {
+      const query = document.getElementById('search-input').value;
+      const engine = document.getElementById('searchEngine').value;
+      search(query, engine);
+    });
+  </script>
+</body>
+</html>

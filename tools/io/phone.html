@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>📞 Phone Number Info Lookup</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: gray;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Background video */
+  .bg-video {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: -2;
+    filter: brightness(0.25) grayscale(0.4); /* dark gray/black effect */
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35); /* subtle overlay */
+    z-index: -1;
+  }
+
+  .container {
+    position: relative;
+    max-width: 600px;
+    margin: 50px auto;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+  }
+  h1 {
+    text-align: center;
+    color: white;
+    margin-bottom: 25px;
+  }
+  input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid gray;
+    box-sizing: border-box;
+  }
+  button {
+    margin-top: 15px;
+    padding: 12px 20px;
+    width: 100%;
+    background-color: gray;
+    border: none;
+    color: rgb(0, 0, 0);
+    font-weight: bold;
+    font-size: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  button:hover {
+    background-color: blue;
+  }
+  pre {
+    background: rgba(0,0,0,0.4);
+    padding: 15px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin-top: 20px;
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .error {
+    color: gray;
+    font-weight: bold;
+    margin-top: 20px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- Background video -->
+<video class="bg-video" autoplay muted loop>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<div class="container">
+  <h1>📞 Phone Number Info Lookup</h1>
+  <input id="phoneInput" type="text" placeholder="Enter phone number (with or without country code)" />
+  <button onclick="lookupNumber()">Lookup</button>
+  <pre id="output"></pre>
+  <div id="error" class="error"></div>
+</div>
+
+<script>
+const output = document.getElementById('output');
+const errorDiv = document.getElementById('error');
+
+// Manual country code data
+const countryCodes = {
+  "1": {name:"United States/Canada", iso:"US/CA", flag:"🇺🇸🇨🇦", currency:"USD/CAD"},
+  "7": {name:"Russia/Kazakhstan", iso:"RU/KZ", flag:"🇷🇺🇰🇿", currency:"RUB/KZT"},
+  "20": {name:"Egypt", iso:"EG", flag:"🇪🇬", currency:"EGP"},
+  "27": {name:"South Africa", iso:"ZA", flag:"🇿🇦", currency:"ZAR"},
+  "30": {name:"Greece", iso:"GR", flag:"🇬🇷", currency:"EUR"},
+  "31": {name:"Netherlands", iso:"NL", flag:"🇳🇱", currency:"EUR"},
+  "32": {name:"Belgium", iso:"BE", flag:"🇧🇪", currency:"EUR"},
+  "33": {name:"France", iso:"FR", flag:"🇫🇷", currency:"EUR"},
+  "34": {name:"Spain", iso:"ES", flag:"🇪🇸", currency:"EUR"},
+  "36": {name:"Hungary", iso:"HU", flag:"🇭🇺", currency:"HUF"},
+  "39": {name:"Italy", iso:"IT", flag:"🇮🇹", currency:"EUR"},
+  "40": {name:"Romania", iso:"RO", flag:"🇷🇴", currency:"RON"},
+  "41": {name:"Switzerland", iso:"CH", flag:"🇨🇭", currency:"CHF"},
+  "43": {name:"Austria", iso:"AT", flag:"🇦🇹", currency:"EUR"},
+  "44": {name:"United Kingdom", iso:"GB", flag:"🇬🇧", currency:"GBP"},
+  "45": {name:"Denmark", iso:"DK", flag:"🇩🇰", currency:"DKK"},
+  "46": {name:"Sweden", iso:"SE", flag:"🇸🇪", currency:"SEK"},
+  "47": {name:"Norway", iso:"NO", flag:"🇳🇴", currency:"NOK"},
+  "48": {name:"Poland", iso:"PL", flag:"🇵🇱", currency:"PLN"},
+  "49": {name:"Germany", iso:"DE", flag:"🇩🇪", currency:"EUR"},
+  "51": {name:"Peru", iso:"PE", flag:"🇵🇪", currency:"PEN"},
+  "52": {name:"Mexico", iso:"MX", flag:"🇲🇽", currency:"MXN"},
+  "53": {name:"Cuba", iso:"CU", flag:"🇨🇺", currency:"CUP"},
+  "54": {name:"Argentina", iso:"AR", flag:"🇦🇷", currency:"ARS"},
+  "55": {name:"Brazil", iso:"BR", flag:"🇧🇷", currency:"BRL"},
+  "56": {name:"Chile", iso:"CL", flag:"🇨🇱", currency:"CLP"},
+  "57": {name:"Colombia", iso:"CO", flag:"🇨🇴", currency:"COP"},
+  "58": {name:"Venezuela", iso:"VE", flag:"🇻🇪", currency:"VES"},
+  "60": {name:"Malaysia", iso:"MY", flag:"🇲🇾", currency:"MYR"},
+  "61": {name:"Australia", iso:"AU", flag:"🇦🇺", currency:"AUD"},
+  "62": {name:"Indonesia", iso:"ID", flag:"🇮🇩", currency:"IDR"},
+  "63": {name:"Philippines", iso:"PH", flag:"🇵🇭", currency:"PHP"},
+  "64": {name:"New Zealand", iso:"NZ", flag:"🇳🇿", currency:"NZD"},
+  "65": {name:"Singapore", iso:"SG", flag:"🇸🇬", currency:"SGD"},
+  "66": {name:"Thailand", iso:"TH", flag:"🇹🇭", currency:"THB"},
+  "81": {name:"Japan", iso:"JP", flag:"🇯🇵", currency:"JPY"},
+  "82": {name:"South Korea", iso:"KR", flag:"🇰🇷", currency:"KRW"},
+  "84": {name:"Vietnam", iso:"VN", flag:"🇻🇳", currency:"VND"},
+  "86": {name:"China", iso:"CN", flag:"🇨🇳", currency:"CNY"},
+  "90": {name:"Turkey", iso:"TR", flag:"🇹🇷", currency:"TRY"},
+  "91": {name:"India", iso:"IN", flag:"🇮🇳", currency:"INR"},
+  "92": {name:"Pakistan", iso:"PK", flag:"🇵🇰", currency:"PKR"},
+  "93": {name:"Afghanistan", iso:"AF", flag:"🇦🇫", currency:"AFN"},
+  "94": {name:"Sri Lanka", iso:"LK", flag:"🇱🇰", currency:"LKR"},
+  "95": {name:"Myanmar", iso:"MM", flag:"🇲🇲", currency:"MMK"},
+  "98": {name:"Iran", iso:"IR", flag:"🇮🇷", currency:"IRR"},
+  "211": {name:"South Sudan", iso:"SS", flag:"🇸🇸", currency:"SSP"},
+  "212": {name:"Morocco", iso:"MA", flag:"🇲🇦", currency:"MAD"},
+  "213": {name:"Algeria", iso:"DZ", flag:"🇩🇿", currency:"DZD"},
+  "216": {name:"Tunisia", iso:"TN", flag:"🇹🇳", currency:"TND"},
+  "218": {name:"Libya", iso:"LY", flag:"🇱🇾", currency:"LYD"},
+  "220": {name:"Gambia", iso:"GM", flag:"🇬🇲", currency:"GMD"},
+  "221": {name:"Senegal", iso:"SN", flag:"🇸🇳", currency:"XOF"},
+  "222": {name:"Mauritania", iso:"MR", flag:"🇲🇷", currency:"MRU"},
+  "223": {name:"Mali", iso:"ML", flag:"🇲🇱", currency:"XOF"},
+  "224": {name:"Guinea", iso:"GN", flag:"🇬🇳", currency:"GNF"},
+  "225": {name:"Côte d'Ivoire", iso:"CI", flag:"🇨🇮", currency:"XOF"},
+  "226": {name:"Burkina Faso", iso:"BF", flag:"🇧🇫", currency:"XOF"},
+  "227": {name:"Niger", iso:"NE", flag:"🇳🇪", currency:"XOF"},
+  "228": {name:"Togo", iso:"TG", flag:"🇹🇬", currency:"XOF"},
+  "229": {name:"Benin", iso:"BJ", flag:"🇧🇯", currency:"XOF"},
+  "230": {name:"Mauritius", iso:"MU", flag:"🇲🇺", currency:"MUR"},
+  "231": {name:"Liberia", iso:"LR", flag:"🇱🇷", currency:"LRD"},
+  "232": {name:"Sierra Leone", iso:"SL", flag:"🇸🇱", currency:"SLL"},
+  "233": {name:"Ghana", iso:"GH", flag:"🇬🇭", currency:"GHS"},
+  "234": {name:"Nigeria", iso:"NG", flag:"🇳🇬", currency:"NGN"},
+  "235": {name:"Chad", iso:"TD", flag:"🇹🇩", currency:"XAF"},
+  "236": {name:"Central African Republic", iso:"CF", flag:"🇨🇫", currency:"XAF"},
+  "237": {name:"Cameroon", iso:"CM", flag:"🇨🇲", currency:"XAF"},
+  "238": {name:"Cape Verde", iso:"CV", flag:"🇨🇻", currency:"CVE"},
+  "239": {name:"Sao Tome and Principe", iso:"ST", flag:"🇸🇹", currency:"STN"},
+  "240": {name:"Equatorial Guinea", iso:"GQ", flag:"🇬🇶", currency:"XAF"},
+  "241": {name:"Gabon", iso:"GA", flag:"🇬🇦", currency:"XAF"},
+  "242": {name:"Congo (Brazzaville)", iso:"CG", flag:"🇨🇬", currency:"XAF"},
+  "243": {name:"Congo (Kinshasa)", iso:"CD", flag:"🇨🇩", currency:"CDF"},
+  "244": {name:"Angola", iso:"AO", flag:"🇦🇴", currency:"AOA"},
+  "245": {name:"Guinea-Bissau", iso:"GW", flag:"🇬🇼", currency:"XOF"},
+  "246": {name:"British Indian Ocean Territory", iso:"IO", flag:"🇮🇴", currency:"USD"},
+  "247": {name:"Ascension Island", iso:"AC", flag:"🇦🇨", currency:"SHP"},
+  "248": {name:"Seychelles", iso:"SC", flag:"🇸🇨", currency:"SCR"},
+  "249": {name:"Sudan", iso:"SD", flag:"🇸🇩", currency:"SDG"},
+  "250": {name:"Rwanda", iso:"RW", flag:"🇷🇼", currency:"RWF"},
+  "251": {name:"Ethiopia", iso:"ET", flag:"🇪🇹", currency:"ETB"},
+  "252": {name:"Somalia", iso:"SO", flag:"🇸🇴", currency:"SOS"},
+  "253": {name:"Djibouti", iso:"DJ", flag:"🇩🇯", currency:"DJF"},
+  "254": {name:"Kenya", iso:"KE", flag:"🇰🇪", currency:"KES"},
+  "255": {name:"Tanzania", iso:"TZ", flag:"🇹🇿", currency:"TZS"},
+  "256": {name:"Uganda", iso:"UG", flag:"🇺🇬", currency:"UGX"},
+  "257": {name:"Burundi", iso:"BI", flag:"🇧🇮", currency:"BIF"},
+  "258": {name:"Mozambique", iso:"MZ", flag:"🇲🇿", currency:"MZN"},
+  "260": {name:"Zambia", iso:"ZM", flag:"🇿🇲", currency:"ZMW"},
+  "261": {name:"Madagascar", iso:"MG", flag:"🇲🇬", currency:"MGA"},
+  "262": {name:"Réunion/Mayotte", iso:"RE/YT", flag:"🇷🇪🇾🇹", currency:"EUR/MYR"},
+  "263": {name:"Zimbabwe", iso:"ZW", flag:"🇿🇼", currency:"ZWL"},
+  "264": {name:"Namibia", iso:"NA", flag:"🇳🇦", currency:"NAD"},
+  "265": {name:"Malawi", iso:"MW", flag:"🇲🇼", currency:"MWK"},
+  "266": {name:"Lesotho", iso:"LS", flag:"🇱🇸", currency:"LSL"},
+  "267": {name:"Botswana", iso:"BW", flag:"🇧🇼", currency:"BWP"},
+  "268": {name:"Eswatini", iso:"SZ", flag:"🇸🇿", currency:"SZL"},
+  "269": {name:"Comoros", iso:"KM", flag:"🇰🇲", currency:"KMF"},
+  "290": {name:"Saint Helena", iso:"SH", flag:"🇸🇭", currency:"SHP"},
+  "291": {name:"Eritrea", iso:"ER", flag:"🇪🇷", currency:"ERN"},
+  "297": {name:"Aruba", iso:"AW", flag:"🇦🇼", currency:"AWG"},
+  "298": {name:"Faroe Islands", iso:"FO", flag:"🇫🇴", currency:"DKK"},
+  "299": {name:"Greenland", iso:"GL", flag:"🇬🇱", currency:"DKK"},
+  "350": {name:"Gibraltar", iso:"GI", flag:"🇬🇮", currency:"GIP"},
+  "351": {name:"Portugal", iso:"PT", flag:"🇵🇹", currency:"EUR"},
+  "352": {name:"Luxembourg", iso:"LU", flag:"🇱🇺", currency:"EUR"},
+  "353": {name:"Ireland", iso:"IE", flag:"🇮🇪", currency:"EUR"},
+  "354": {name:"Iceland", iso:"IS", flag:"🇮🇸", currency:"ISK"},
+  "355": {name:"Albania", iso:"AL", flag:"🇦🇱", currency:"ALL"},
+  "356": {name:"Malta", iso:"MT", flag:"🇲🇹", currency:"EUR"},
+  "357": {name:"Cyprus", iso:"CY", flag:"🇨🇾", currency:"EUR"},
+  "358": {name:"Finland", iso:"FI", flag:"🇫🇮", currency:"EUR"},
+  "359": {name:"Bulgaria", iso:"BG", flag:"🇧🇬", currency:"BGN"},
+  "370": {name:"Lithuania", iso:"LT", flag:"🇱🇹", currency:"EUR"},
+  "371": {name:"Latvia", iso:"LV", flag:"🇱🇻", currency:"EUR"},
+  "372": {name:"Estonia", iso:"EE", flag:"🇪🇪", currency:"EUR"},
+  "373": {name:"Moldova", iso:"MD", flag:"🇲🇩", currency:"MDL"},
+  "374": {name:"Armenia", iso:"AM", flag:"🇦🇲", currency:"AMD"},
+  "375": {name:"Belarus", iso:"BY", flag:"🇧🇾", currency:"BYN"},
+  "376": {name:"Andorra", iso:"AD", flag:"🇦🇩", currency:"EUR"},
+  "377": {name:"Monaco", iso:"MC", flag:"🇲🇨", currency:"EUR"},
+  "378": {name:"San Marino", iso:"SM", flag:"🇸🇲", currency:"EUR"},
+  "379": {name:"Vatican City", iso:"VA", flag:"🇻🇦", currency:"EUR"},
+  "380": {name:"Ukraine", iso:"UA", flag:"🇺🇦", currency:"UAH"},
+  "381": {name:"Serbia", iso:"RS", flag:"🇷🇸", currency:"RSD"},
+  "382": {name:"Montenegro", iso:"ME", flag:"🇲🇪", currency:"EUR"},
+  "383": {name:"Kosovo", iso:"XK", flag:"🇽🇰", currency:"EUR"},
+  "385": {name:"Croatia", iso:"HR", flag:"🇭🇷", currency:"HRK"},
+  "386": {name:"Slovenia", iso:"SI", flag:"🇸🇮", currency:"EUR"},
+  "387": {name:"Bosnia and Herzegovina", iso:"BA", flag:"🇧🇦", currency:"BAM"},
+  "389": {name:"North Macedonia", iso:"MK", flag:"🇲🇰", currency:"MKD"},
+  "420": {name:"Czech Republic", iso:"CZ", flag:"🇨🇿", currency:"CZK"},
+  "421": {name:"Slovakia", iso:"SK", flag:"🇸🇰", currency:"EUR"},
+  "423": {name:"Liechtenstein", iso:"LI", flag:"🇱🇮", currency:"CHF"},
+  "500": {name:"Falkland Islands", iso:"FK", flag:"🇫🇰", currency:"FKP"},
+  "501": {name:"Belize", iso:"BZ", flag:"🇧🇿", currency:"BZD"},
+  "502": {name:"Guatemala", iso:"GT", flag:"🇬🇹", currency:"GTQ"},
+  "503": {name:"El Salvador", iso:"SV", flag:"🇸🇻", currency:"SVC"},
+  "504": {name:"Honduras", iso:"HN", flag:"🇭🇳", currency:"HNL"},
+  "505": {name:"Nicaragua", iso:"NI", flag:"🇳🇮", currency:"NIO"},
+  "506": {name:"Costa Rica", iso:"CR", flag:"🇨🇷", currency:"CRC"},
+  "507": {name:"Panama", iso:"PA", flag:"🇵🇦", currency:"PAB"},
+  "508": {name:"Saint Pierre and Miquelon", iso:"PM", flag:"🇵🇲", currency:"EUR"},
+  "509": {name:"Haiti", iso:"HT", flag:"🇭🇹", currency:"HTG"},
+  "590": {name:"Guadeloupe", iso:"GP", flag:"🇬🇵", currency:"EUR"},
+  "591": {name:"Bolivia", iso:"BO", flag:"🇧🇴", currency:"BOB"},
+  "592": {name:"Guyana", iso:"GY", flag:"🇬🇾", currency:"GYD"},
+  "593": {name:"Ecuador", iso:"EC", flag:"🇪🇨", currency:"USD"},
+  "594": {name:"French Guiana", iso:"GF", flag:"🇬🇫", currency:"EUR"},
+  "595": {name:"Paraguay", iso:"PY", flag:"🇵🇾", currency:"PYG"},
+  "596": {name:"Martinique", iso:"MQ", flag:"🇲🇶", currency:"EUR"},
+  "597": {name:"Suriname", iso:"SR", flag:"🇸🇷", currency:"SRD"},
+  "598": {name:"Uruguay", iso:"UY", flag:"🇺🇾", currency:"UYU"},
+  "599": {name:"Curaçao", iso:"CW", flag:"🇨🇼", currency:"ANG"},
+  "670": {name:"Timor-Leste", iso:"TL", flag:"🇹🇱", currency:"USD"},
+  "672": {name:"Australian External Territories", iso:"AQ", flag:"🇦🇶", currency:"AUD"},
+  "673": {name:"Brunei", iso:"BN", flag:"🇧🇳", currency:"BND"},
+  "674": {name:"Nauru", iso:"NR", flag:"🇳🇷", currency:"AUD"},
+  "675": {name:"Papua New Guinea", iso:"PG", flag:"🇵🇬", currency:"PGK"},
+  "676": {name:"Tonga", iso:"TO", flag:"🇹🇴", currency:"TOP"},
+  "677": {name:"Solomon Islands", iso:"SB", flag:"🇸🇧", currency:"SBD"},
+  "678": {name:"Vanuatu", iso:"VU", flag:"🇻🇺", currency:"VUV"},
+  "679": {name:"Fiji", iso:"FJ", flag:"🇫🇯", currency:"FJD"},
+  "680": {name:"Palau", iso:"PW", flag:"🇵🇼", currency:"USD"},
+  "681": {name:"Wallis and Futuna", iso:"WF", flag:"🇼🇫", currency:"XPF"},
+  "682": {name:"Cook Islands", iso:"CK", flag:"🇨🇰", currency:"NZD"},
+  "683": {name:"Niue", iso:"NU", flag:"🇳🇺", currency:"NZD"},
+  "684": {name:"American Samoa", iso:"AS", flag:"🇦🇸", currency:"USD"},
+  "685": {name:"Samoa", iso:"WS", flag:"🇼🇸", currency:"WST"},
+  "686": {name:"Kiribati", iso:"KI", flag:"🇰🇮", currency:"AUD"},
+  "687": {name:"New Caledonia", iso:"NC", flag:"🇳🇨", currency:"XPF"},
+  "688": {name:"Tuvalu", iso:"TV", flag:"🇹🇻", currency:"AUD"},
+  "689": {name:"French Polynesia", iso:"PF", flag:"🇵🇫", currency:"XPF"},
+  "690": {name:"Tokelau", iso:"TK", flag:"🇹🇰", currency:"NZD"},
+  "691": {name:"Micronesia", iso:"FM", flag:"🇫🇲", currency:"USD"},
+  "692": {name:"Marshall Islands", iso:"MH", flag:"🇲🇭", currency:"USD"},
+  "850": {name:"North Korea", iso:"KP", flag:"🇰🇵", currency:"KPW"},
+  "852": {name:"Hong Kong", iso:"HK", flag:"🇭🇰", currency:"HKD"},
+  "853": {name:"Macau", iso:"MO", flag:"🇲🇴", currency:"MOP"},
+  "855": {name:"Cambodia", iso:"KH", flag:"🇰🇭", currency:"KHR"},
+  "856": {name:"Laos", iso:"LA", flag:"🇱🇦", currency:"LAK"},
+  "870": {name:"Inmarsat", iso:"", flag:"", currency:"USD"},
+  "880": {name:"Bangladesh", iso:"BD", flag:"🇧🇩", currency:"BDT"},
+  "886": {name:"Taiwan", iso:"TW", flag:"🇹🇼", currency:"TWD"},
+  "960": {name:"Maldives", iso:"MV", flag:"🇲🇻", currency:"MVR"},
+  "961": {name:"Lebanon", iso:"LB", flag:"🇱🇧", currency:"LBP"},
+  "962": {name:"Jordan", iso:"JO", flag:"🇯🇴", currency:"JOD"},
+  "963": {name:"Syria", iso:"SY", flag:"🇸🇾", currency:"SYP"},
+  "964": {name:"Iraq", iso:"IQ", flag:"🇮🇶", currency:"IQD"},
+  "965": {name:"Kuwait", iso:"KW", flag:"🇰🇼", currency:"KWD"},
+  "966": {name:"Saudi Arabia", iso:"SA", flag:"🇸🇦", currency:"SAR"},
+  "967": {name:"Yemen", iso:"YE", flag:"🇾🇪", currency:"YER"},
+  "968": {name:"Oman", iso:"OM", flag:"🇴🇲", currency:"OMR"},
+  "970": {name:"Palestine", iso:"PS", flag:"🇵🇸", currency:"ILS"},
+  "971": {name:"United Arab Emirates", iso:"AE", flag:"🇦🇪", currency:"AED"},
+  "972": {name:"Israel", iso:"IL", flag:"🇮🇱", currency:"ILS"},
+  "973": {name:"Bahrain", iso:"BH", flag:"🇧🇭", currency:"BHD"},
+  "974": {name:"Qatar", iso:"QA", flag:"🇶🇦", currency:"QAR"},
+  "975": {name:"Bhutan", iso:"BT", flag:"🇧🇹", currency:"BTN"},
+  "976": {name:"Mongolia", iso:"MN", flag:"🇲🇳", currency:"MNT"},
+  "977": {name:"Nepal", iso:"NP", flag:"🇳🇵", currency:"NPR"},
+  "992": {name:"Tajikistan", iso:"TJ", flag:"🇹🇯", currency:"TJS"},
+  "993": {name:"Turkmenistan", iso:"TM", flag:"🇹🇲", currency:"TMT"},
+  "994": {name:"Azerbaijan", iso:"AZ", flag:"🇦🇿", currency:"AZN"},
+  "995": {name:"Georgia", iso:"GE", flag:"🇬🇪", currency:"GEL"},
+  "996": {name:"Kyrgyzstan", iso:"KG", flag:"🇰🇬", currency:"KGS"},
+  "998": {name:"Uzbekistan", iso:"UZ", flag:"🇺🇿", currency:"UZS"}
+};
+
+
+
+// Timezone mapping
+const tzMap = {
+  AF: ['Asia/Kabul'],
+  AL: ['Europe/Tirane'],
+  DZ: ['Africa/Algiers'],
+  AS: ['Pacific/Pago_Pago'],
+  AD: ['Europe/Andorra'],
+  AO: ['Africa/Luanda'],
+  AG: ['America/Antigua'],
+  AR: ['America/Argentina/Buenos_Aires'],
+  AM: ['Asia/Yerevan'],
+  AU: ['Australia/Sydney', 'Australia/Perth', 'Australia/Adelaide', 'Australia/Hobart', 'Australia/Darwin'],
+  AT: ['Europe/Vienna'],
+  AZ: ['Asia/Baku'],
+  BS: ['America/Nassau'],
+  BH: ['Asia/Bahrain'],
+  BD: ['Asia/Dhaka'],
+  BB: ['America/Barbados'],
+  BY: ['Europe/Minsk'],
+  BE: ['Europe/Brussels'],
+  BZ: ['America/Belize'],
+  BJ: ['Africa/Porto-Novo'],
+  BM: ['Atlantic/Bermuda'],
+  BT: ['Asia/Thimphu'],
+  BO: ['America/La_Paz'],
+  BA: ['Europe/Sarajevo'],
+  BW: ['Africa/Gaborone'],
+  BR: ['America/Sao_Paulo', 'America/Manaus', 'America/Cuiaba', 'America/Fortaleza'],
+  BN: ['Asia/Brunei'],
+  BG: ['Europe/Sofia'],
+  BF: ['Africa/Ouagadougou'],
+  BI: ['Africa/Bujumbura'],
+  KH: ['Asia/Phnom_Penh'],
+  CM: ['Africa/Douala'],
+  CA: ['America/Toronto', 'America/Vancouver', 'America/Edmonton', 'America/Halifax', 'America/St_Johns'],
+  CV: ['Atlantic/Cape_Verde'],
+  CF: ['Africa/Bangui'],
+  TD: ['Africa/Ndjamena'],
+  CL: ['America/Santiago'],
+  CN: ['Asia/Shanghai'],
+  CO: ['America/Bogota'],
+  KM: ['Indian/Comoro'],
+  CD: ['Africa/Kinshasa', 'Africa/Lubumbashi'],
+  CG: ['Africa/Brazzaville'],
+  CR: ['America/Costa_Rica'],
+  HR: ['Europe/Zagreb'],
+  CU: ['America/Havana'],
+  CY: ['Asia/Nicosia'],
+  CZ: ['Europe/Prague'],
+  DK: ['Europe/Copenhagen'],
+  DJ: ['Africa/Djibouti'],
+  DM: ['America/Dominica'],
+  DO: ['America/Santo_Domingo'],
+  EC: ['America/Guayaquil'],
+  EG: ['Africa/Cairo'],
+  SV: ['America/El_Salvador'],
+  GQ: ['Africa/Malabo'],
+  ER: ['Africa/Asmara'],
+  EE: ['Europe/Tallinn'],
+  ET: ['Africa/Addis_Ababa'],
+  FJ: ['Pacific/Fiji'],
+  FI: ['Europe/Helsinki'],
+  FR: ['Europe/Paris'],
+  GA: ['Africa/Libreville'],
+  GM: ['Africa/Banjul'],
+  GE: ['Asia/Tbilisi'],
+  DE: ['Europe/Berlin'],
+  GH: ['Africa/Accra'],
+  GR: ['Europe/Athens'],
+  GD: ['America/Grenada'],
+  GT: ['America/Guatemala'],
+  GN: ['Africa/Conakry'],
+  GW: ['Africa/Bissau'],
+  GY: ['America/Guyana'],
+  HT: ['America/Port-au-Prince'],
+  HN: ['America/Tegucigalpa'],
+  HU: ['Europe/Budapest'],
+  IS: ['Atlantic/Reykjavik'],
+  IN: ['Asia/Kolkata'],
+  ID: ['Asia/Jakarta', 'Asia/Pontianak', 'Asia/Makassar', 'Asia/Jayapura'],
+  IR: ['Asia/Tehran'],
+  IQ: ['Asia/Baghdad'],
+  IE: ['Europe/Dublin'],
+  IL: ['Asia/Jerusalem'],
+  IT: ['Europe/Rome'],
+  JM: ['America/Jamaica'],
+  JP: ['Asia/Tokyo'],
+  JO: ['Asia/Amman'],
+  KZ: ['Asia/Almaty', 'Asia/Qyzylorda', 'Asia/Aqtobe', 'Asia/Aqtau', 'Asia/Oral', 'Asia/Almaty'],
+  KE: ['Africa/Nairobi'],
+  KI: ['Pacific/Tarawa'],
+  KP: ['Asia/Pyongyang'],
+  KR: ['Asia/Seoul'],
+  KW: ['Asia/Kuwait'],
+  KG: ['Asia/Bishkek'],
+  LA: ['Asia/Vientiane'],
+  LV: ['Europe/Riga'],
+  LB: ['Asia/Beirut'],
+  LS: ['Africa/Maseru'],
+  LR: ['Africa/Monrovia'],
+  LY: ['Africa/Tripoli'],
+  LI: ['Europe/Vaduz'],
+  LT: ['Europe/Vilnius'],
+  LU: ['Europe/Luxembourg'],
+  MG: ['Indian/Antananarivo'],
+  MW: ['Africa/Blantyre'],
+  MY: ['Asia/Kuala_Lumpur', 'Asia/Kuching'],
+  MV: ['Indian/Maldives'],
+  ML: ['Africa/Bamako'],
+  MT: ['Europe/Malta'],
+  MH: ['Pacific/Majuro'],
+  MR: ['Africa/Nouakchott'],
+  MU: ['Indian/Mauritius'],
+  MX: ['America/Mexico_City', 'America/Cancun', 'America/Hermosillo', 'America/Tijuana'],
+  FM: ['Pacific/Chuuk'],
+  MD: ['Europe/Chisinau'],
+  MC: ['Europe/Monaco'],
+  MN: ['Asia/Ulaanbaatar'],
+  ME: ['Europe/Podgorica'],
+  MA: ['Africa/Casablanca'],
+  MZ: ['Africa/Maputo'],
+  MM: ['Asia/Yangon'],
+  NA: ['Africa/Windhoek'],
+  NR: ['Pacific/Nauru'],
+  NP: ['Asia/Kathmandu'],
+  NL: ['Europe/Amsterdam'],
+  NZ: ['Pacific/Auckland', 'Pacific/Chatham'],
+  NI: ['America/Managua'],
+  NE: ['Africa/Niamey'],
+  NG: ['Africa/Lagos'],
+  NO: ['Europe/Oslo'],
+  OM: ['Asia/Muscat'],
+  PK: ['Asia/Karachi'],
+  PW: ['Pacific/Palau'],
+  PA: ['America/Panama'],
+  PG: ['Pacific/Port_Moresby'],
+  PY: ['America/Asuncion'],
+  PE: ['America/Lima'],
+  PH: ['Asia/Manila'],
+  PL: ['Europe/Warsaw'],
+  PT: ['Europe/Lisbon'],
+  QA: ['Asia/Qatar'],
+  RO: ['Europe/Bucharest'],
+  RU: ['Europe/Moscow', 'Asia/Yekaterinburg', 'Asia/Krasnoyarsk', 'Asia/Vladivostok', 'Asia/Novosibirsk'],
+  RW: ['Africa/Kigali'],
+  KN: ['America/St_Kitts'],
+  LC: ['America/St_Lucia'],
+  VC: ['America/St_Vincent'],
+  WS: ['Pacific/Apia'],
+  SM: ['Europe/San_Marino'],
+  ST: ['Africa/Sao_Tome'],
+  SA: ['Asia/Riyadh'],
+  SN: ['Africa/Dakar'],
+  RS: ['Europe/Belgrade'],
+  SC: ['Indian/Mahe'],
+  SL: ['Africa/Freetown'],
+  SG: ['Asia/Singapore'],
+  SK: ['Europe/Bratislava'],
+  SI: ['Europe/Ljubljana'],
+  SB: ['Pacific/Guadalcanal'],
+  SO: ['Africa/Mogadishu'],
+  ZA: ['Africa/Johannesburg'],
+  ES: ['Europe/Madrid', 'Africa/Ceuta'],
+  LK: ['Asia/Colombo'],
+  SD: ['Africa/Khartoum'],
+  SR: ['America/Paramaribo'],
+  SZ: ['Africa/Mbabane'],
+  SE: ['Europe/Stockholm'],
+  CH: ['Europe/Zurich'],
+  SY: ['Asia/Damascus'],
+  TW: ['Asia/Taipei'],
+  TJ: ['Asia/Dushanbe'],
+  TZ: ['Africa/Dar_es_Salaam'],
+  TH: ['Asia/Bangkok'],
+  TL: ['Asia/Dili'],
+  TG: ['Africa/Lome'],
+  TO: ['Pacific/Tongatapu'],
+  TT: ['America/Port_of_Spain'],
+  TN: ['Africa/Tunis'],
+  TR: ['Europe/Istanbul'],
+  TM: ['Asia/Ashgabat'],
+  TV: ['Pacific/Funafuti'],
+  UG: ['Africa/Kampala'],
+  UA: ['Europe/Kiev'],
+  AE: ['Asia/Dubai'],
+  GB: ['Europe/London'],
+  US: ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Anchorage', 'Pacific/Honolulu'],
+  UY: ['America/Montevideo'],
+  UZ: ['Asia/Tashkent'],
+  VU: ['Pacific/Efate'],
+  VE: ['America/Caracas'],
+  VN: ['Asia/Ho_Chi_Minh'],
+  YE: ['Asia/Aden'],
+  ZM: ['Africa/Lusaka'],
+  ZW: ['Africa/Harare']
+};
+
+function lookupNumber() {
+  const input = document.getElementById('phoneInput').value.trim();
+  output.textContent = '';
+  errorDiv.textContent = '';
+
+  if (!input) {
+    errorDiv.textContent = 'Please enter a phone number.';
+    return;
+  }
+
+  // Extract country code from input manually (max 3 digits)
+  let cc = '';
+  for(let i=1;i<=3;i++){
+    let code = input.substring(0,i);
+    if(countryCodes[code]) { cc = code; break; }
+  }
+
+  if(!cc) {
+    errorDiv.textContent = 'Unknown or unsupported country code.';
+    return;
+  }
+
+  const numberWithoutCC = input.replace(cc,'').trim();
+  const country = countryCodes[cc];
+
+  const info = {
+    "creator": "Zerodays",
+    "status": "Success",
+    "Country": country.name,
+    "ISO": country.iso,
+    "Flag": country.flag,
+    "Currency": country.currency,
+    "Valid Number": numberWithoutCC.length > 0,
+    "Original Input": input,
+    "Country Calling Code": cc,
+    "Timezone": tzMap[country.iso] ? tzMap[country.iso].join(', ') : "Unknown",
+    "Number": numberWithoutCC
+  };
+
+  output.textContent = JSON.stringify(info,null,4);
+}
+</script>
+</body>
+</html>

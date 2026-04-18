@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Device Identifier NextGen</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: #fff;
+    }
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 30px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 14px;
+      backdrop-filter: (8px);
+      box-shadow: 0 0 25px rgba(0,0,0,0.5);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+      font-size: 2.2rem;
+      color: red;
+      
+
+    }
+    input, button {
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+    }
+    input[type="text"] {
+      padding: 12px;
+      width: calc(100% - 24px);
+      margin-bottom: 15px;
+      background: #333;
+      color: white;
+    }
+    button {
+      padding: 12px 20px;
+      background: red;
+      color: green;
+      margin: 10px 6px 0 0;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+    .output, .history {
+      margin-top: 20px;
+      padding: 20px;
+      background: #111;
+      border-radius: 10px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+    .output { color: #00ffd5; }
+    .history {
+      background: #222;
+      color: #ccc;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .scanning {
+      animation: flash 1s infinite alternate;
+    }
+    @keyframes flash {
+      from { opacity: 0.6; }
+      to { opacity: 1; }
+    }
+    .note {
+      font-size: 0.9rem;
+      color: #aaa;
+      margin-top: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🛰️ Device Identifier - NextGen</h1>
+    <input type="text" id="targetInput" placeholder="Enter IP or Domain..." />
+    <div>
+      <button onclick="identifyDevice()">🔎 Identify</button>
+      <button onclick="downloadResult()">💾 Save TXT</button>
+      <button onclick="clearLog()">🧹 Clear</button>
+    </div>
+    <div id="result" class="output">Awaiting device identification...</div>
+    <h3 color:red;>📂 Scan Log</h3>
+    <div id="history" class="history">No scans yet.</div>
+    <p class="note"><strong>⚠️ For educational purposes only. Use responsibly.</strong></p>
+  </div>
+
+  <script>
+    let lastResult = "";
+
+    const brands = {
+      Nothing: ["Phone (2)", "Ear (2)"],
+      Framework: ["Laptop 13", "Laptop 16"],
+      Fairphone: ["Fairphone 5", "Fairphone 4"],
+      "Steam Deck": ["Steam Deck OLED", "Steam Deck LCD"],
+      Pine64: ["PinePhone Pro", "PineTab 2"],
+      System76: ["Lemur Pro", "Thelio", "Gazelle"],
+      ASRock: ["DeskMini X300", "B550M Steel Legend"],
+      Gigabyte: ["AORUS 15", "BRIX Pro"],
+      Alienware: ["x17 R2", "m15 R6"],
+      MSI: ["GE Raider", "Modern 14", "Creator Z17"],
+      Razer: ["Blade 16", "Razer Edge 5G"],
+      BeagleBoard: ["BeagleBone Black", "BeagleV-Ahead"]
+    };
+
+    const osList = [
+      "Ubuntu 24.04 LTS", "Windows 11 Pro 23H2", "macOS Sonoma 14.4", "SteamOS 3.5",
+      "Pop!_OS 22.04", "Manjaro ARM 24", "Android 14", "postmarketOS edge", 
+      "Fedora Silverblue 40", "Zorin OS 17 Pro"
+    ];
+
+    const categories = {
+      Phone: "📱", Laptop: "💻", Desktop: "🖥️", Tablet: "📲", Game: "🎮",
+      SBC: "🧩", Console: "🕹️", DevBoard: "🔧", Server: "🖧", Wearable: "⌚"
+    };
+
+    function getRandom(obj) {
+      const keys = Object.keys(obj);
+      const randKey = keys[Math.floor(Math.random() * keys.length)];
+      const randVal = obj[randKey][Math.floor(Math.random() * obj[randKey].length)];
+      return { brand: randKey, model: randVal };
+    }
+
+    async function identifyDevice() {
+      const target = document.getElementById("targetInput").value.trim();
+      const resultBox = document.getElementById("result");
+      const historyBox = document.getElementById("history");
+
+      if (!target) {
+        alert("Please enter a valid IP or domain.");
+        return;
+      }
+
+      resultBox.classList.add("scanning");
+      resultBox.textContent = `⏳ Scanning: ${target}...`;
+
+      try {
+        const res = await fetch(`https://ipapi.co/${target}/json/`);
+        const data = await res.json();
+
+        if (data.error || !data.ip) {
+          throw new Error("Invalid or unreachable target.");
+        }
+
+        const { brand, model } = getRandom(brands);
+        const os = osList[Math.floor(Math.random() * osList.length)];
+        const categoryKeys = Object.keys(categories);
+        const category = categoryKeys[Math.floor(Math.random() * categoryKeys.length)];
+        const time = new Date().toLocaleString();
+
+        const info = `${categories[category]} Scan Result for ${target} [${time}]:
+• IP: ${data.ip}
+• City: ${data.city}
+• Region: ${data.region}
+• Country: ${data.country_name}
+• ISP: ${data.org || "Unknown"}
+• ASN: ${data.asn || "N/A"}
+• Brand: ${brand}
+• Model: ${model}
+• OS: ${os}
+• Category: ${category}`;
+
+        resultBox.textContent = info;
+        lastResult = info;
+        addToHistory(info);
+      } catch (err) {
+        resultBox.textContent = `❌ Error: ${err.message}`;
+      } finally {
+        resultBox.classList.remove("scanning");
+      }
+    }
+
+    function addToHistory(text) {
+      const box = document.getElementById("history");
+      const divider = "\n--------------------------\n";
+      box.textContent = box.textContent === "No scans yet." ? text : box.textContent + divider + text;
+    }
+
+    function downloadResult() {
+      if (!lastResult) {
+        alert("No result to download.");
+        return;
+      }
+      const file = new Blob([lastResult], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(file);
+      a.download = `device_id_${Date.now()}.txt`;
+      a.click();
+    }
+
+    function clearLog() {
+      document.getElementById("history").textContent = "No scans yet.";
+    }
+  </script>
+</body>
+</html>

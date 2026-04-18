@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>YouTube Creator Data Generator v195</title>
+<style>
+  body {
+    margin: 0; padding: 0;
+    background-color: #000; 
+    color: #00ff41; /* Hacker Green */
+    font-family: 'Consolas', monospace;
+    display: flex; flex-direction: column; height: 100vh;
+  }
+
+  #bgVideo {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+    z-index: -1;
+    object-fit: cover;
+    filter: brightness(0.3) contrast(1.3);
+  }
+
+  header {
+    padding: 15px 25px;
+    background: rgba(0,20,0,0.9);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    border-bottom: 2px solid #00ff41;
+    box-shadow: 0 0 30px rgba(0,255,65,0.4);
+  }
+  
+  .title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ff0000; /* YouTube Red */
+    text-shadow: 0 0 5px #ff0000;
+  }
+  
+  label {
+    font-weight: bold;
+    font-size: 14px;
+    color: #ffaa00;
+    text-shadow: 0 0 3px #ffaa00;
+  }
+  
+  select, input[type=button] {
+    font-family: monospace;
+    font-size: 14px;
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: 1px solid #00ff41;
+    outline: none;
+    cursor: pointer;
+    background: rgba(0,0,0,0.8);
+    color: #00ff41;
+    transition: all 0.3s;
+  }
+  
+  select {
+    min-width: 160px;
+  }
+  
+  input[type=button] {
+    background: #00ff41;
+    color: #000;
+    font-weight: bold;
+  }
+  
+  input[type=button]:hover {
+    background: #ff1493;
+    color: #fff;
+    box-shadow: 0 0 15px #ff1493;
+    transform: scale(1.05);
+  }
+  
+  input[type=text] {
+    flex-grow: 1;
+    min-width: 200px;
+    font-family: monospace;
+    font-size: 14px;
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: 1px solid #00ff41;
+    outline: none;
+    background: rgba(0,0,0,0.8);
+    color: #00ff41;
+  }
+  
+  input[type=text]:focus {
+    border-color: #ff1493;
+    box-shadow: 0 0 10px #ff1493;
+  }
+  
+  #totalCount {
+    background: rgba(0,0,0,0.9);
+    color: #00ff41;
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: 2px solid #00ff41;
+    font-weight: bold;
+    min-width: 140px;
+    text-align: center;
+    font-size: 14px;
+    box-shadow: 0 0 15px rgba(0,255,65,0.5);
+  }
+  
+  #logContainer {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.85);
+    position: relative;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  
+  thead tr {
+    background: rgba(0,50,0,0.95);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    border-bottom: 2px solid #00ff41;
+  }
+  
+  th, td {
+    padding: 10px 15px;
+    border-bottom: 1px solid rgba(0,255,65,0.3);
+    white-space: nowrap;
+    text-align: left;
+    font-family: monospace;
+  }
+  
+  th {
+    color: #00ffff;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  
+  tbody tr {
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  tbody tr:hover {
+    background: rgba(255,20,147,0.2);
+    transform: scale(1.01);
+  }
+  
+  .channel-name {
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    font-weight: bold;
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  
+  .handle {
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    color: #00ffff;
+    background: rgba(0,255,255,0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,255,255,0.3);
+  }
+  
+  .country-flag {
+    font-size: 16px;
+    margin-right: 5px;
+  }
+  
+  .highlight {
+    background: rgba(0,255,65,0.2);
+    padding: 2px 5px;
+    border-radius: 3px;
+  }
+  
+  #loadingIndicator {
+    padding: 15px 0;
+    text-align: center;
+    color: #00ff41;
+    font-size: 15px;
+    font-weight: bold;
+  }
+
+  #logContainer::-webkit-scrollbar {
+    width: 10px;
+  }
+  #logContainer::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.5);
+  }
+  #logContainer::-webkit-scrollbar-thumb {
+    background: #00ff41;
+    border-radius: 5px;
+  }
+  #logContainer::-webkit-scrollbar-thumb:hover {
+    background: #ff1493;
+  }
+
+  @media (max-width: 600px) {
+    th, td { padding: 8px 10px; font-size: 11px; }
+    .channel-name { font-size: 11px; }
+    input[type=text] { font-size: 13px; min-width: auto; }
+  }
+</style>
+</head>
+<body>
+
+<video autoplay muted loop id="bgVideo">
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+
+<header>
+  <div class="title">▶️ YouTube Creator Data v195</div>
+  <label for="regionMode">Region Mode:</label>
+  <select id="regionMode" aria-label="Region selection mode">
+    <option value="random">🔀 Random Global</option>
+    <option value="europe">🇪🇺 Europe (EU)</option>
+    <option value="usa">🇺🇸 USA (North America)</option>
+    <option value="asia">🇯🇵 Asia Pacific</option>
+    <option value="manual">✏️ Manual Region</option>
+  </select>
+  
+  <input type="button" id="generateBtn" value="🚀 GENERATE DATA" />
+  <input type="text" id="searchInput" placeholder="🔍 Channel/Handle/ID..." />
+  <span id="totalCount">Total: 0</span>
+  <input type="button" id="downloadBtn" value="💾 DOWNLOAD" />
+</header>
+
+<div id="logContainer" tabindex="0" aria-live="polite">
+  <table role="grid" aria-rowcount="0" aria-colcount="6">
+    <thead>
+      <tr>
+        <th>Channel Name</th>
+        <th>Handle (@)</th>
+        <th>Channel ID</th>
+        <th>Region</th>
+        <th>Category</th>
+        <th>Subscribers</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+  <div id="loadingIndicator" hidden>🔄 Accessing creator database...</div>
+</div>
+
+<script>
+(() => {
+  const regionModeEl = document.getElementById('regionMode');
+  const generateBtn = document.getElementById('generateBtn');
+  const searchInput = document.getElementById('searchInput');
+  const logBody = document.getElementById('logBody');
+  const logContainer = document.getElementById('logContainer');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const totalCount = document.getElementById('totalCount');
+
+  const BATCH_SIZE = 400;
+  const MAX_LOGS = 20000;
+
+  // 195 Countries
+  const COUNTRIES = {
+    'AF': {name: 'Afghanistan', flag: '🇦🇫'}, 'AL': {name: 'Albania', flag: '🇦🇱'}, 'DZ': {name: 'Algeria', flag: '🇩🇿'}, 'AS': {name: 'American Samoa', flag: '🇦🇸'},
+    'AD': {name: 'Andorra', flag: '🇦🇩'}, 'AO': {name: 'Angola', flag: '🇦🇴'}, 'AI': {name: 'Anguilla', flag: '🇦🇮'}, 'AQ': {name: 'Antarctica', flag: '🇦🇶'},
+    'AG': {name: 'Antigua and Barbuda', flag: '🇦🇬'}, 'AR': {name: 'Argentina', flag: '🇦🇷'}, 'AM': {name: 'Armenia', flag: '🇦🇲'}, 'AW': {name: 'Aruba', flag: '🇦🇼'},
+    'AU': {name: 'Australia', flag: '🇦🇺'}, 'AT': {name: 'Austria', flag: '🇦🇹'}, 'AZ': {name: 'Azerbaijan', flag: '🇦🇿'}, 'BS': {name: 'Bahamas', flag: '🇧🇸'},
+    'BH': {name: 'Bahrain', flag: '🇧🇭'}, 'BD': {name: 'Bangladesh', flag: '🇧🇩'}, 'BB': {name: 'Barbados', flag: '🇧🇧'}, 'BY': {name: 'Belarus', flag: '🇧🇾'},
+    'BE': {name: 'Belgium', flag: '🇧🇪'}, 'BZ': {name: 'Belize', flag: '🇧🇿'}, 'BJ': {name: 'Benin', flag: '🇧🇯'}, 'BM': {name: 'Bermuda', flag: '🇧🇲'},
+    'BT': {name: 'Bhutan', flag: '🇧🇹'}, 'BO': {name: 'Bolivia', flag: '🇧🇴'}, 'BA': {name: 'Bosnia and Herzegovina', flag: '🇧🇦'}, 'BW': {name: 'Botswana', flag: '🇧🇼'},
+    'BR': {name: 'Brazil', flag: '🇧🇷'}, 'IO': {name: 'British Indian Ocean Territory', flag: '🇮🇴'}, 'BN': {name: 'Brunei Darussalam', flag: '🇧🇳'}, 'BG': {name: 'Bulgaria', flag: '🇧🇬'},
+    'BF': {name: 'Burkina Faso', flag: '🇧🇫'}, 'BI': {name: 'Burundi', flag: '🇧🇮'}, 'CV': {name: 'Cabo Verde', flag: '🇨🇻'}, 'KH': {name: 'Cambodia', flag: '🇰🇭'},
+    'CM': {name: 'Cameroon', flag: '🇨🇲'}, 'CA': {name: 'Canada', flag: '🇨🇦'}, 'KY': {name: 'Cayman Islands', flag: '🇰🇾'}, 'CF': {name: 'Central African Republic', flag: '🇨🇫'},
+    'TD': {name: 'Chad', flag: '🇹🇩'}, 'CL': {name: 'Chile', flag: '🇨🇱'}, 'CN': {name: 'China', flag: '🇨🇳'}, 'CX': {name: 'Christmas Island', flag: '🇨🇽'},
+    'CC': {name: 'Cocos (Keeling) Islands', flag: '🇨🇨'}, 'CO': {name: 'Colombia', flag: '🇨🇴'}, 'KM': {name: 'Comoros', flag: '🇰🇲'}, 'CG': {name: 'Congo', flag: '🇨🇬'},
+    'CD': {name: 'Congo, Democratic Republic of the', flag: '🇨🇩'}, 'CK': {name: 'Cook Islands', flag: '🇨🇰'}, 'CR': {name: 'Costa Rica', flag: '🇨🇷'}, 'CI': {name: 'Côte d\'Ivoire', flag: '🇨🇮'},
+    'HR': {name: 'Croatia', flag: '🇭🇷'}, 'CU': {name: 'Cuba', flag: '🇨🇺'}, 'CW': {name: 'Curaçao', flag: '🇨🇼'}, 'CY': {name: 'Cyprus', flag: '🇨🇾'},
+    'CZ': {name: 'Czechia', flag: '🇨🇿'}, 'DK': {name: 'Denmark', flag: '🇩🇰'}, 'DJ': {name: 'Djibouti', flag: '🇩🇯'}, 'DM': {name: 'Dominica', flag: '🇩🇲'},
+    'DO': {name: 'Dominican Republic', flag: '🇩🇴'}, 'EC': {name: 'Ecuador', flag: '🇪🇨'}, 'EG': {name: 'Egypt', flag: '🇪🇬'}, 'SV': {name: 'El Salvador', flag: '🇸🇻'},
+    'GQ': {name: 'Equatorial Guinea', flag: '🇬🇶'}, 'ER': {name: 'Eritrea', flag: '🇪🇷'}, 'EE': {name: 'Estonia', flag: '🇪🇪'}, 'SZ': {name: 'Eswatini', flag: '🇸🇿'},
+    'ET': {name: 'Ethiopia', flag: '🇪🇹'}, 'FK': {name: 'Falkland Islands (Malvinas)', flag: '🇫🇰'}, 'FO': {name: 'Faroe Islands', flag: '🇫🇴'}, 'FJ': {name: 'Fiji', flag: '🇫🇯'},
+    'FI': {name: 'Finland', flag: '🇫🇮'}, 'FR': {name: 'France', flag: '🇫🇷'}, 'GF': {name: 'French Guiana', flag: '🇬🇫'}, 'PF': {name: 'French Polynesia', flag: '🇵🇫'},
+    'TF': {name: 'French Southern Territories', flag: '🇹🇫'}, 'GA': {name: 'Gabon', flag: '🇬🇦'}, 'GM': {name: 'Gambia', flag: '🇬🇲'}, 'GE': {name: 'Georgia', flag: '🇬🇪'},
+    'DE': {name: 'Germany', flag: '🇩🇪'}, 'GH': {name: 'Ghana', flag: '🇬🇭'}, 'GI': {name: 'Gibraltar', flag: '🇬🇮'}, 'GR': {name: 'Greece', flag: '🇬🇷'},
+    'GL': {name: 'Greenland', flag: '🇬🇱'}, 'GD': {name: 'Grenada', flag: '🇬🇩'}, 'GP': {name: 'Guadeloupe', flag: '🇬🇵'}, 'GU': {name: 'Guam', flag: '🇬🇺'},
+    'GT': {name: 'Guatemala', flag: '🇬🇹'}, 'GG': {name: 'Guernsey', flag: '🇬🇬'}, 'GN': {name: 'Guinea', flag: '🇬🇳'}, 'GW': {name: 'Guinea-Bissau', flag: '🇬🇼'},
+    'GY': {name: 'Guyana', flag: '🇬🇾'}, 'HT': {name: 'Haiti', flag: '🇭🇹'}, 'HM': {name: 'Heard Island and McDonald Islands', flag: '🇭🇲'}, 'VA': {name: 'Holy See', flag: '🇻🇦'},
+    'HN': {name: 'Honduras', flag: '🇭🇳'}, 'HK': {name: 'Hong Kong', flag: '🇭🇰'}, 'HU': {name: 'Hungary', flag: '🇭🇺'}, 'IS': {name: 'Iceland', flag: '🇮🇸'},
+    'IN': {name: 'India', flag: '🇮🇳'}, 'ID': {name: 'Indonesia', flag: '🇮🇩'}, 'IR': {name: 'Iran', flag: '🇮🇷'}, 'IQ': {name: 'Iraq', flag: '🇮🇶'},
+    'IE': {name: 'Ireland', flag: '🇮🇪'}, 'IM': {name: 'Isle of Man', flag: '🇮🇲'}, 'IL': {name: 'Israel', flag: '🇮🇱'}, 'IT': {name: 'Italy', flag: '🇮🇹'},
+    'JM': {name: 'Jamaica', flag: '🇯🇲'}, 'JP': {name: 'Japan', flag: '🇯🇵'}, 'JE': {name: 'Jersey', flag: '🇯🇪'}, 'JO': {name: 'Jordan', flag: '🇯🇴'},
+    'KZ': {name: 'Kazakhstan', flag: '🇰🇿'}, 'KE': {name: 'Kenya', flag: '🇰🇪'}, 'KI': {name: 'Kiribati', flag: '🇰🇮'}, 'KP': {name: 'North Korea', flag: '🇰🇵'},
+    'KR': {name: 'South Korea', flag: '🇰🇷'}, 'KW': {name: 'Kuwait', flag: '🇰🇼'}, 'KG': {name: 'Kyrgyzstan', flag: '🇰🇬'}, 'LA': {name: 'Lao People\'s Democratic Republic', flag: '🇱🇦'},
+    'LV': {name: 'Latvia', flag: '🇱🇻'}, 'LB': {name: 'Lebanon', flag: '🇱🇧'}, 'LS': {name: 'Lesotho', flag: '🇱🇸'}, 'LR': {name: 'Liberia', flag: '🇱🇷'},
+    'LY': {name: 'Libya', flag: '🇱🇾'}, 'LI': {name: 'Liechtenstein', flag: '🇱🇮'}, 'LT': {name: 'Lithuania', flag: '🇱🇹'}, 'LU': {name: 'Luxembourg', flag: '🇱🇺'},
+    'MO': {name: 'Macao', flag: '🇲🇴'}, 'MG': {name: 'Madagascar', flag: '🇲🇬'}, 'MW': {name: 'Malawi', flag: '🇲🇼'}, 'MY': {name: 'Malaysia', flag: '🇲🇾'},
+    'MV': {name: 'Maldives', flag: '🇲🇻'}, 'ML': {name: 'Mali', flag: '🇲🇱'}, 'MT': {name: 'Malta', flag: '🇲🇹'}, 'MH': {name: 'Marshall Islands', flag: '🇲🇭'},
+    'MQ': {name: 'Martinique', flag: '🇲🇶'}, 'MR': {name: 'Mauritania', flag: '🇲🇷'}, 'MU': {name: 'Mauritius', flag: '🇲🇺'}, 'YT': {name: 'Mayotte', flag: '🇾🇹'},
+    'MX': {name: 'Mexico', flag: '🇲🇽'}, 'FM': {name: 'Micronesia, Federated States of', flag: '🇫🇲'}, 'MD': {name: 'Moldova, Republic of', flag: '🇲🇩'}, 'MC': {name: 'Monaco', flag: '🇲🇨'},
+    'MN': {name: 'Mongolia', flag: '🇲🇳'}, 'ME': {name: 'Montenegro', flag: '🇲🇪'}, 'MS': {name: 'Montserrat', flag: '🇲🇸'}, 'MA': {name: 'Morocco', flag: '🇲🇦'},
+    'MZ': {name: 'Mozambique', flag: '🇲🇿'}, 'MM': {name: 'Myanmar', flag: '🇲🇲'}, 'NA': {name: 'Namibia', flag: '🇳🇦'}, 'NR': {name: 'Nauru', flag: '🇳🇷'},
+    'NP': {name: 'Nepal', flag: '🇳🇵'}, 'NL': {name: 'Netherlands', flag: '🇳🇱'}, 'NC': {name: 'New Caledonia', flag: '🇳🇨'}, 'NZ': {name: 'New Zealand', flag: '🇳🇿'},
+    'NI': {name: 'Nicaragua', flag: '🇳🇮'}, 'NE': {name: 'Niger', flag: '🇳🇪'}, 'NG': {name: 'Nigeria', flag: '🇳🇬'}, 'NU': {name: 'Niue', flag: '🇳🇺'},
+    'NF': {name: 'Norfolk Island', flag: '🇳🇫'}, 'MK': {name: 'North Macedonia', flag: '🇲🇰'}, 'MP': {name: 'Northern Mariana Islands', flag: '🇲🇵'}, 'NO': {name: 'Norway', flag: '🇳🇴'},
+    'OM': {name: 'Oman', flag: '🇴🇲'}, 'PK': {name: 'Pakistan', flag: '🇵🇰'}, 'PW': {name: 'Palau', flag: '🇵🇼'}, 'PS': {name: 'Palestine, State of', flag: '🇵🇸'},
+    'PA': {name: 'Panama', flag: '🇵🇦'}, 'PG': {name: 'Papua New Guinea', flag: '🇵🇬'}, 'PY': {name: 'Paraguay', flag: '🇵🇾'}, 'PE': {name: 'Peru', flag: '🇵🇪'},
+    'PH': {name: 'Philippines', flag: '🇵🇭'}, 'PN': {name: 'Pitcairn', flag: '🇵🇳'}, 'PL': {name: 'Poland', flag: '🇵🇱'}, 'PT': {name: 'Portugal', flag: '🇵🇹'},
+    'PR': {name: 'Puerto Rico', flag: '🇵🇷'}, 'QA': {name: 'Qatar', flag: '🇶🇦'}, 'RE': {name: 'Réunion', flag: '🇷🇪'}, 'RO': {name: 'Romania', flag: '🇷🇴'},
+    'RU': {name: 'Russia', flag: '🇷🇺'}, 'RW': {name: 'Rwanda', flag: '🇷🇼'}, 'BL': {name: 'Saint Barthélemy', flag: '🇧🇱'}, 'SH': {name: 'Saint Helena, Ascension and Tristan da Cunha', flag: '🇸🇭'},
+    'KN': {name: 'Saint Kitts and Nevis', flag: '🇰🇳'}, 'LC': {name: 'Saint Lucia', flag: '🇱🇨'}, 'MF': {name: 'Saint Martin (French part)', flag: '🇲🇫'}, 'PM': {name: 'Saint Pierre and Miquelon', flag: '🇵🇲'},
+    'VC': {name: 'Saint Vincent and the Grenadines', flag: '🇻🇨'}, 'WS': {name: 'Samoa', flag: '🇼🇸'}, 'SM': {name: 'San Marino', flag: '🇸🇲'}, 'ST': {name: 'Sao Tome and Principe', flag: '🇸🇹'},
+    'SA': {name: 'Saudi Arabia', flag: '🇸🇦'}, 'SN': {name: 'Senegal', flag: '🇸🇳'}, 'RS': {name: 'Serbia', flag: '🇷🇸'}, 'SC': {name: 'Seychelles', flag: '🇸🇨'},
+    'SL': {name: 'Sierra Leone', flag: '🇸🇱'}, 'SG': {name: 'Singapore', flag: '🇸🇬'}, 'SX': {name: 'Sint Maarten (Dutch part)', flag: '🇸🇽'}, 'SK': {name: 'Slovakia', flag: '🇸🇰'},
+    'SI': {name: 'Slovenia', flag: '🇸🇮'}, 'SB': {name: 'Solomon Islands', flag: '🇸🇧'}, 'SO': {name: 'Somalia', flag: '🇸🇴'}, 'ZA': {name: 'South Africa', flag: '🇿🇦'},
+    'GS': {name: 'South Georgia and the South Sandwich Islands', flag: '🇬🇸'}, 'SS': {name: 'South Sudan', flag: '🇸🇸'}, 'ES': {name: 'Spain', flag: '🇪🇸'}, 'LK': {name: 'Sri Lanka', flag: '🇱🇰'},
+    'SD': {name: 'Sudan', flag: '🇸🇩'}, 'SR': {name: 'Suriname', flag: '🇸🇷'}, 'SJ': {name: 'Svalbard and Jan Mayen', flag: '🇸🇯'}, 'SE': {name: 'Sweden', flag: '🇸🇪'},
+    'CH': {name: 'Switzerland', flag: '🇨🇭'}, 'SY': {name: 'Syrian Arab Republic', flag: '🇸🇾'}, 'TW': {name: 'Taiwan', flag: '🇹🇼'}, 'TJ': {name: 'Tajikistan', flag: '🇹🇯'},
+    'TZ': {name: 'Tanzania, United Republic of', flag: '🇹🇿'}, 'TH': {name: 'Thailand', flag: '🇹🇭'}, 'TL': {name: 'Timor-Leste', flag: '🇹🇱'}, 'TG': {name: 'Togo', flag: '🇹🇬'},
+    'TK': {name: 'Tokelau', flag: '🇹🇰'}, 'TO': {name: 'Tonga', flag: '🇹🇴'}, 'TT': {name: 'Trinidad and Tobago', flag: '🇹🇹'}, 'TN': {name: 'Tunisia', flag: '🇹🇳'},
+    'TR': {name: 'Turkey', flag: '🇹🇷'}, 'TM': {name: 'Turkmenistan', flag: '🇹🇲'}, 'TC': {name: 'Turks and Caicos Islands', flag: '🇹🇨'}, 'TV': {name: 'Tuvalu', flag: '🇹🇻'},
+    'UG': {name: 'Uganda', flag: '🇺🇬'}, 'UA': {name: 'Ukraine', flag: '🇺🇦'}, 'AE': {name: 'United Arab Emirates', flag: '🇦🇪'}, 'GB': {name: 'United Kingdom', flag: '🇬🇧'},
+    'US': {name: 'United States', flag: '🇺🇸'}, 'UM': {name: 'United States Minor Outlying Islands', flag: '🇺🇲'}, 'UY': {name: 'Uruguay', flag: '🇺🇾'}, 'UZ': {name: 'Uzbekistan', flag: '🇺🇿'},
+    'VU': {name: 'Vanuatu', flag: '🇻🇺'}, 'VE': {name: 'Venezuela', flag: '🇻🇪'}, 'VN': {name: 'Viet Nam', flag: '🇻🇳'}, 'VG': {name: 'Virgin Islands (British)', flag: '🇻🇬'},
+    'VI': {name: 'Virgin Islands (U.S.)', flag: '🇻🇮'}, 'WF': {name: 'Wallis and Futuna', flag: '🇼🇫'}, 'EH': {name: 'Western Sahara', flag: '🇪🇭'}, 'YE': {name: 'Yemen', flag: '🇾🇪'},
+    'ZM': {name: 'Zambia', flag: '🇿🇲'}, 'ZW': {name: 'Zimbabwe', flag: '🇿🇼'}
+  };
+
+  // Name Databases
+
+const FIRST_NAMES = [
+    "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Jamie", "Blake", "Skyler", "Riley", "Dakota", 
+    "Abby", "Abigail", "Ada", "Addie", "Addison", "Adelaide", "Adele", "Adora", "Adriana", "Ælfgifu", 
+    "Æthelburh", "Agnes", "Aileen", "Alaina", "Alanna", "Alberta", "Albina", "Aleana", "Alexa", 
+    "Alexandra", "Alexandria", "Alexis", "Alice", "Alicia", "Alisha", "Alison", "Allyson", "Alma", 
+    "Althea", "Alvina", "Alyson", "Amanda", "Amber", "Amberley", "Amelia", "Amy", "Ana", "Andrea", 
+    "Andrée", "Andy", "Angel", "Angela", "Angelica", "Angelina", "Angella", "Angie", "Anna", 
+    "Annabelle", "Annabeth", "Anne", "Annette", "Annie", "Antonia", "April", "Arabella", "Arda", 
+    "Ariana", "Ariel", "Arya", "Ash", "Ashley", "Astrid", "Aubrey", "Audra", "Audrey", "Aurora", 
+    "Autumn", "Averil", "Avis", "Azalea", "Babette", "Barb", "Barbara", "Beatrice", "Beatrix", 
+    "Beau", "Becca", "Becki", "Becky", "Belinda", "Bella", "Berenice", "Bertha", "Betsy", 
+    "Bettina", "Betty", "Beverly", "Bianca", "Blair", "Blake", "Blanche", "Blossom", "Bobbi", 
+    "Bobby", "Bonnie", "Braden", "Brandy", "Brenda", "Brianna", "Bridget", "Brielle", "Brilliana", 
+    "Brooklyn", "Brynlee", "Bryony", "Caden", "Calla", "Candy", "Cara", "Cari", "Carina", 
+    "Carissa", "Carlena", "Carlene", "Carlie", "Carly", "Carmelita", "Carol", "Carol Ann", 
+    "Carol Anne", "Carole", "Carolina", "Caroline", "Carolyn", "Carrie Ann", "Carrie Anne", 
+    "Carroll", "Carry", "Carson", "Cary", "Casey", "Cassandra", "Cassidy", "Cathleen", "Cathy", 
+    "Cecilia", "Cecily", "Celestia", "Celia", "Celinda", "Chara", "Charis", "Charisse", 
+    "Charity", "Charla", "Charle", "Charlee", "Charlene", "Charley", "Charli", "Charlie", 
+    "Charlotte", "Charly", "Charlyne", "Charmaine", "Chas", "Chelsea", "Cherry", "Cheryl", 
+    "Chloe", "Chris", "Christabel", "Christi", "Christina", "Christine", "Christy", "Cindy", 
+    "Claire", "Clara", "Clare", "Claribel", "Clarice", "Clarissa", "Claudia", "Clementine", 
+    "Clover", "Cody", "Colette", "Colleen", "Constance", "Cora", "Coral", "Coraline", 
+    "Cordelia", "Courtney", "Crystal", "Cynthia",
+    "Daenerys", "Daisy", "Dana", "Dani", "Danielle", "Danna", "Daphne", "Darla", "Darlene", 
+    "Davina", "Dawn", "Deanna", "D", "Deanne", "Deb", "Debbie", "Deborah", "Dede", "Deja", 
+    "Delaney", "Delia", "Demetria", "Demi", "Denise", "Destiny", "Devon", "Diamond", "Diana", 
+    "Diane", "Dimity", "Donna", "Dora", "Doreen", "Doris", "Dorothy", "Dottie", "Drew", 
+    "Dulcie", "E", "Eadgifu", "Ealdgyth", "Ebony", "Edburga", "Eden", "Edith", "Edna", 
+    "Edris", "Edwina", "Effie", "Eileen", "Elaine", "Eleanor", "Elektra", "Elisha", "Eliza", 
+    "Elizabeth", "Ella", "Elle", "Ellen", "Ellie", "Ellis", "Elora", "Ember", "Emerald", 
+    "Emily", "Emma", "Enid", "Erika", "Erin", "Estelle", "Esther", "Esty", "Ethel", 
+    "Etheldreda", "Etty", "Eudora", "Eva", "Evan", "Evangelina", "Eve", "Evelyn", "F", 
+    "Fabienne", "Faith", "Fancy", "Faye", "Felicity", "Fern", "Finn", "Fiona", "Fleur", 
+    "Florence", "Frances", "Francie", "Francine", "Frankie", "Frederica", "Frida", "G", 
+    "Gage", "Gail", "Gale", "Gemma", "Gene", "Genevieve", "Georgene", "Georgette", "Georgia", 
+    "Georgiana", "Georgina", "Gertie", "Gertrude", "Gia", "Gina", "Ginny", "Giselle", 
+    "Gladys", "Glenda", "Glenna", "Gloria", "Glynis", "Goldie", "Grace", "Gussie", "Gwen", 
+    "Gwenda", "Gwendolen", "Gwendoline", "Gwendolyn", "Gwyneth",
+    "Haisley", "Haley", "Hannah", "Harmony", "Harriet", "Hayden", "Hayley", "Hazel", 
+    "Heather", "Heidi", "Helen", "Helena", "Helene", "Henrietta", "Hero", "Hester", 
+    "Hilary", "Hilda", "Hodierna", "Holly", "Honor", "Hope", "Hunter", 
+    "Ida", "Ila", "Imelda", "Imogen", "Ingrid", "Iona", "Irene", "Iris", 
+    "Irma", "Isa", "Isabel", "Isabella", "Isla", "Ivy", 
+    "Jacinta", "Jack", "Jackie", "Jacqueline", "Jacqui", "Jade", "Jaime", "Jamie", 
+    "Jan", "Jana", "Jane", "Janee", "Janelle", "Janet", "Janey", "Janie", 
+    "January", "Jasmine", "Jay", "Jayda", "Jayden", "Jayne", "Jaynie", 
+    "Jean", "Jeanie", "Jeannie", "Jemima", "Jemma", "Jenna", "Jennifer", "Jenny", 
+    "Jensen", "Jerri", "Jerry", "Jess", "Jessica", "Jessie", "Jill", 
+    "Joan", "Joanna", "Joanne", "Jodi", "Jodie", "Jody", "Joelle", 
+    "Joey", "Johnny", "Jolie", "Jordan", 
+    "Josephine", "Josie", "Joy", "Joyce", "Judith", "Julia", "Julianne", 
+    "Julie", "Juliet", "June", "Juniper", "Juno", "Justine", 
+    "Kailey", "Kalla", "Kara", "Karen", "Karin", "Karlee", "Karlene", 
+    "Karli", "Karlie", "Karly", "Karolyn", "Karrie", "Karyn", "Karyne", 
+    "Kasey", "Kate", "Katey", "Kathleen", "Kathryn", "Kathy", "Katie", 
+    "Katina", "Katrina", "Katy", "Kay", "Kayla", "Kaylee", "Kelly", 
+    "Kelsey", "Kierra", "Kim", "Kimberly", "Kira", "Kirsteen", 
+    "Kirstin", "Kitty", "Krista", "Kristen", "Kristi", "Kristin", 
+    "Kristy", "Kylie", "Kyra",
+    "Lacey", "Lana", "Lanna", "Lara", "Larissa", "Laura", "Laurel", "Lauren", 
+    "Laurence", "Lauretta", "Laurie", "Lauryn", "Lavender", "Leah", "Leanne", 
+    "Lee", "Leila", "Leisha", "Lena", "Lenna", "Leona", "Leonora", "Leslie", 
+    "Lettice", "Lexi", "Lila", "Liliana", "Lilibet", "Lilibeth", "Lilla", 
+    "Lillian", "Lillie", "Lilly", "Lily", "Lina", "Linda", "Lindsay", 
+    "Lindy", "Lisa", "Liza", "Lizzie", "Lois", "Loraine", "Lorelei", 
+    "Lorena", "Loretta", "Lori", "Lorinda", "Lorna", "Lorraine", "Lottie", 
+    "Lotty", "Louella", "Louisa", "Louise", "Lucia", "Lucinda", "Lucy", 
+    "Lydia", "Lyndsay", "Lynnette", "Lysette", "Mabel", "Mable", "Macy", 
+    "Madelaine", "Madeleine", "Madelyn", "Madge", "Madison", "Madonna", 
+    "Mae", "Maggie", "Magnolia", "Mallory", "Mandy", "Mara", "Marcia", 
+    "Marcie", "Margaret", "Margie", "Margo", "Maria", "Mariah", "Marian", 
+    "Marianne", "Marie", "Marigold", "Marilyn", "Marina", "Marissa", 
+    "Marjorie", "Marlene", "Marsha", "Marta", "Martha", "Martina", 
+    "Mary", "Mary Belle", "Maryanne", "Mason", "Matilda", "Maud", 
+    "Maude", "Maura", "Maureen", "Mavis", "Maxine", "May", "Maya", 
+    "Mayola", "McKenna", "Meara", "Medea", "Megan", "Mehitable", 
+    "Mel", "Melanie", "Melina", "Melinda", "Melissa", "Melody", 
+    "Mercedes", "Meredith", "Merilyn", "Merle", "Merrilyn", "Mia", 
+    "Micah", "Michele", "Michelle", "Mila", "Mildred", "Miley", 
+    "Millicent", "Millie", "Mina", "Mindi", "Mindy", "Minerva", 
+    "Minnie", "Miranda", "Miriam", "Misty", "Moira", "Molly", 
+    "Morgan", "Muriel", "Myra", "Myrna", "Myrtle",
+    "Nadia", "Nadine", "Naila", "Nancy", "Naomi", "Narcissa", "Nathalie", 
+    "Nena", "Nettie", "Netty", "Nevaeh", "Nia", "Nicki", "Nicola", 
+    "Nicole", "Nina", "Noel", "Noella", "Noelle",
+    "Napoleon", "Nate", "Nathan", "Nathanael", "Nathaniel", "Ned", "Nehemiah", 
+    "Neil", "Nelson", "Nestor", "Newt", "Newton", "Niall", "Nicholas", 
+    "Nick", "Nicodemus", "Nicolas", "Nigel", "Niles", "Noah", "Noam", 
+    "Norm", "Norman", "Nowell",
+    "Obadiah", "Odin", "Oliver", "Ollie", "Orion", "Orlando", "Orville", 
+    "Osbert", "Osborne", "Oscar", "Osric", "Oswald", "Otis", "Otto", 
+    "Owen", "Ozzie",
+    "Paddy", "Palmer", "Paris", "Patrick", "Patsy", "Patty", "Paul", 
+    "Peleg", "Percival", "Percy", "Perry", "Pete", "Peter", "Philip", 
+    "Phillipps", "Phineas", "Pierse", "Poe", "Porter", "Posy", "Preston",
+    "Quentin", "Quincy", "Quinn",
+    "Race", "Rafe", "Raife", "Raleigh", "Ralph", "Ralphie", "Ramsey", 
+    "Randall", "Randi", "Randolph", "Randy", "Raphael", "Rathbone", 
+    "Ray", "Raymond", "Reese", "Reggie", "Reginald", "Rembrandt", 
+    "Rendell", "Renssalaer", "Reuben", "Rex", "Reynold", "Rhett", 
+    "Rich", "Richard", "Richie", "Rick", "Ricky", "Riley", "Ritchie", 
+    "Rob", "Robbie", "Robert", "Robin", "Roderick", "Rodger", 
+    "Rodney", "Roger", "Rogers", "Roland", "Roman", "Ron", "Ronald", 
+    "Ronnie", "Rory", "Roscoe", "Ross", "Roualeyn", "Rowland", 
+    "Roy", "Rudolph", "Rudy", "Rufus", "Rupert", "Russ", "Russell", 
+    "Ryan", "Ryder",
+    "Sam", "Sammy", "Samson", "Samuel", "Sandy", "Sanford", "Saul", 
+    "Sawyer", "Scott", "Sean", "Sebastian", "Seth", "Seymour", 
+    "Shane", "Shaun", "Shawn", "Shayne", "Sheldon", "Shepherd", 
+    "Sid", "Sidney", "Sigmund", "Simon", "Sky", "Skyler", 
+    "Sloane", "Smith", "Sol", "Solomon", "Spencer", "Stan", 
+    "Stanford", "Stanley", "Stefan", "Stephen", "Stetson", 
+    "Steve", "Stevie", "Stevland", "Stewart", "Storm", "Stuart", 
+    "Swaine", "Syd", "Sydney", "Sylvester",
+    "Tanner", "Taran", "Taylor", "Tazewell", "Ted", "Tedd", "Teddy", 
+    "Terence", "Terry", "Thaddeus", "Theo", "Theodore", "Thomas", 
+    "Thor", "Tim", "Timmy", "Timothy", "Tobias", "Toby", "Tod", 
+    "Todd", "Toddy", "Tom", "Tommie", "Tommy", "Tony", "Tracy", 
+    "Travis", "Tregonwell", "Trent", "Trevor", "Trey", "Tristan", 
+    "Troy", "Truman", "Tucker", "Tyler", "Tyson",
+    "Ultan", "Ulysses", "Uriah",
+    "Val", "Valentine", "Vernon", "Vic", "Vicary", "Victor", "Vince", 
+    "Vincent", "Vinny", "Vivian",
+    "Wade", "Wadsworth", "Walden", "Waldo", "Walker", "Wallace", 
+    "Wally", "Walt", "Walter", "Warren", "Waverly", "Waylon", 
+    "Wayne", "Wells", "Wes", "Wesley", "Whitney", "Wilber", 
+    "Wilbert", "Wilbur", "Wilf", "Wilfred", "Wilfried", "Wilhelm", 
+    "Will", "Willard", "William", "Willis", "Willy", "Wilmon", 
+    "Wilson", "Winnie", "Winston", "Wolfgang", "Woodrow", 
+    "Woodruff", "Woody", "Wyatt", "Wyndham",
+    "Xander", "Xavier",
+    "Yancy",
+    "Zabdiel", "Zach", "Zachary", "Zack", "Zadoc", "Zak", "Zane", 
+    "Zayden", "Zeb", "Zechariah", "Zedekiah", "Zeke", "Zeph", 
+    "Zephaniah", "Zion"
+];
+
+  const LAST_NAMES = [
+    'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez',
+    'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin',
+    'Lee', 'Perez', 'Thompson', 'White', 'Harris', 'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson',
+    'Walker', 'Young', 'Allen', 'King', 'Wright', 'Scott', 'Torres', 'Nguyen', 'Hill', 'Flores',
+    'Green', 'Adams', 'Nelson', 'Baker', 'Hall', 'Rivera', 'Campbell', 'Mitchell', 'Carter', 'Roberts',
+    'Gomez', 'Phillips', 'Evans', 'Turner', 'Diaz', 'Parker', 'Cruz', 'Edwards', 'Collins', 'Reyes',
+    'Stewart', 'Morris', 'Morales', 'Murphy', 'Cook', 'Rogers', 'Gutierrez', 'Ortiz', 'Morgan', 'Cooper',
+    'Peterson', 'Bailey', 'Reed', 'Kelly', 'Howard', 'Ramos', 'Kim', 'Cox', 'Ward', 'Richardson',
+    'Watson', 'Brooks', 'Chavez', 'Wood', 'James', 'Bennett', 'Gray', 'Mendoza', 'Ruiz', 'Hughes',
+    'Price', 'Alvarez', 'Castillo', 'Sanders', 'Patel', 'Myers', 'Long', 'Ross', 'Foster', 'Jimenez',
+    'Powell', 'Jenkins', 'Perry', 'Russell', 'Sullivan', 'Bell', 'Coleman', 'Butler', 'Henderson', 'Barnes',
+    'Gonzales', 'Fisher', 'Vasquez', 'Simmons', 'Romero', 'Jordan', 'Patterson', 'Alexander', 'Hamilton', 'Graham',
+    'Reynolds', 'Griffin', 'Wallace', 'Moreno', 'West', 'Cole', 'Hayes', 'Bryant', 'Herrera', 'Gibson',
+    'Ellis', 'Tran', 'Medina', 'Aguilar', 'Stevens', 'Murray', 'Ford', 'Castro', 'Marshall', 'Owens',
+    'Harrison', 'Fernandez', 'Mcdonald', 'Woods', 'Washington', 'Kennedy', 'Wells', 'Vargas', 'Henry', 'Chen',
+    'Freeman', 'Webb', 'Tucker', 'Guzman', 'Burns', 'Crawford', 'Olson', 'Simpson', 'Porter', 'Hunter',
+    'Gordon', 'Mendez', 'Silva', 'Shaw', 'Snyder', 'Mason', 'Dixon', 'Munoz', 'Hunt', 'Hicks'
+  ];
+
+  const CHANNEL_TYPES = [
+    'Gaming', 'Vlogs', 'Music', 'Education', 'Tech', 'Cooking', 'Travel', 'Comedy', 'News', 'Sports',
+    'Science', 'DIY', 'Lifestyle', 'Beauty', 'Automotive', 'Fitness', 'Film', 'Animation'
+  ];
+
+  let totalLogsGenerated = 0;
+  let currentRegionMode = 'random';
+  let allEntries = [];
+  let countryList = Object.keys(COUNTRIES);
+
+  function shuffleArray(array) {
+    return array.sort(() => Math.random() - 0.5);
+  }
+
+  function getRegionCode() {
+    switch(currentRegionMode) {
+      case 'manual':
+        const manualInput = searchInput.value.toUpperCase().slice(0,2);
+        return COUNTRIES[manualInput] ? manualInput : 'US';
+      case 'usa': return 'US';
+      case 'europe': 
+        const euCountries = ['DE','FR','IT','ES','GB','NL','BE','SE','DK','FI','NO','PL','CZ','AT','CH'];
+        return euCountries[Math.floor(Math.random() * euCountries.length)];
+      case 'asia':
+        const asiaCountries = ['JP','CN','IN','KR','SG','HK','MY','TH','VN','ID','PH','TW','AU'];
+        return asiaCountries[Math.floor(Math.random() * asiaCountries.length)];
+      default: // random global
+        return countryList[Math.floor(Math.random() * countryList.length)];
+    }
+  }
+
+  function generateRandomString(len, charset) {
+    charset = charset || 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < len; i++) result += charset.charAt(Math.floor(Math.random() * charset.length));
+    return result;
+  }
+
+  function generateChannelID() {
+    // YouTube Channel IDs are 24 characters, starting with UC
+    return 'UC' + generateRandomString(22, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_');
+  }
+
+  function generateHandle(firstName, lastName) {
+    const patterns = [
+      `@${firstName.toLowerCase()}${lastName.toLowerCase()}`,
+      `@${firstName.toLowerCase()}_${lastName.toLowerCase()}`,
+      `@${firstName.toLowerCase()}TV`,
+      `@${lastName.toLowerCase()}Official`,
+      `@${firstName[0].toLowerCase()}${lastName.toLowerCase()}`
+    ];
+    return patterns[Math.floor(Math.random() * patterns.length)];
+  }
+
+  function formatSubscribers() {
+    const count = Math.floor(Math.random() * 10000000);
+    if (count > 1000000) return (count / 1000000).toFixed(2) + 'M';
+    if (count > 1000) return (count / 1000).toFixed(1) + 'K';
+    return count.toString();
+  }
+
+  function createRow(entry) {
+    const tr = document.createElement('tr');
+    
+    tr.innerHTML = `
+      <td class="channel-name" title="Click to copy name">${entry.channelName}</td>
+      <td><span class="handle">${entry.handle}</span></td>
+      <td style="font-family: monospace; color: #888;">${entry.id}</td>
+      <td><span class="country-flag">${entry.flag}</span>${entry.country}</td>
+      <td class="highlight">${entry.category}</td>
+      <td style="color: #ff0000; font-weight: bold;">${entry.subs}</td>
+    `;
+    
+    tr.onclick = (e) => {
+      if (e.target.closest('.channel-name') || e.target.closest('.handle')) {
+        const text = e.target.closest('.channel-name') ? entry.channelName : entry.handle;
+        navigator.clipboard.writeText(text);
+        e.target.style.background = '#ff0000';
+        setTimeout(() => e.target.style.background = '', 500);
+      }
+    };
+    
+    return tr;
+  }
+
+  function generateEntry() {
+    const regionCode = getRegionCode();
+    const regionData = COUNTRIES[regionCode] || COUNTRIES['US'];
+    const first = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+    const last = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+    
+    return {
+      channelName: `${first} ${last}`,
+      handle: generateHandle(first, last),
+      id: generateChannelID(),
+      country: regionData.name,
+      flag: regionData.flag,
+      category: CHANNEL_TYPES[Math.floor(Math.random() * CHANNEL_TYPES.length)],
+      subs: formatSubscribers()
+    };
+  }
+
+  function updateTotalCount() {
+    totalCount.textContent = `Total: ${totalLogsGenerated.toLocaleString()}`;
+  }
+
+  function loadMoreLogs() {
+    if (totalLogsGenerated >= MAX_LOGS) {
+      loadingIndicator.textContent = `⚠️ Max ${MAX_LOGS.toLocaleString()} records reached`;
+      loadingIndicator.hidden = false;
+      return;
+    }
+    loadingIndicator.hidden = false;
+    
+    requestAnimationFrame(() => {
+      const fragment = document.createDocumentFragment();
+      for (let i = 0; i < BATCH_SIZE && totalLogsGenerated < MAX_LOGS; i++, totalLogsGenerated++) {
+        const entry = generateEntry();
+        allEntries.push(entry);
+        fragment.appendChild(createRow(entry));
+      }
+      logBody.appendChild(fragment);
+      loadingIndicator.hidden = true;
+      updateTotalCount();
+      updateAriaRowCount();
+    });
+  }
+
+  function resetLogs() {
+    totalLogsGenerated = 0;
+    allEntries = [];
+    logBody.innerHTML = '';
+    loadingIndicator.hidden = true;
+    updateTotalCount();
+    updateAriaRowCount();
+  }
+
+  function filterLogs() {
+    const filter = searchInput.value.toLowerCase();
+    if (!filter) {
+      [...logBody.children].forEach(tr => tr.style.display = "");
+      return;
+    }
+    [...logBody.children].forEach(tr => {
+      const haystack = tr.textContent.toLowerCase();
+      tr.style.display = haystack.includes(filter) ? "" : "none";
+    });
+  }
+
+  function updateAriaRowCount() {
+    logBody.parentElement.setAttribute('aria-rowcount', logBody.children.length);
+  }
+
+  // Event Listeners
+  logContainer.addEventListener('scroll', () => {
+    if (loadingIndicator.hidden &&
+        logContainer.scrollTop + logContainer.clientHeight >= logContainer.scrollHeight - 100 &&
+        !searchInput.value.trim()) {
+      loadMoreLogs();
+    }
+  });
+
+  generateBtn.addEventListener('click', () => {
+    currentRegionMode = regionModeEl.value;
+    if (currentRegionMode === 'manual' && !searchInput.value.trim()) {
+      currentRegionMode = 'random';
+    }
+    resetLogs();
+    loadMoreLogs();
+    searchInput.value = '';
+  });
+
+  searchInput.addEventListener('input', () => {
+    filterLogs();
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const csvData = allEntries.map(e => 
+      `"${e.channelName}","${e.handle}","${e.id}","${e.country}","${e.category}","${e.subs}"`
+    ).join('\n');
+    
+    const csvBlob = new Blob([`Channel Name,Handle,Channel ID,Region,Category,Subscribers\n${csvData}`], 
+      {type: 'text/csv;charset=utf-8;'});
+    
+    const csvLink = document.createElement('a');
+    csvLink.href = URL.createObjectURL(csvBlob);
+    csvLink.download = `youtube_creators_${currentRegionMode}_${Date.now()}.csv`;
+    csvLink.style.display = 'none';
+    document.body.appendChild(csvLink);
+    csvLink.click();
+    document.body.removeChild(csvLink);
+  });
+
+  // Initialize
+  updateTotalCount();
+  loadMoreLogs();
+  
+  // Update country list for random mode
+  setInterval(() => {
+    if (currentRegionMode === 'random') {
+      countryList = shuffleArray(Object.keys(COUNTRIES));
+    }
+  }, 5000);
+
+})();
+</script>
+
+</body>
+</html>

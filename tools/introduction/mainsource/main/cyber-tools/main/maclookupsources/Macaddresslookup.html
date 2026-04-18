@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MAC Address Lookup</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: rgb(8, 5, 5);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #1eff00;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      padding: 10px 16px;
+      background: #e70404;
+      color: #07e912;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #b92929;
+    }
+
+    .status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+
+    .success {
+      background: #faf6f6;
+      color: #000000;
+    }
+
+    .error {
+      background: #fdecea;
+      color: #e74c3c;
+    }
+
+    .log {
+      margin-top: 30px;
+    }
+
+    .log h3 {
+      margin-bottom: 10px;
+    }
+
+    .log-entry {
+      background: #f9f9f9;
+      border-left: 4px solid #db3434;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .loader {
+      margin: 20px auto;
+      width: 40px;
+      height: 40px;
+      border: 4px solid #ff0202;
+      border-top: 4px solid #09ff00;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>MAC Address Lookup</h1>
+    <div class="input-group">
+      <input type="text" id="macInput" placeholder="Enter MAC Address (e.g. 44:38:39:ff:ef:57)" />
+      <button onclick="lookupMac()">Lookup</button>
+    </div>
+    <div id="result"></div>
+    <div class="log">
+      <h3>Lookup History</h3>
+      <div id="history"></div>
+    </div>
+  </div>
+
+  <script>
+    const vendorDB = {
+      "44:38:39": "Cisco Systems",
+      "00:1A:2B": "Intel Corporation",
+      "3C:5A:B4": "Samsung Electronics",
+      "B8:27:EB": "Raspberry Pi Foundation",
+      "FC:FB:FB": "Facebook, Inc.",
+      "00:1D:A1": "Apple, Inc.",
+      "00:1E:C2": "Sony Corporation",
+      "00:1F:3A": "Nokia Corporation",
+      "00:1B:77": "Hewlett Packard",
+      "00:1C:BF": "Dell Inc.",
+      "00:1A:4A": "Lenovo Group Limited",
+      "00:1A:73": "Microsoft Corporation",
+      "00:1A:92": "LG Electronics",
+      "00:1B:63": "ASUS Computer International",
+      "00:1C:10": "TP-Link Technologies",
+      "00:1D:92": "Zebra Technologies",
+      "A4:5E:60": "Xiaomi Corporation",
+      "D0:50:99": "Huawei Technologies",
+      "F0:9F:C2": "OnePlus Technology",
+      "B0:4E:26": "Oppo Electronics",
+      "C4:4E:36": "Vivo Communication Technology",
+      "00:1A:11": "Google LLC",
+      "00:1B:63": "ASUS Computer International",
+      "00:1C:10": "TP-Link Technologies",
+      "00:1D:92": "Zebra Technologies",
+      "00:1A:00": "Acer Inc.",
+      "00:1B:2F": "Toshiba Corporation",
+      "00:1C:42": "Gateway, Inc.",
+      "00:1D:60": "Fujitsu Limited",
+      "00:1E:4F": "MSI Computer Corp.",
+      "00:1F:3A": "Nokia Corporation",
+      "00:1A:4D": "Razer Inc.",
+      "00:1A:4E": "Alienware",
+      "00:1A:4F": "Gigabyte Technology",
+      "00:1A:50": "ASRock Inc.",
+      "00:1A:51": "ZOTAC International",
+      "00:1A:52": "BlackBerry Limited",
+      "00:1A:53": "Motorola Mobility",
+      "00:1A:54": "HTC Corporation",
+      "00:1A:55": "Nokia Networks",
+      "00:1A:56": "Panasonic Corporation",
+      "00:1A:57": "Sharp Corporation",
+      "00:1A:58": "TCL Technology",
+      "00:1A:59": "ZTE Corporation",
+      "00:1A:5A": "Alcatel-Lucent",
+      "00:1A:5B": "BenQ Corporation",
+      "00:1A:5C": "Sierra Wireless",
+      "00:1A:5D": "Kyocera Corporation",
+      "00:1A:5E": "Fujitsu Siemens Computers",
+      "00:1A:5F": "Epson Corporation",
+      "00:1A:60": "Nikon Corporation",
+      "00:1A:61": "Canon Inc.",
+      "00:1A:62": "Ricoh Company, Ltd.",
+      "00:1A:63": "Lexmark International",
+      "00:1A:64": "Seiko Epson Corporation",
+      "00:1A:65": "Brother Industries, Ltd.",
+      "00:1A:66": "Harman International",
+      "00:1A:67": "JVC Kenwood Corporation",
+      "00:1A:68": "Pioneer Corporation",
+      "00:1A:69": "Sanyo Electric Co., Ltd.",
+      "00:1A:6A": "Toshiba America Information Systems",
+      "00:1A:6B": "Hitachi, Ltd.",
+      "00:1A:6C": "Mitsubishi Electric Corporation",
+      "00:1A:6D": "NEC Corporation",
+      "00:1A:6E": "Panasonic Corporation",
+      "00:1A:6F": "Sony Computer Entertainment",
+      "00:1A:70": "NVIDIA Corporation",
+      "00:1A:71": "Qualcomm Technologies, Inc.",
+      "00:1A:72": "Broadcom Corporation",
+      "00:1A:73": "Texas Instruments",
+      "00:1A:74": "Marvell Technology Group",
+      "00:1A:75": "Infineon Technologies",
+      "00:1A:76": "Analog Devices",
+      "00:1A:77": "Maxim Integrated",
+      "00:1A:78": "Microchip Technology",
+      "00:1A:79": "Atmel Corporation",
+      "00:1A:7A": "Cypress Semiconductor",
+      "00:1A:7B": "STMicroelectronics",
+      "00:1A:7C": "NXP Semiconductors",
+      "00:1A:7D": "Renesas Electronics",
+      "00:1A:7E": "Silicon Labs",
+      "00:1A:7F": "Rohm Semiconductor",
+      "00:1A:80": "ON Semiconductor",
+      "00:1A:81": "Vishay Intertechnology",
+      "00:1A:82": "Fairchild Semiconductor",
+      "00:1A:83": "Diodes Incorporated",
+      "00:1A:84": "Lattice Semiconductor",
+      "00:1A:85": "Altera Corporation",
+      "00:1A:86": "Xilinx, Inc.",
+      "00:1A:87": "Microsemi Corporation",
+      "00:1A:88": "Actel Corporation",
+      "00:1A:89": "Cavium Networks",
+      "00:1A:8A": "Broadcom Limited",
+      "00:1A:8B": "Marvell Semiconductor",
+      "00:1A:8C": "Qualcomm Atheros",
+      "00:1A:8D": "Realtek Semiconductor",
+      "00:1A:8E": "Ralink Technology",
+      "00:1A:8F": "Atheros Communications",
+      "00:1A:90": "ZyXEL Communications",
+      "00:1A:91": "D-Link Corporation",
+      "00:1A:92": "Linksys",
+      "00:1A:93": "Netgear, Inc.",
+      "00:1A:94": "TP-Link Technologies",
+      "00:1A:95": "Belkin International",
+      "00:1A:96": "Buffalo Technology",
+      "00:1A:97": "ASUS Computer International",
+      "00:1A:98": "ZyXEL Communications",
+      "00:1A:99": "SonicWall, Inc.",
+      "00:1A:9A": "Cisco Systems",
+      "00:1A:9B": "Juniper Networks",
+      "00:1A:9C": "Arista Networks",
+      "00:1A:9D": "Extreme Networks",
+      "00:1A:9E": "Alcatel-Lucent",
+      "00:1A:9F": "Avaya Inc.",
+      "00:1A:A0": "MikroTik",
+      "00:1A:A1": "Ubiquiti Networks",
+      "00:1A:A2": "Meraki, Inc.",
+      "00:1A:A3": "Fortinet, Inc.",
+      "00:1A:A4": "Palo Alto Networks",
+      "00:1A:A5": "Check Point Software",
+      "00:1A:A6": "Sophos Ltd.",
+      "00:1A:A7": "Barracuda Networks",
+      "00:1A:A8": "F5 Networks",
+      "00:1A:A9": "Citrix Systems",
+      "00:1A:AA": "VMware, Inc.",
+      "00:1A:AB": "Red Hat, Inc.",
+      "00:1A:AC": "SUSE Linux",
+      "00:1A:AD": "Canonical Ltd.",
+      "00:1A:AE": "Oracle Corporation",
+      "00:1A:AF": "IBM Corporation",
+      "00:1A:B0": "Hewlett Packard Enterprise",
+      "00:1A:B1": "Dell Technologies",
+      "00:1A:B2": "Lenovo Group Limited",
+      "00:1A:B3": "Microsoft Corporation",
+      "00:1A:B4": "Apple Inc.",
+      "00:1A:B5": "Google LLC",
+      "00:1A:B6": "Amazon.com, Inc.",
+      "00:1A:B7": "Facebook, Inc.",
+      "00:1A:B8": "Twitter, Inc.",
+      "00:1A:B9": "LinkedIn Corporation",
+      "00:1A:BA": "Snap Inc.",
+      "00:1A:BB": "Pinterest, Inc.",
+      "00:1A:BC": "Reddit, Inc.",
+      "00:1A:BD": "Tumblr, Inc.",
+      "00:1A:BE": "Flickr, Inc.",
+      "00:1A:BF": "YouTube, LLC",
+      "00:1A:C0": "Vimeo, Inc.",
+      "00:1A:C1": "Dailymotion SA",
+      "00:1A:C2": "Twitch Interactive, Inc.",
+      "00:1A:C3": "Discord, Inc.",
+      "00:1A:C4": "Slack Technologies, Inc.",
+      "00:1A:C5": "Zoom Video Communications, Inc.",
+      "00:1A:C6": "Skype Technologies",
+      "00:1A:C7": "WhatsApp Inc.",
+      "00:1A:C8": "WeChat",
+      "00:1A:C9": "Telegram Messenger",
+      "00:1A:CA": "Signal Foundation",
+      "00:1A:CB": "Snapchat, Inc.",
+      "00:1A:CC": "TikTok Inc.",
+      "00:1A:CD": "ByteDance Ltd.",
+      "00:1A:CE": "Alibaba Group",
+      "00:1A:CF": "Tencent Holdings Ltd.",
+      "00:1A:D0": "Baidu, Inc.",
+      "00:1A:D1": "JD.com, Inc.",
+      "00:1A:D2": "Meituan Dianping",
+      "00:1A:D3": "Pinduoduo Inc.",
+      "00:1A:D4": "Xiaomi Corporation",
+      "00:1A:D5": "Huawei Technologies",
+      "00:1A:D6": "ZTE Corporation",
+      "00:1A:D7": "Oppo Electronics",
+      "00:1A:D8": "Vivo Communication Technology",
+      "00:1A:D9": "OnePlus Technology",
+      "00:1A:DA": "Realme",
+      "00:1A:DB": "Honor",
+      "00:1A:DC": "Lenovo Group Limited",
+      "00:1A:DD": "ASUS Computer International",
+      "00:1A:DE": "Acer Inc.",
+      "00:1A:DF": "MSI Computer Corp.",
+      "00:1A:E0": "Gigabyte Technology",
+      "00:1A:E1": "Razer Inc.",
+      "00:1A:E2": "Alienware",
+      "00:1A:E3": "ZOTAC International",
+      "00:1A:E4": "TP-Link Technologies",
+      "00:1A:E5": "D-Link Corporation",
+      "00:1A:E6": "Linksys",
+      "00:1A:E7": "Netgear, Inc.",
+      "00:1A:E8": "Belkin International",
+      "00:1A:E9": "Buffalo Technology",
+      "00:1A:EA": "ZyXEL Communications",
+      "00:1A:EB": "MikroTik",
+      "00:1A:EC": "Ubiquiti Networks",
+      "00:1A:ED": "Meraki, Inc.",
+      "00:1A:EE": "Fortinet, Inc.",
+      "00:1A:EF": "Palo Alto Networks",
+      "00:1A:F0": "Check Point Software",
+      "00:1A:F1": "Sophos Ltd.",
+      "00:1A:F2": "Barracuda Networks",
+      "00:1A:F3": "F5 Networks",
+      "00:1A:F4": "Citrix Systems",
+      "00:1A:F5": "VMware, Inc.",
+      "00:1A:F6": "Red Hat, Inc.",
+      "00:1A:F7": "SUSE Linux",
+      "00:1A:F8": "Canonical Ltd.",
+      "00:1A:F9": "Oracle Corporation",
+      "00:1A:FA": "IBM Corporation",
+      "00:1A:FB": "Hewlett Packard Enterprise",
+      "00:1A:FC": "Dell Technologies",
+      "00:1A:FD": "Lenovo Group Limited",
+      "00:1A:FE": "Microsoft Corporation",
+      "00:1A:FF": "Apple Inc.",
+    };
+
+    const history = [];
+
+    function validateMac(mac) {
+      return /^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$/i.test(mac);
+    }
+
+    function lookupMac() {
+      const input = document.getElementById('macInput').value.trim().toUpperCase();
+      const result = document.getElementById('result');
+      const historyDiv = document.getElementById('history');
+      result.innerHTML = '';
+
+      if (!validateMac(input)) {
+        result.innerHTML = `<div class="status error">❌ Invalid MAC address format</div>`;
+        return;
+      }
+
+      result.innerHTML = `<div class="loader"></div>`;
+
+      setTimeout(() => {
+        const prefix = input.substring(0, 8).replace(/-/g, ':');
+        const vendor = vendorDB[prefix] || "Unknown Vendor";
+
+        result.innerHTML = `
+          <div class="status success">
+            ✅ Vendor: <strong>${vendor}</strong><br/>
+            MAC: ${input}
+          </div>
+        `;
+
+        const logEntry = `<div class="log-entry">MAC: <strong>${input}</strong> → Vendor: ${vendor}</div>`;
+        history.unshift(logEntry);
+        historyDiv.innerHTML = history.slice(0, 10).join("");
+      }, 1200);
+    }
+  </script>
+</body>
+</html>

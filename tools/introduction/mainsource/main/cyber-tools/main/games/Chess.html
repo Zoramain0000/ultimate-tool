@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: red;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(8, 60px);
+            grid-template-rows: repeat(8, 60px);
+            border: 2px solid #333;
+        }
+
+        .square {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            cursor: pointer;
+        }
+
+        .white {
+            background-color: #eee;
+        }
+
+        .black {
+            background-color: #aaa;
+        }
+
+        .selected {
+            background-color: yellow;
+        }
+
+        #controls {
+            margin-top: 20px;
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px;
+            font-size: 1em;
+            cursor: pointer;
+            background: red;
+            color: green;
+        }
+        button {
+background:rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <h1>Chess Game</h1>
+    <div id="board"></div>
+    <div id="controls">
+        <button id="reset">Reset Game</button>
+        <button id="toggle-ai">Toggle AI</button>
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        const resetButton = document.getElementById('reset');
+        const toggleAiButton = document.getElementById('toggle-ai');
+        const pieces = {
+            'r': '♖', 'n': '♘', 'b': '♗', 'q': '♕', 'k': '♔', 'p': '♙',
+            'R': '♜', 'N': '♞', 'B': '♝', 'Q': '♛', 'K': '♚', 'P': '♟'
+        };
+
+        let selectedSquare = null;
+        let boardState = [
+            ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+            ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+            ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+        ];
+
+        let isAiEnabled = false;
+
+        function createBoard() {
+            board.innerHTML = '';
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const square = document.createElement('div');
+                    square.classList.add('square', (row + col) % 2 === 0 ? 'white' : 'black');
+                    square.dataset.row = row;
+                    square.dataset.col = col;
+                    square.addEventListener('click', handleSquareClick);
+                    square.textContent = pieces[boardState[row][col]] || '';
+                    board.appendChild(square);
+                }
+            }
+        }
+
+        function handleSquareClick(event) {
+            const square = event.target;
+            const row = square.dataset.row;
+            const col = square.dataset.col;
+
+            if (selectedSquare) {
+                const selectedRow = selectedSquare.dataset.row;
+                const selectedCol = selectedSquare.dataset.col;
+
+                // Move the piece
+                boardState[row][col] = boardState[selectedRow][selectedCol];
+                boardState[selectedRow][selectedCol] = '';
+                selectedSquare.classList.remove('selected');
+                selectedSquare = null;
+
+                createBoard();
+
+                // If AI is enabled, make a move
+ if (isAiEnabled) {
+                    setTimeout(makeAiMove, 500);
+                }
+            } else {
+                selectedSquare = square;
+                square.classList.add('selected');
+            }
+        }
+
+        function makeAiMove() {
+            const emptySquares = [];
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    if (boardState[row][col] === '') {
+                        emptySquares.push({ row, col });
+                    }
+                }
+            }
+
+            if (emptySquares.length > 0) {
+                const randomSquare = emptySquares[Math.floor(Math.random() * emptySquares.length)];
+                const aiPieceRow = Math.floor(Math.random() * 8);
+                const aiPieceCol = Math.floor(Math.random() * 8);
+
+                if (boardState[aiPieceRow][aiPieceCol] !== '') {
+                    boardState[randomSquare.row][randomSquare.col] = boardState[aiPieceRow][aiPieceCol];
+                    boardState[aiPieceRow][aiPieceCol] = '';
+                    createBoard();
+                }
+            }
+        }
+
+        resetButton.addEventListener('click', () => {
+            boardState = [
+                ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+                ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                ['', '', '', '', '', '', '', ''],
+                ['', '', '', '', '', '', '', ''],
+                ['', '', '', '', '', '', '', ''],
+                ['', '', '', '', '', '', '', ''],
+                ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+            ];
+            createBoard();
+        });
+
+        toggleAiButton.addEventListener('click', () => {
+            isAiEnabled = !isAiEnabled;
+            toggleAiButton.textContent = isAiEnabled ? 'Disable AI' : 'Enable AI';
+        });
+
+        createBoard();
+    </script>
+</body>
+</html>

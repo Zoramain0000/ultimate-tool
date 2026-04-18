@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>File Explorer (ZeroDays)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      background: rgba(0,0,0,0.5);
+      color: red;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .toolbar {
+background: rgba(0,0,0,0.5);
+      padding: 8px;
+      display: flex;
+      gap: 10px;
+      border-bottom: 1px solid red;
+      flex-wrap: wrap;
+    }
+    .toolbar button {
+      padding: 6px 12px;
+      border: none;
+background: rgba(0,0,0,0.5);
+color: red;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .search-bar {
+      padding: 8px;
+      display: flex;
+      gap: 5px;
+    }
+    .search-bar input {
+      flex: 1;
+      padding: 6px;
+      border-radius: 3px;
+      border: 1px solid red;
+    }
+    .container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    #sidebar {
+      width: 250px;
+background: rgba(0,0,0,0.5);
+      overflow-y: auto;
+      border-right: 1px solid red;
+      padding: 10px;
+    }
+    .file-item {
+      padding: 5px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      border-radius: 4px;
+      color: red;
+    }
+    .file-item:hover {
+background: rgba(0,0,0,0.5);
+    }
+    .file-item.active {
+      background: red;
+      color: green;
+    }
+    .sub-folder {
+      margin-left: 15px;
+      display: none;
+    }
+    .sub-folder.visible {
+      display: block;
+    }
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+    }
+    .tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 5px;
+      overflow-x: auto;
+    }
+    .tab {
+background: rgba(0,0,0,0.5);
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .tab.active {
+background: rgba(0,0,0,0.5);
+      color: green;
+    }
+    .tab .close {
+      margin-left: 8px;
+      color: #333;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .tab .close:hover {
+      color: red;
+    }
+    #editor {
+      flex-grow: 1;
+      border: 1px solid red;
+      position: relative;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><i class="fas fa-folder-open"></i> File Explorer</h1>
+    <button onclick="openDirectory()">📂 Open Folder</button>
+  </header>
+
+  <div class="toolbar">
+    <button onclick="createNewFile()">➕ New File</button>
+    <button onclick="createNewFolder()">📁 New Folder</button>
+    <button onclick="renameFile()">✏️ Rename</button>
+    <button onclick="deleteFile()">🗑️ Delete</button>
+    <button onclick="saveFile()">💾 Save</button>
+    <button onclick="downloadFile()">⬇️ Download</button>
+    <button onclick="clearEditorContent()">🧹 Clear Text</button>
+    <button onclick="removeFileFromEditor()">❌ Remove File</button>
+    <button onclick="createZip()">📦 ZIP</button>
+    <button onclick="extractZip()">🧯 Extract ZIP</button>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search files..." oninput="searchFiles()">
+  </div>
+
+  <div class="container">
+    <div id="sidebar"></div>
+    <div id="main">
+      <div class="tabs" id="tabs"></div>
+      <div id="editor"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script>
+    let editor;
+    let directoryHandle;
+    let openTabs = [];
+    let currentTab = null;
+
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' }});
+    require(['vs/editor/editor.main'], function () {
+      editor = monaco.editor.create(document.getElementById('editor'), {
+        value: '',
+        language: 'javascript',
+        theme: 'vs-dark',
+        automaticLayout: true
+      });
+    });
+
+    async function openDirectory() {
+      directoryHandle = await window.showDirectoryPicker();
+      await renderTree(directoryHandle, document.getElementById("sidebar"));
+    }
+
+    async function renderTree(handle, container) {
+      container.innerHTML = "";
+      for await (const entry of handle.values()) {
+        const item = document.createElement("div");
+        item.textContent = entry.name;
+        item.className = "file-item";
+        item.onclick = async (e) => {
+          e.stopPropagation();
+          if (entry.kind === "file") {
+            await openFile(entry);
+          } else {
+            toggleFolder(entry, item);
+          }
+        };
+        container.appendChild(item);
+
+        if (entry.kind === "directory") {
+          const subFolder = document.createElement("div");
+          subFolder.className = "sub-folder";
+          item.appendChild(subFolder);
+          renderTree(entry, subFolder);
+        }
+      }
+    }
+
+    function toggleFolder(entry, element) {
+      const sub = element.querySelector(".sub-folder");
+      if (sub) sub.classList.toggle("visible");
+    }
+
+    async function openFile(handle) {
+      const alreadyOpen = openTabs.find(tab => tab.handle === handle);
+      if (alreadyOpen) return switchTab(alreadyOpen.id);
+
+      const file = await handle.getFile();
+      const content = await file.text();
+      const id = Math.random().toString(36).substr(2);
+      const tab = { id, name: file.name, handle, content };
+      openTabs.push(tab);
+      renderTabs();
+      switchTab(id);
+    }
+
+    function renderTabs() {
+      const tabsDiv = document.getElementById("tabs");
+      tabsDiv.innerHTML = "";
+      openTabs.forEach(tab => {
+        const tabEl = document.createElement("div");
+        tabEl.className = "tab" + (tab.id === currentTab?.id ? " active" : "");
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = tab.name;
+        nameSpan.onclick = () => switchTab(tab.id);
+
+        const closeBtn = document.createElement("span");
+        closeBtn.textContent = "×";
+        closeBtn.className = "close";
+        closeBtn.onclick = (e) => {
+          e.stopPropagation();
+          closeTab(tab.id);
+        };
+
+        tabEl.appendChild(nameSpan);
+        tabEl.appendChild(closeBtn);
+        tabsDiv.appendChild(tabEl);
+      });
+    }
+
+    function switchTab(id) {
+      currentTab = openTabs.find(tab => tab.id === id);
+      if (currentTab) {
+        editor.setValue(currentTab.content);
+        renderTabs();
+      }
+    }
+
+    function closeTab(id) {
+      openTabs = openTabs.filter(tab => tab.id !== id);
+      if (currentTab?.id === id) {
+        currentTab = openTabs.length ? openTabs[0] : null;
+        editor.setValue(currentTab?.content || '');
+      }
+      renderTabs();
+    }
+
+    async function saveFile() {
+      if (!currentTab) return;
+      currentTab.content = editor.getValue();
+      const writable = await currentTab.handle.createWritable();
+      await writable.write(currentTab.content);
+      await writable.close();
+      alert("Saved!");
+    }
+
+    async function deleteFile() {
+      if (!currentTab || !confirm("Delete this file?")) return;
+      await directoryHandle.removeEntry(currentTab.name);
+      closeTab(currentTab.id);
+      await renderTree(directoryHandle, document.getElementById("sidebar"));
+    }
+
+    function clearEditorContent() {
+      if (currentTab) {
+        editor.setValue('');
+        currentTab.content = '';
+      }
+    }
+
+    function downloadFile() {
+      if (!currentTab) return;
+      const blob = new Blob([editor.getValue()], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = currentTab.name;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function removeFileFromEditor() {
+      if (!currentTab) return;
+      closeTab(currentTab.id);
+    }
+
+    function renameFile() {
+      if (!currentTab) return;
+      const newName = prompt("Rename file to:", currentTab.name);
+      if (newName) {
+        currentTab.name = newName;
+        renderTabs();
+      }
+    }
+
+    function searchFiles() {
+      const query = document.getElementById("searchInput").value.toLowerCase();
+      document.querySelectorAll(".file-item").forEach(item => {
+        item.style.display = item.textContent.toLowerCase().includes(query) ? "block" : "none";
+      });
+    }
+
+    async function createNewFile() {
+      if (!directoryHandle) return alert("Open a folder first.");
+      const fileName = prompt("Enter new file name:");
+      if (!fileName) return;
+      const newFile = await directoryHandle.getFileHandle(fileName, { create: true });
+      await openFile(newFile);
+      await renderTree(directoryHandle, document.getElementById("sidebar"));
+    }
+
+    async function createNewFolder() {
+      if (!directoryHandle) return alert("Open a folder first.");
+      const folderName = prompt("Enter new folder name:");
+      if (!folderName) return;
+      await directoryHandle.getDirectoryHandle(folderName, { create: true });
+      await renderTree(directoryHandle, document.getElementById("sidebar"));
+    }
+
+    async function createZip() {
+      const zip = new JSZip();
+      for (const tab of openTabs) {
+        zip.file(tab.name, tab.content);
+      }
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "archive.zip";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function extractZip() {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".zip";
+      input.onchange = async () => {
+        const file = input.files[0];
+        if (!file) return;
+        const zip = await JSZip.loadAsync(file);
+        for (const filename in zip.files) {
+          const content = await zip.files[filename].async("string");
+          const id = Math.random().toString(36).substr(2);
+          openTabs.push({ id, name: filename, content });
+        }
+        renderTabs();
+        switchTab(openTabs[openTabs.length - 1].id);
+      };
+      input.click();
+    }
+  </script>
+</body>
+</html>

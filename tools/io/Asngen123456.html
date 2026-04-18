@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ASN Local Log Generator - Ultimate</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+html,body{margin:0;height:100%;background:#000;font-family:monospace;color:#eaffff;overflow:hidden}
+video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;opacity:.2;z-index:-2}
+.overlay{position:fixed;inset:0;background:linear-gradient(180deg,#001,#000);z-index:-1}
+header{
+  padding:10px 14px;background:rgba(0,0,0,.85);border-bottom:1px solid #00ffee;
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px
+}
+header b{letter-spacing:.08em;margin-right:8px}
+button,input[type=number]{background:#000;color:#00ffee;border:1px solid #00ffee;padding:4px 6px;font-family:monospace}
+button:hover{background:#00ffee;color:#000;cursor:pointer}
+input[type=range]{accent-color:#00ffee}
+.feed{height:calc(60vh);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.card{border:1px solid rgba(0,255,238,.25);border-radius:12px;padding:12px;background:rgba(0,0,0,.55);backdrop-filter:blur(6px)}
+.top{display:flex;justify-content:space-between;font-size:11px}
+.mid{margin-top:4px;font-size:13px}
+.path{margin-top:4px;font-size:12px;color:#9ff}
+.graph{display:flex;gap:4px;margin-top:6px}
+.graph span{width:12px;height:6px;background:#055;border-radius:3px}
+.threat{margin-top:6px;font-size:11px}
+.low{color:#00ff99}
+.midT{color:#ffd24d}
+.high{color:#ff6b6b}
+.details{display:none;margin-top:8px;font-size:11px;white-space:pre-wrap}
+.card.open .details{display:block}
+#heatmap{height:20px;margin:4px 16px;display:flex;gap:1px}
+.heatbar{flex:1;height:100%;background:#004}
+#topology{width:100%;height:200px;margin-top:8px;border:1px solid #00ffee}
+</style>
+</head>
+<body>
+
+<video autoplay muted loop>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <b>ASN LOCAL LOG GENERATOR</b>
+  ASN# (comma-separated)
+  <input type="text" id="asnInput" value="12345" style="width:120px">
+  Speed
+  <input type="range" id="speed" min="100" max="2000" value="700">
+  <button onclick="generate(1)">+1</button>
+  <button onclick="start()">▶</button>
+  <button onclick="stop()">⏸</button>
+  <button onclick="saveSession()">SAVE</button>
+  <button onclick="restoreSession()">RESTORE</button>
+  <button onclick="exportReplay()">EXPORT VIDEO</button>
+  Events: <span id="count">0</span>
+</header>
+
+<input type="range" id="scrubber" min="0" value="0" style="width:100%">
+<div id="heatmap"></div>
+<svg id="topology"></svg>
+<div class="feed" id="feed"></div>
+
+<script>
+const feed = document.getElementById("feed");
+const counter = document.getElementById("count");
+const scrubber = document.getElementById("scrubber");
+const heatmapEl = document.getElementById("heatmap");
+const topologyEl = document.getElementById("topology");
+
+let logs = [], total = 0, timer = null, running = false;
+
+function r(a){return a[Math.floor(Math.random()*a.length)]}
+function prefix(){return `${Math.floor(Math.random()*223)+1}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.0/24`}
+function threatScore(type,path){let s=20+path.length*10;if(type==="W") s+=30;return Math.min(s,100)}
+
+function createLog(){
+  const asnInput = document.getElementById("asnInput").value.split(",").map(x=>x.trim());
+  const asn = r(asnInput);
+  const type = Math.random()>.3?"A":"W";
+  const path=[asn,r([64512,64520,3356,2914,1299])];
+  return {...{time:new Date().toISOString(),asn,type,prefix:prefix(),path,score:threatScore(type,path)}}
+}
+
+function render(log){
+  const card=document.createElement("div");
+  card.className="card";
+  let level = log.score<40?"low":log.score<70?"midT":"high";
+  card.innerHTML=`
+    <div class="top"><span>${log.type==="A"?"ANNOUNCE":"WITHDRAW"}</span><span>${log.time}</span></div>
+    <div class="mid">AS${log.asn} → ${log.prefix}</div>
+    <div class="path">AS-PATH: ${log.path.join(" → ")}</div>
+    <div class="graph">${log.path.map(()=>"<span></span>").join("")}</div>
+    <div class="threat ${level}">Threat score: ${log.score}</div>
+    <div class="details">${JSON.stringify(log,null,2)}</div>
+  `;
+  card.onclick=()=>card.classList.toggle("open");
+  feed.appendChild(card);
+}
+
+function generate(n){
+  for(let i=0;i<n;i++){
+    const log=createLog();
+    logs.push(log);
+    render(log);
+    total++;
+  }
+  counter.textContent=total;
+  scrubber.max=logs.length;
+  feed.scrollTop=feed.scrollHeight;
+  renderHeatmap();
+  renderTopology();
+}
+
+function start(){
+  if(running) return;
+  running=true;
+  timer=setInterval(()=>generate(1),document.getElementById("speed").value);
+}
+
+function stop(){running=false;clearInterval(timer)}
+
+function saveSession(){localStorage.setItem("asnLogs",JSON.stringify(logs))}
+function restoreSession(){
+  const saved=JSON.parse(localStorage.getItem("asnLogs")||"[]");
+  logs=saved;feed.innerHTML="";total=0;saved.forEach(l=>{render(l);total++});
+  counter.textContent=total;scrubber.max=logs.length;
+  renderHeatmap();renderTopology();
+}
+
+scrubber.oninput=()=>{
+  feed.innerHTML="";
+  logs.slice(0,scrubber.value).forEach(render);
+  counter.textContent=scrubber.value;
+  renderHeatmap(scrubber.value);
+  renderTopology(scrubber.value);
+};
+
+// --- Heatmap ---
+function renderHeatmap(max=logs.length){
+  heatmapEl.innerHTML="";
+  const slice=logs.slice(0,max);
+  const segments=20;
+  let bars = Array(segments).fill(0);
+  slice.forEach((l,i)=>{bars[Math.floor(i/slice.length*segments)]++});
+  const maxVal=Math.max(...bars);
+  bars.forEach(v=>{
+    const el=document.createElement("div");
+    el.className="heatbar";
+    const intensity = maxVal?Math.floor(255*v/maxVal):0;
+    el.style.background=`rgb(${intensity},0,${255-intensity})`;
+    heatmapEl.appendChild(el);
+  });
+}
+
+// --- Topology SVG ---
+function renderTopology(max=logs.length){
+  const slice=logs.slice(0,max);
+  const nodes={}, edges=[];
+  slice.forEach(l=>{
+    l.path.forEach(n=>nodes[n]=true);
+    for(let i=0;i<l.path.length-1;i++){edges.push([l.path[i],l.path[i+1]])}
+  });
+  const w=topologyEl.clientWidth,h=topologyEl.clientHeight;
+  topologyEl.innerHTML="";
+  const nodeList=Object.keys(nodes);
+  const pos={};
+  nodeList.forEach((n,i)=>{
+    pos[n]={x:50+i*(w-100)/nodeList.length,y:h/2};
+    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",pos[n].x);c.setAttribute("cy",pos[n].y);
+    c.setAttribute("r",10);c.setAttribute("fill","#0ff");
+    topologyEl.appendChild(c);
+    const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+    t.setAttribute("x",pos[n].x);t.setAttribute("y",pos[n].y+4);
+    t.setAttribute("text-anchor","middle");t.setAttribute("fill","#fff");
+    t.setAttribute("font-size","10");t.textContent=n;
+    topologyEl.appendChild(t);
+  });
+  edges.forEach(e=>{
+    const l=document.createElementNS("http://www.w3.org/2000/svg","line");
+    l.setAttribute("x1",pos[e[0]].x);l.setAttribute("y1",pos[e[0]].y);
+    l.setAttribute("x2",pos[e[1]].x);l.setAttribute("y2",pos[e[1]].y);
+    l.setAttribute("stroke","#0ff");l.setAttribute("stroke-width","2");
+    topologyEl.appendChild(l);
+  });
+}
+
+// --- Export Replay ---
+async function exportReplay(){
+  stop();
+  const stream = feed.captureStream(30);
+  const recorder = new MediaRecorder(stream);
+  const chunks=[];
+  recorder.ondataavailable=e=>chunks.push(e.data);
+  recorder.start();
+  // replay all logs
+  feed.innerHTML="";
+  for(let i=0;i<logs.length;i++){
+    render(logs[i]);
+    await new Promise(r=>setTimeout(r,document.getElementById("speed").value));
+  }
+  recorder.stop();
+  recorder.onstop=()=>{
+    const blob=new Blob(chunks,{type:"video/webm"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download="asn_replay.webm";a.click();
+    URL.revokeObjectURL(url);
+  };
+}
+
+// initial seed
+generate(6);
+</script>
+
+</body>
+</html>

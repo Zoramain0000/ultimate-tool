@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays Remote Recon & Intelligence - Embedded Viewer</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:Arial,sans-serif;color:#d1d1d1;overflow:hidden;position:relative;}
+
+.bg-video{
+  position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-2;filter:brightness(0.3);
+}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:-1;}
+
+/* EMBEDDED TARGET FRAME */
+#targetFrame{
+  position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:1;
+  display:none;box-shadow:inset 0 0 50px rgba(0,0,0,0.8);
+}
+#targetFrame.active{display:block;}
+
+/* DRAGGABLE TARGET DISPLAY BOX */
+#targetDisplay{
+  position:fixed;top:20px;left:20px;background:rgba(0,0,0,0.97);padding:0;border-radius:12px;
+  border:2px solid #00ff7f;max-width:360px;min-width:320px;z-index:15;box-shadow:0 8px 35px rgba(0,255,127,0.4);
+  font-family:monospace;font-size:13px;display:none;cursor:move;
+  user-select:none;-webkit-user-select:none;transition:transform 0.2s ease;
+}
+#targetDisplay.minimized{transform:scale(0.7) translateY(-10px);box-shadow:0 4px 15px rgba(0,255,127,0.3);}
+#targetDisplay.dragging{opacity:0.9;transform:rotate(2deg)!important;box-shadow:0 12px 45px rgba(0,255,127,0.6);}
+
+#targetDisplayHeader{
+  background:linear-gradient(90deg,rgba(0,255,127,0.2),rgba(0,200,100,0.1));padding:12px 15px;border-radius:10px 10px 0 0;
+  border-bottom:1px solid rgba(0,255,127,0.3);display:flex;justify-content:space-between;align-items:center;
+  cursor:move;font-weight:bold;color:#00ff7f;font-size:14px;
+}
+#targetDisplayHeader:hover{background:linear-gradient(90deg,rgba(0,255,127,0.3),rgba(0,200,100,0.2));}
+
+.drag-handle{display:inline-flex;align-items:center;cursor:move;font-size:16px;}
+.drag-handle:hover .handle-icon{transform:scale(1.1);}
+
+.handle-icon{margin-right:6px;transition:transform 0.2s;}
+.minimize-btn{background:none;border:none;color:#00ff7f;font-size:18px;cursor:pointer;padding:4px;
+  border-radius:4px;transition:0.2s;}
+.minimize-btn:hover{background:rgba(0,255,127,0.2);transform:scale(1.1);}
+
+#targetDisplayContent{padding:15px;display:block;}
+#targetDisplayContent.minimized{display:none;}
+
+#targetFrameURL{background:rgba(10,10,10,0.9);padding:10px;border-radius:6px;border:1px solid #444;
+  word-break:break-all;font-family:monospace;font-size:12px;color:#8aff8a;margin:8px 0;cursor:pointer;
+  transition:0.2s;}
+#targetFrameURL:hover{background:rgba(10,100,50,0.9);transform:scale(1.02);}
+
+#targetPreview{width:100%;height:120px;background:rgba(15,15,15,0.8);border-radius:8px;
+  border:1px solid #555;overflow:hidden;margin-top:8px;transition:height 0.3s;}
+#targetPreview iframe{width:100%;height:100%;border:none;border-radius:6px;}
+
+/* MAIN UI OVERLAY */
+header{
+  background:rgba(0,0,0,0.9);padding:15px;text-align:center;border-bottom:1px solid #1f1f1f;
+  position:fixed;top:0;width:100%;z-index:10;
+}
+header h1{font-size:22px;letter-spacing:2px;}
+
+.container{
+  max-width:420px;margin:80px 20px 20px 20px;padding:20px;background:rgba(0,0,0,0.85);
+  border-radius:10px;box-shadow:0 0 25px rgba(0,0,0,0.9);z-index:10;position:fixed;right:20px;top:80px;
+  max-height:70vh;overflow-y:auto;
+}
+
+.section{margin-bottom:20px;}
+.section h2{
+  font-size:16px;margin-bottom:8px;color:#9f9f9f;border-left:4px solid #555;padding-left:8px;
+}
+
+.data-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
+.card{
+  background:rgba(15,15,15,0.95);padding:10px;border-radius:6px;border:1px solid #222;font-size:12px;
+}
+.card span{display:block;color:#777;font-size:10px;margin-bottom:2px;}
+.card.success {border-left:4px solid #00ff7f;}
+.card.warning {border-left:4px solid #ffaa00;}
+.card.danger {border-left:4px solid #ff4444;}
+.card.target-info {background:rgba(0,255,127,0.1);border-left:4px solid #00ff7f;}
+
+button{
+  padding:10px 16px;background:black;border:1px solid #333;color:white;cursor:pointer;border-radius:6px;
+  transition:.3s;font-size:12px;margin:3px;flex:1;
+}
+button:hover{background:#111;transform:scale(1.03);}
+button.success{background:#00ff7f;color:black;border-color:#00cc66;}
+button.danger{background:#ff4444;color:white;border-color:#cc3333;}
+button:disabled{opacity:0.5;cursor:not-allowed;}
+button.full{width:100%;margin:5px 0;}
+
+input{
+  width:100%;padding:10px;border-radius:6px;border:1px solid #555;background:rgba(0,0,0,0.8);
+  color:#fff;font-size:14px;margin-bottom:10px;box-sizing:border-box;
+}
+
+.scan-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;}
+.scan-controls input{width:70px;font-size:12px;}
+.scan-controls select{width:70px;font-size:12px;}
+
+.log{
+  background:black;padding:10px;border-radius:6px;font-family:monospace;font-size:11px;
+  color:#8aff8a;max-height:200px;overflow:auto;border:1px solid #222;
+}
+
+.port-results{
+  max-height:150px;overflow:auto;border:1px solid #333;background:rgba(5,5,5,0.9);
+  padding:8px;border-radius:6px;font-size:11px;
+}
+
+.controls-row{display:flex;gap:5px;flex-wrap:wrap;}
+.controls-row button{flex:1;min-width:80px;}
+
+.toggle-overlay{position:fixed;bottom:20px;left:20px;background:rgba(0,255,127,0.9);color:#000;
+  border:none;border-radius:50%;width:50px;height:50px;font-size:18px;cursor:pointer;z-index:15;
+  box-shadow:0 4px 15px rgba(0,255,127,0.3);transition:.3s;}
+.toggle-overlay:hover{transform:scale(1.1);box-shadow:0 6px 20px rgba(0,255,127,0.5);}
+
+.loading{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#00ff7f;
+  font-size:16px;z-index:20;display:none;background:rgba(0,0,0,0.9);padding:20px;border-radius:10px;}
+.loading.active{display:block;}
+
+@media (max-width:768px){
+  .container{max-width:100%;margin:80px 10px 10px 10px;right:10px;left:10px;top:80px;}
+  header h1{font-size:18px;}
+  #targetDisplay{min-width:280px;max-width:95vw;left:2.5%;right:2.5%;}
+}
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+  
+</video>
+<div class="overlay"></div>
+
+<!-- 🔥 DRAGGABLE & MINIMIZABLE TARGET DISPLAY BOX -->
+<div class="target-display-box" id="targetDisplay">
+  <div id="targetDisplayHeader">
+    <div class="drag-handle">
+      <span class="handle-icon">⋮⋮</span>
+      <span>🎯 EMBEDDED TARGET INFO</span>
+    </div>
+    <button class="minimize-btn" onclick="toggleMinimize()" id="minimizeBtn" title="Minimize/Maximize">−</button>
+  </div>
+  
+  <div id="targetDisplayContent">
+    <div>Status: <span id="targetStatusText">Ready</span></div>
+    <div>Live URL: <code id="targetFrameURL" onclick="copyURL()">about:blank</code></div>
+    <div>Protocol: <span id="targetProtocol">-</span></div>
+    <div>Dimensions: <span id="frameDimensions">0x0</span></div>
+    <button class="success" onclick="reloadTarget()" style="margin-top:8px;width:100%;">🔄 RELOAD TARGET</button>
+    <div style="font-size:11px;color:#777;margin-top:12px;">Target Preview:</div>
+    <div id="targetPreview">
+      <div style="height:120px;background:rgba(20,20,20,0.9);display:flex;align-items:center;justify-content:center;
+                  color:#666;border-radius:8px;border:1px solid #444;font-size:12px;">
+        Target Loaded Here
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EMBEDDED TARGET -->
+<iframe id="targetFrame" src="about:blank" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+
+<!-- CONTROL OVERLAY -->
+<header>
+  <h1>🔥 ZERO DAYS EMBEDDED RECON v2.2</h1>
+</header>
+
+<div class="container" id="reconContainer">
+  <div class="section">
+    <h2>🎯 Remote Target</h2>
+    <input type="text" id="targetInput" placeholder="192.168.1.1:8080, example.com, https://target.com" />
+    <button class="full success" onclick="loadTarget()">📡 LOAD & EMBED TARGET</button>
+  </div>
+
+  <div class="section">
+    <h2>⚡ Quick Recon</h2>
+    <div class="controls-row">
+      <button onclick="reconTarget()">Full Recon</button>
+      <button onclick="portScanCommon()">Common Ports</button>
+      <button onclick="dnsLookup()">DNS</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Network Intel</h2>
+    <div class="data-grid">
+      <div class="card target-info"><span>🎯 Current Target</span><div id="target">-</div></div>
+      <div class="card"><span>🔗 Resolved IP</span><div id="ip">-</div></div>
+      <div class="card"><span>🏢 ASN/ISP</span><div id="asn">-</div></div>
+      <div class="card"><span>📍 Location</span><div id="location">-</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>🔌 Open Ports</h2>
+    <div class="port-results" id="portResults">
+      <div style="color:#888;">Load target to scan...</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>📋 Live Log</h2>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<!-- UI ELEMENTS -->
+<div class="loading" id="loading">🔍 Scanning target...</div>
+<button class="toggle-overlay" onclick="toggleOverlay()" id="toggleBtn">👁️</button>
+
+<script>
+const log = msg => {
+  const l = document.getElementById("log");
+  l.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+  l.scrollTop = l.scrollHeight;
+};
+
+const loading = (show) => document.getElementById('loading').classList.toggle('active', show);
+const showTargetDisplay = (show) => document.getElementById('targetDisplay').classList.toggle('active', show);
+
+let currentTarget = '';
+let frameVisible = false;
+let currentFrameURL = '';
+let isDragging = false;
+let dragOffset = {x: 0, y: 0};
+let isMinimized = false;
+
+// 🔥 DRAG & DROP FUNCTIONALITY
+function makeDraggable(element) {
+  const header = document.getElementById('targetDisplayHeader');
+  
+  const dragStart = (e) => {
+    isDragging = true;
+    element.classList.add('dragging');
+    
+    const rect = element.getBoundingClientRect();
+    dragOffset.x = e.clientX - rect.left;
+    dragOffset.y = e.clientY - rect.top;
+    
+    document.addEventListener('mousemove', dragMove);
+    document.addEventListener('mouseup', dragEnd);
+  };
+  
+  const dragMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    
+    const x = Math.max(10, Math.min(window.innerWidth - element.offsetWidth - 10, e.clientX - dragOffset.x));
+    const y = Math.max(10, Math.min(window.innerHeight - element.offsetHeight - 10, e.clientY - dragOffset.y));
+    
+    element.style.left = x + 'px';
+    element.style.top = y + 'px';
+    element.style.right = 'auto';
+    element.style.bottom = 'auto';
+  };
+  
+  const dragEnd = () => {
+    isDragging = false;
+    element.classList.remove('dragging');
+    document.removeEventListener('mousemove', dragMove);
+    document.removeEventListener('mouseup', dragEnd);
+  };
+  
+  // Touch support for mobile
+  header.addEventListener('touchstart', (e) => {
+    dragStart(e.touches[0]);
+  }, {passive: false});
+  
+  header.addEventListener('mousedown', dragStart);
+}
+
+// 🔥 MINIMIZE/MAXIMIZE
+function toggleMinimize() {
+  isMinimized = !isMinimized;
+  const display = document.getElementById('targetDisplay');
+  const content = document.getElementById('targetDisplayContent');
+  const btn = document.getElementById('minimizeBtn');
+  
+  display.classList.toggle('minimized', isMinimized);
+  content.classList.toggle('minimized', isMinimized);
+  btn.textContent = isMinimized ? '+' : '−';
+  btn.title = isMinimized ? 'Expand' : 'Minimize';
+  
+  log(isMinimized ? '📦 Target display minimized' : '📦 Target display expanded');
+}
+
+// 🔥 URL COPY
+function copyURL() {
+  navigator.clipboard.writeText(currentFrameURL).then(() => {
+    const urlEl = document.getElementById('targetFrameURL');
+    const original = urlEl.textContent;
+    urlEl.textContent = '✅ COPIED!';
+    urlEl.style.color = '#00ff7f';
+    setTimeout(() => {
+      urlEl.textContent = original;
+      urlEl.style.color = '#8aff8a';
+    }, 1500);
+    log('📋 Target URL copied to clipboard');
+  });
+}
+
+function toggleOverlay() {
+  const container = document.getElementById('reconContainer');
+  frameVisible = !frameVisible;
+  container.style.opacity = frameVisible ? '0.3' : '1';
+  container.style.pointerEvents = frameVisible ? 'none' : 'auto';
+  document.getElementById('toggleBtn').textContent = frameVisible ? '📡' : '👁️';
+}
+
+function formatTarget(target) {
+  if (!target) return 'about:blank';
+  if (target.match(/^https?:\/\//)) return target;
+  if (target.includes(':')) return `http://${target}`;
+  return `https://${target}`;
+}
+
+function updateTargetBox(url, status = 'Active') {
+  currentFrameURL = url;
+  document.getElementById('targetFrameURL').textContent = url;
+  document.getElementById('targetStatusText').textContent = status;
+  document.getElementById('targetProtocol').textContent = url.startsWith('https') ? 'HTTPS 🔒' : 'HTTP 🔓';
+  
+  // Update preview iframe
+  const previewFrame = document.createElement('iframe');
+  previewFrame.src = url;
+  previewFrame.sandbox = 'allow-scripts allow-same-origin';
+  previewFrame.style.borderRadius = '6px';
+  document.getElementById('targetPreview').innerHTML = '';
+  document.getElementById('targetPreview').appendChild(previewFrame);
+  
+  // Update dimensions every 2s
+  setTimeout(() => {
+    const updateDims = setInterval(() => {
+      const frame = document.getElementById('targetFrame');
+      if (frame.contentWindow && frame.classList.contains('active')) {
+        const dims = frame.getBoundingClientRect();
+        document.getElementById('frameDimensions').textContent = 
+          `${Math.round(dims.width)}×${Math.round(dims.height)} px`;
+      } else {
+        clearInterval(updateDims);
+      }
+    }, 2000);
+  }, 1000);
+}
+
+function reloadTarget() {
+  if (currentFrameURL !== 'about:blank') {
+    log('🔄 Reloading embedded target...');
+    document.getElementById('targetFrame').src = currentFrameURL;
+  }
+}
+
+async function loadTarget() {
+  currentTarget = document.getElementById("targetInput").value.trim();
+  if (!currentTarget) return log("⚠️ Enter target first");
+
+  const formatted = formatTarget(currentTarget);
+  log(`🎯 Embedding target: ${formatted}`);
+  loading(true);
+  showTargetDisplay(true);
+  
+  const frame = document.getElementById('targetFrame');
+  frame.src = formatted;
+  document.getElementById('target').textContent = currentTarget;
+  
+  frame.onload = () => {
+    frame.classList.add('active');
+    loading(false);
+    log("✅ Target embedded successfully");
+    updateTargetBox(formatted, '✅ Embedded & Active');
+    setTimeout(() => reconTarget(), 800);
+  };
+  
+  frame.onerror = () => {
+    loading(false);
+    log("❌ Target failed to load");
+    updateTargetBox(formatted, '❌ Load Failed');
+  };
+}
+
+async function resolveTarget(host) {
+  try {
+    const res = await fetch(`https://dns.google/resolve?name=${host}&type=A`);
+    const data = await res.json();
+    return data.Answer?.[0]?.data || host;
+  } catch { return host; }
+}
+
+async function reconTarget() {
+  if (!currentTarget) return;
+  log(`🔍 Recon on: ${currentTarget}`);
+  loading(true);
+  
+  try {
+    const host = currentTarget.split('/')[2]?.split(':')[0] || currentTarget.split(':')[0];
+    const ip = await resolveTarget(host);
+    
+    const ipData = await fetch(`https://ipapi.co/${ip}/json/`).then(r => r.json()).catch(() => ({}));
+    
+    document.getElementById("ip").textContent = ip;
+    document.getElementById("asn").textContent = ipData.asn ? `AS${ipData.asn} (${ipData.org || '-'})` : '-';
+    document.getElementById("location").textContent = `${ipData.city || ''}, ${ipData.country_name || ''}`.trim() || 'Unknown';
+    
+    log(`✅ ${ip} | ${ipData.org || 'N/A'} | ${ipData.city || '?'} ${ipData.country_name || '?'}`);
+    portScanCommon();
+  } catch(e) {
+    log(`❌ Recon failed: ${e.message}`);
+  } finally {
+    loading(false);
+  }
+}
+
+async function portScanCommon() {
+  if (!currentTarget) return;
+  log("🔌 Scanning 17 common ports...");
+  const commonPorts = [21,22,23,25,53,80,110,443,993,995,8080,8443,3000,5000,8081,9090,9443];
+  const results = document.getElementById("portResults");
+  results.innerHTML = '<div style="color:#00ff7f;">🔍 Scanning ports...</div>';
+  
+  const openPorts = [];
+  for (let port of commonPorts) {
+    try {
+      const host = currentTarget.split('/')[2]?.split(':')[0] || currentTarget;
+      const res = await fetch(`https://dns.google/resolve?name=${host}:${port}`, {mode: 'no-cors'});
+      if (res.type === 'opaque' || res.status >= 200) {
+        openPorts.push(port);
+        const div = document.createElement('div');
+        div.className = 'card success';
+        div.innerHTML = `<span>🔓 TCP/${port}</span><div>OPEN</div>`;
+        results.appendChild(div);
+      }
+    } catch {}
+    await new Promise(r => setTimeout(r, 60));
+  }
+  
+  if (openPorts.length) {
+    log(`✅ ${openPorts.length} ports open: ${openPorts.join(', ')}`);
+  } else {
+    results.innerHTML = '<div style="color:#ffaa00;">🔒 No common ports (firewall?)</div>';
+  }
+}
+
+async function dnsLookup() {
+  if (!currentTarget) return log("⚠️ Load target first");
+  log(`🔎 DNS: ${currentTarget}`);
+  try {
+    const res = await fetch(`https://dns.google/resolve?name=${currentTarget}&type=ANY`);
+    const data = await res.json();
+    log(`📡 Records: ${JSON.stringify(data.Answer || 'None', null, 1).slice(0, 250)}`);
+  } catch(e) {
+    log('❌ DNS failed');
+  }
+}
+
+// 🔥 INIT
+window.onload = () => {
+  // Make target display draggable
+  makeDraggable(document.getElementById('targetDisplay'));
+  
+  const params = new URLSearchParams(window.location.search);
+  const target = params.get('target') || params.get('url') || params.get('host') || params.get('ip');
+  if (target) {
+    document.getElementById('targetInput').value = target;
+    log(`🎯 Auto-loading: ${target}`);
+    setTimeout(loadTarget, 1500);
+  }
+  log("🚀 ZeroDays Recon v2.2 - DRAGGABLE TARGET BOX");
+  log("🖱️ Drag header • − Minimize • Click URL to copy");
+  showTargetDisplay(true);
+};
+
+// 🔥 ENHANCED HOTKEYS
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'Enter') loadTarget();
+  if (e.ctrlKey && e.key === 'r') reconTarget();
+  if (e.ctrlKey && e.key === 'l') reloadTarget();
+  if (e.altKey && e.key === 't') toggleOverlay();
+  if (e.altKey && e.key === 'm') toggleMinimize();
+});
+</script>
+
+</body>
+</html>

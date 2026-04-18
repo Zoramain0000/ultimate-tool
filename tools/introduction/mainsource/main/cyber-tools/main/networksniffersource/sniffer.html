@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Sniffer Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .mode-switcher {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            padding: 10px 20px;
+            border: none;
+            background: #e0e0e0;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .mode-btn.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .mode-btn:first-child {
+            border-radius: 5px 0 0 5px;
+        }
+
+        .mode-btn:last-child {
+            border-radius: 0 5px 5px 0;
+        }
+
+        .config-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid #3498db;
+            color: #3498db;
+        }
+
+        .btn-outline:hover {
+            background-color: #f8f9fa;
+        }
+
+        .btn-ghost {
+            background-color: transparent;
+            color: #7f8c8d;
+        }
+
+        .btn-ghost:hover {
+            background-color: #f8f9fa;
+        }
+
+        .ml-auto {
+            margin-left: auto;
+        }
+
+        .packet-log {
+            border: 1px solid #ddd;
+            padding: 15px;
+            height: 500px;
+            overflow-y: auto;
+            background: #1a1a1a;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            border-radius: 4px;
+        }
+
+        .packet-entry {
+            margin-bottom: 5px;
+            white-space: pre-wrap;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .simple-mode .advanced-only {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .config-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .button-group button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            Network Sniffer Tool
+        </h1>
+
+        <div class="mode-switcher">
+            <button class="mode-btn active" id="simpleModeBtn">Simple Mode</button>
+            <button class="mode-btn" id="advancedModeBtn">Advanced Mode</button>
+        </div>
+
+        <div class="config-section">
+            <div class="input-group">
+                <label for="interface">Interface</label>
+                <input type="text" id="interface" placeholder="eth0" value="eth0">
+            </div>
+            
+            <div class="input-group">
+                <label for="packetCount">Packet Count</label>
+                <input type="number" id="packetCount" placeholder="100" value="100">
+            </div>
+            
+            <div class="input-group advanced-only">
+                <label for="timeout">Timeout (seconds)</label>
+                <input type="number" id="timeout" placeholder="30" value="30">
+            </div>
+            
+            <div class="input-group advanced-only">
+                <label for="protocol">Protocol</label>
+                <select id="protocol">
+                    <option value="tcp">TCP</option>
+                    <option value="udp">UDP</option>
+                    <option value="icmp">ICMP</option>
+                    <option value="http">HTTP</option>
+                    <option value="https">HTTPS</option>
+                    <option value="all">All</option>
+                </select>
+            </div>
+            
+            <div class="input-group advanced-only">
+                <label for="option">Option</label>
+                <select id="option">
+                    <option value="verbose">Verbose</option>
+                    <option value="quiet">Quiet</option>
+                    <option value="hex">Hex Dump</option>
+                    <option value="summary">Summary</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button id="startButton" class="btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Start Sniffing
+            </button>
+            
+            <button id="stopButton" class="btn-danger hidden">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="6" y="6" width="12" height="12" rx="1"></rect>
+                </svg>
+                Stop Sniffing
+            </button>
+            
+            <button id="filterButton" class="btn-outline advanced-only">
+                Filter Packets
+            </button>
+            
+            <button id="openButton" class="btn-outline advanced-only">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Open Captured Packets
+            </button>
+            
+            <button id="exitButton" class="btn-ghost ml-auto">
+                Exit
+            </button>
+        </div>
+
+        <div id="packetLog" class="packet-log">
+            No packets captured yet. Click "Start Sniffing" to begin.
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const startButton = document.getElementById("startButton");
+            const stopButton = document.getElementById("stopButton");
+            const filterButton = document.getElementById("filterButton");
+            const openButton = document.getElementById("openButton");
+            const exitButton = document.getElementById("exitButton");
+            const packetLog = document.getElementById("packetLog");
+            const simpleModeBtn = document.getElementById("simpleModeBtn");
+            const advancedModeBtn = document.getElementById("advancedModeBtn");
+            
+            let isSniffing = false;
+            let sniffingInterval;
+            let packets = [];
+            
+            // Mode switching
+            simpleModeBtn.addEventListener("click", () => {
+                document.body.classList.add("simple-mode");
+                simpleModeBtn.classList.add("active");
+                advancedModeBtn.classList.remove("active");
+            });
+            
+            advancedModeBtn.addEventListener("click", () => {
+                document.body.classList.remove("simple-mode");
+                advancedModeBtn.classList.add("active");
+                simpleModeBtn.classList.remove("active");
+            });
+            
+            // Start sniffing function
+            const startSniffing = () => {
+                if (isSniffing) return;
+                
+                isSniffing = true;
+                packets = [];
+                packetLog.innerHTML = "";
+                
+                const interfaceName = document.getElementById("interface").value;
+                const packetCount = parseInt(document.getElementById("packetCount").value) || 100;
+                const timeout = parseInt(document.getElementById("timeout").value) || 30;
+                const protocol = document.getElementById("protocol").value;
+                const option = document.getElementById("option").value;
+                
+                // Display initial information
+                addToLog(`Starting packet capture on interface: ${interfaceName}`);
+                addToLog(`Packet count: ${packetCount === 0 ? 'Infinite' : packetCount}`);
+                
+                if (!document.body.classList.contains("simple-mode")) {
+                    addToLog(`Timeout: ${timeout} seconds`);
+                    addToLog(`Protocol: ${protocol === 'all' ? 'All protocols' : protocol.toUpperCase()}`);
+                    addToLog(`Option: ${option}`);
+                }
+                
+                addToLog("----------------------------------------");
+                
+                // Show stop button and hide start button
+                startButton.classList.add("hidden");
+                stopButton.classList.remove("hidden");
+                
+                // Simulate packet capture
+                let packetsCaptured = 0;
+                
+                sniffingInterval = setInterval(() => {
+                    if (packetCount > 0 && packetsCaptured >= packetCount) {
+                        stopSniffing();
+                        return;
+                    }
+                    
+                    // Generate random packet data
+                    const timestamp = new Date().toLocaleTimeString();
+                    const protocols = ['TCP', 'UDP', 'ICMP', 'HTTP', 'HTTPS'];
+                    const selectedProtocol = document.body.classList.contains("simple-mode") ? 
+                        'TCP' : 
+                        (protocol === 'all' ? protocols[Math.floor(Math.random() * protocols.length)] : protocol.toUpperCase());
+                    
+                    const sourceIP = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+                    const destIP = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+                    
+                    const domains = ['google.com', 'facebook.com', 'twitter.com', 'github.com', 'amazon.com'];
+                    const domain = domains[Math.floor(Math.random() * domains.length)];
+                    
+                    let packetInfo;
+                    
+                    if (document.body.classList.contains("simple-mode")) {
+                        packetInfo = `${timestamp} ${selectedProtocol} ${sourceIP} → ${destIP}`;
+                    } else {
+                        switch(option) {
+                            case 'verbose':
+                                packetInfo = `${timestamp} [VERBOSE] ${selectedProtocol} packet from ${sourceIP} to ${destIP} (${domain}) - ${Math.floor(Math.random() * 1500)} bytes`;
+                                break;
+                            case 'quiet':
+                                packetInfo = `${timestamp} ${selectedProtocol} ${sourceIP} → ${destIP}`;
+                                break;
+                            case 'hex':
+                                packetInfo = `${timestamp} [HEX] ${selectedProtocol}\n${generateHexDump()}`;
+                                break;
+                            case 'summary':
+                                packetInfo = `${timestamp} [SUMMARY] ${selectedProtocol} packet #${packetsCaptured + 1} between ${sourceIP} and ${destIP} (${domain})`;
+                                break;
+                            default:
+                                packetInfo = `${timestamp} ${selectedProtocol} packet captured`;
+                        }
+                    }
+                    
+                    addToLog(packetInfo);
+                    packets.push(packetInfo);
+                    packetsCaptured++;
+                    
+                }, 500); // Simulate a packet every 500ms
+                
+                // Auto-stop after timeout if set
+                if (!document.body.classList.contains("simple-mode") && timeout > 0) {
+                    setTimeout(() => {
+                        if (isSniffing) {
+                            stopSniffing();
+                            addToLog(`Capture stopped after timeout of ${timeout} seconds`);
+                        }
+                    }, timeout * 1000);
+                }
+            };
+            
+            // Stop sniffing function
+            const stopSniffing = () => {
+                if (!isSniffing) return;
+                
+                clearInterval(sniffingInterval);
+                isSniffing = false;
+                
+                // Show start button and hide stop button
+                startButton.classList.remove("hidden");
+                stopButton.classList.add("hidden");
+                
+                addToLog("----------------------------------------");
+                addToLog("Packet capture stopped");
+                addToLog(`Total packets captured: ${packets.length}`);
+            };
+            
+            // Helper function to add to log
+            const addToLog = (message) => {
+                const entry = document.createElement("div");
+                entry.className = "packet-entry";
+                entry.textContent = message;
+                packetLog.appendChild(entry);
+                packetLog.scrollTop = packetLog.scrollHeight;
+            };
+            
+            // Helper function to generate random hex dump
+            const generateHexDump = () => {
+                let hexDump = "";
+                for (let i = 0; i < 4; i++) {
+                    let line = "";
+                    let ascii = "";
+                    for (let j = 0; j < 16; j++) {
+                        const byte = Math.floor(Math.random() * 256);
+                        line += byte.toString(16).padStart(2, '0') + " ";
+                        ascii += byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : ".";
+                    }
+                    hexDump += line.padEnd(50) + "|" + ascii + "|\n";
+                }
+                return hexDump;
+            };
+            
+            // Event listeners
+            startButton.addEventListener("click", startSniffing);
+            stopButton.addEventListener("click", stopSniffing);
+            
+            filterButton.addEventListener("click", () => {
+                alert("Packet filtering requires running this tool with another terminal for full functionality.");
+            });
+            
+            openButton.addEventListener("click", () => {
+                alert("This feature works with saved packet capture files (.pcap format).");
+            });
+            
+            exitButton.addEventListener("click", () => {
+                if (isSniffing) {
+                    if (confirm("Are you sure you want to exit while packet capture is running?")) {
+                        stopSniffing();
+                        alert("Application exited (simulated in this demo)");
+                    }
+                } else {
+                    alert("Application exited (simulated in this demo)");
+                }
+            });
+        });
+    </script>
+</body>
+</html>

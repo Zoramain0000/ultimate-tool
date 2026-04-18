@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>File Timestamp Manipulation Tool</title>
+
+<style>
+/* RESET */
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+/* VIDEO BACKGROUND */
+video.bg-video{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:-2;
+}
+
+/* DARK OVERLAY */
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.1);
+  backdrop-filter: blur(3px);
+  z-index:-1;
+}
+
+/* BODY */
+body{
+  font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+  color:#eaf6ff;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+/* HEADER */
+header{
+  width:100%;
+  padding:1.2rem;
+  text-align:center;
+  font-size:1.9rem;
+  font-weight:800;
+  letter-spacing:1px;
+  background:rgba(0,0,0,0.1);
+  border-bottom:1px solid rgba(0,200,255,0.4);
+  color:#7ddcff;
+  text-shadow:0 0 15px rgba(0,200,255,.7);
+}
+
+/* MAIN CARD */
+main{
+  flex:1;
+  width:92%;
+  max-width:640px;
+  margin:2rem auto;
+  background:rgba(0,0,0,0.1);
+  border-radius:14px;
+  padding:1.8rem;
+  box-shadow:
+    0 0 30px rgba(0,0,0,0.1),
+    inset 0 0 30px rgba(0,200,255,.1);
+  border:1px solid rgba(0,200,255,.25);
+}
+
+/* LABELS */
+label{
+  margin-top:1.1rem;
+  display:block;
+  font-weight:600;
+  color:#9adfff;
+}
+
+/* FILE INPUT */
+input[type="file"]{
+  margin-top:.5rem;
+  width:100%;
+  color:#9adfff;
+}
+
+/* FILE INFO */
+.file-info{
+  margin-top:1rem;
+  background:rgba(0,0,0,0.1);
+  padding:1rem;
+  border-radius:10px;
+  font-family:monospace;
+  font-size:.9rem;
+  border:1px solid rgba(0,200,255,.2);
+}
+
+/* DATETIME INPUTS */
+.datetime-inputs{
+  display:flex;
+  gap:.5rem;
+  flex-wrap:wrap;
+  margin-top:.6rem;
+}
+
+.datetime-inputs input{
+  flex:1 1 90px;
+  padding:.45rem;
+  border-radius:8px;
+  border:1px solid rgba(0,200,255,.35);
+  background:rgba(0,0,0,0.1);
+  color:#eaf6ff;
+  text-align:center;
+}
+
+/* BUTTON */
+button{
+  margin-top:1.7rem;
+  width:100%;
+  padding:.9rem;
+  font-size:1.15rem;
+  font-weight:800;
+  letter-spacing:.5px;
+  background:linear-gradient(135deg,#00c6ff,#0072ff);
+  border:none;
+  border-radius:10px;
+  color:white;
+  cursor:pointer;
+  box-shadow:0 0 20px rgba(0,150,255,.7);
+  transition:.25s ease;
+}
+
+button:hover:not(:disabled){
+  transform:translateY(-2px);
+  box-shadow:0 0 30px rgba(0,180,255,1);
+}
+
+button:disabled{
+  background:#444;
+  box-shadow:none;
+  cursor:not-allowed;
+}
+
+/* MESSAGE */
+.message{
+  margin-top:1rem;
+  font-weight:700;
+  text-align:center;
+}
+
+.error{ color:#ff6b6b; }
+.success{ color:#7CFF9B; }
+
+/* FOOTER */
+footer{
+  padding:1rem;
+  font-size:.8rem;
+  color:#7aa7c7;
+  opacity:.7;
+}
+</style>
+</head>
+
+<body>
+
+<!-- VIDEO BACKGROUND -->
+<video class="bg-video" autoplay muted loop>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>File Timestamp Manipulation Tool</header>
+
+<main>
+  <label>Select a file to modify its timestamp</label>
+  <input type="file" id="fileInput">
+
+  <div class="file-info" id="fileInfo" style="display:none">
+    <div><strong>Name:</strong> <span id="fileName"></span></div>
+    <div><strong>Size:</strong> <span id="fileSize"></span> bytes</div>
+    <div><strong>Last Modified:</strong> <span id="fileLastModified"></span></div>
+  </div>
+
+  <label>New Date & Time</label>
+  <div class="datetime-inputs" id="datetimeInputs" style="display:none">
+    <input type="number" id="yearInput" placeholder="Year">
+    <input type="number" id="monthInput" placeholder="Month">
+    <input type="number" id="dayInput" placeholder="Day">
+    <input type="number" id="hourInput" placeholder="Hour">
+    <input type="number" id="minuteInput" placeholder="Minute">
+    <input type="number" id="secondInput" placeholder="Second">
+  </div>
+
+  <button id="applyBtn" disabled>Apply Timestamp & Download</button>
+  <div class="message" id="message"></div>
+</main>
+
+<footer>© 2025 • Client-Side Timestamp Tool • No Backend</footer>
+
+<script>
+const fileInput=document.getElementById('fileInput');
+const fileInfo=document.getElementById('fileInfo');
+const fileNameSpan=document.getElementById('fileName');
+const fileSizeSpan=document.getElementById('fileSize');
+const fileLastModifiedSpan=document.getElementById('fileLastModified');
+const datetimeInputs=document.getElementById('datetimeInputs');
+const applyBtn=document.getElementById('applyBtn');
+const message=document.getElementById('message');
+let selectedFile=null;
+
+fileInput.addEventListener('change',()=>{
+  if(!fileInput.files.length)return;
+  selectedFile=fileInput.files[0];
+  fileNameSpan.textContent=selectedFile.name;
+  fileSizeSpan.textContent=selectedFile.size.toLocaleString();
+  fileLastModifiedSpan.textContent=new Date(selectedFile.lastModified).toLocaleString();
+  fileInfo.style.display='block';
+  datetimeInputs.style.display='flex';
+
+  const d=new Date(selectedFile.lastModified);
+  yearInput.value=d.getFullYear();
+  monthInput.value=d.getMonth()+1;
+  dayInput.value=d.getDate();
+  hourInput.value=d.getHours();
+  minuteInput.value=d.getMinutes();
+  secondInput.value=d.getSeconds();
+
+  applyBtn.disabled=false;
+});
+
+applyBtn.addEventListener('click',()=>{
+  const y=+yearInput.value,m=+monthInput.value-1,d=+dayInput.value;
+  const h=+hourInput.value,mi=+minuteInput.value,s=+secondInput.value;
+  const newTime=new Date(y,m,d,h,mi,s).getTime();
+  const newFile=new File([selectedFile],selectedFile.name,{type:selectedFile.type,lastModified:newTime});
+  const url=URL.createObjectURL(newFile);
+  const a=document.createElement('a');
+  a.href=url;a.download=newFile.name;
+  a.click();URL.revokeObjectURL(url);
+  message.textContent="✔ File downloaded with updated timestamp";
+  message.className="message success";
+});
+</script>
+
+</body>
+</html>

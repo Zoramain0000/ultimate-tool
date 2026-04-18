@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Advanced Traceroute Tool</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      background-color: #1e1e2f;
+      color: #f1f1f1;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background:rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      text-align: center;
+      font-size: 1.8em;
+      color: red;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    main {
+      padding: 30px;
+      max-width: 1000px;
+      margin: auto;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+    }
+    #traceroute-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+    input[type="text"] {
+      padding: 12px;
+      width: 300px;
+      border-radius: 6px;
+      border: none;
+      font-size: 1em;
+    }
+    button {
+      background-color: red;
+      border: none;
+      padding: 12px 18px;
+      font-size: 1em;
+      color: green;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #4dbfe3;
+    }
+    #results {
+      background-color: rgba(42, 46, 58, 0.8);
+      border-radius: 6px;
+      padding: 20px;
+      font-family: 'Courier New', monospace;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      margin-bottom: 40px;
+    }
+    .result-line {
+      margin-bottom: 8px;
+      white-space: pre-wrap;
+    }
+    .error {
+      color: #ff4b4b;
+      font-weight: bold;
+    }
+    .typing::after {
+      content: '|';
+      animation: blink 1s step-start infinite;
+    }
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+    #map {
+      padding: 20px;
+      background-color: rgba(21, 21, 33, 0.7);
+      border-radius: 6px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .map-hop {
+      position: relative;
+      padding-left: 40px;
+      margin-bottom: 30px;
+    }
+    .map-hop::before {
+      content: '';
+      position: absolute;
+      left: 16px;
+      top: 0;
+      bottom: -20px;
+      width: 4px;
+      background: red;
+    }
+    .map-hop::after {
+      content: '';
+      position: absolute;
+      left: 9px;
+      top: 5px;
+      width: 14px;
+      height: 14px;
+      background: red;
+      border-radius: 50%;
+      border: 2px solid #1e1e2f;
+    }
+    .map-info {
+      line-height: 1.5;
+    }
+    @media (max-width: 600px) {
+      input[type="text"], button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>Advanced Traceroute Tool</header>
+  <main>
+    <div id="traceroute-form">
+      <input type="text" id="hostname" placeholder="Enter hostname or IP (e.g. google.com)" />
+      <button id="traceroute-btn">Run Traceroute</button>
+    </div>
+    <div id="results">
+      <div class="result-line">Waiting for input...</div>
+    </div>
+    <div id="map">
+      <div class="result-line">Map trace will appear here.</div>
+    </div>
+  </main>
+
+  <script>
+    const btn = document.getElementById('traceroute-btn');
+    const results = document.getElementById('results');
+    const map = document.getElementById('map');
+    const input = document.getElementById('hostname');
+
+const countries = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+  "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina",
+  "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada",
+  "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo (Congo-Brazzaville)", "Costa Rica", "Croatia", "Cuba",
+  "Cyprus", "Czech Republic", "Democratic Republic of the Congo", "Denmark", "Djibouti", "Dominica", "Dominican Republic",
+  "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France",
+  "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana",
+  "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica",
+  "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho",
+  "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali",
+  "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro",
+  "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria",
+  "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea",
+  "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis",
+  "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal",
+  "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa",
+  "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan",
+  "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey",
+  "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay",
+  "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+];
+
+function simulateTraceroute(host) {
+  const hops = Math.floor(Math.random() * 100) + 50; // Adjusted range to allow more hops
+  const trace = [];
+  const selected = [];
+
+  while (selected.length < hops) {
+    const country = countries[Math.floor(Math.random() * countries.length)];
+    if (!selected.includes(country)) selected.push(country);
+  }
+
+  selected.forEach((country, index) => {
+    // Generate a random IP address in the format x.x.x.x where each x is a random number between 0-255
+    const ip = `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
+    const delay = Math.floor(Math.random() * 100) + 10;
+    trace.push({ hop: index + 1, location: country, ip, delay });
+  });
+
+  return trace;
+}
+
+
+function displayResults(trace) {
+  results.innerHTML = '';
+  trace.forEach(hop => {
+    const line = document.createElement('div');
+    line.className = 'result-line';
+    line.textContent = `${hop.hop}  ${hop.ip}  ${hop.delay} ms`;
+    results.appendChild(line);
+  });
+}
+
+function displayMap(trace) {
+  map.innerHTML = '';
+  trace.forEach(hop => {
+    const hopDiv = document.createElement('div');
+    hopDiv.className = 'map-hop';
+    hopDiv.innerHTML = `<div class="map-info"><strong>Hop ${hop.hop}:</strong> ${hop.location} (${hop.ip}) - ${hop.delay} ms</div>`;
+    map.appendChild(hopDiv);
+  });
+}
+
+btn.addEventListener('click', () => {
+  const host = input.value.trim();
+  if (!host) {
+    results.innerHTML = `<div class="result-line error">Please enter a hostname or IP address.</div>`;
+    return;
+  }
+
+  results.innerHTML = `<div class="result-line typing">Tracing route to ${host}...</div>`;
+  map.innerHTML = '';
+
+  setTimeout(() => {
+    const trace = simulateTraceroute(host);
+    displayResults(trace);
+    displayMap(trace);
+  }, 1500);
+});
+  </script>
+</body>
+</html>

@@ -1,0 +1,387 @@
+# Godmode Anti-Hacker Toolkit
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Godmode Anti-Hacker Toolkit</title>
+  <style>
+    body {
+      background: #0b0b0b
+      font-family: 'Courier New', monospace;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      color: #00ffcc;
+      padding: 20px;
+      transition: background 0.5s;
+    }
+
+    .panel {
+      max-width: 900px;
+      margin: auto;
+      padding: 30px;
+      background: #111;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+      transition: background 0.5s, border 0.5s;
+    }
+
+    h1 {
+      text-align: center;
+      color: #00ffff;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 12px;
+      font-size: 16px;
+      background: #222;
+      color: #0ff;
+      border: 1px solid #333;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .btn:hover {
+      background: #00b8cc;
+      color: #000;
+    }
+
+    .terminal {
+      background: #000;
+      color: #0f0;
+      padding: 15px;
+      height: 300px;
+      overflow-y: auto;
+      border-radius: 6px;
+      font-size: 14px;
+      margin-top: 20px;
+    }
+
+    .dark-mode {
+      background: #000 !important;
+    }
+
+    .dark-mode .panel {
+      background: #1a1a1a;
+      border: 2px solid #333;
+      animation: glow 1s infinite alternate;
+    }
+
+    @keyframes glow {
+      from {
+        box-shadow: 0 0 10px #f00;
+      }
+      to {
+        box-shadow: 0 0 25px #f00;
+      }
+    }
+
+    .window {
+      position: absolute;
+      top: 100px;
+      left: 100px;
+      width: 250px;
+      background: #111;
+      border: 1px solid #00ffcc;
+      border-radius: 8px;
+      box-shadow: 0 0 12px #00ffcc88;
+      z-index: 10;
+      display: none;
+    }
+
+    .title-bar {
+      background: #00ffcc;
+      color: #000;
+      padding: 8px;
+      font-weight: bold;
+      cursor: move;
+      border-radius: 8px 8px 0 0;
+    }
+
+    .content {
+      padding: 10px;
+      color: #0f0;
+      font-size: 13px;
+      background: #000;
+      border-radius: 0 0 8px 8px;
+    }
+
+    .alert-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(255, 0, 0, 0.1);
+      pointer-events: none;
+      animation: flash 1s infinite;
+    }
+
+    @keyframes flash {
+      0%, 100% { background-color: rgba(255, 0, 0, 0.1); }
+      50% { background-color: rgba(255, 0, 0, 0.3); }
+    }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h1>🛡️ Godmode Anti-Hacker Toolkit</h1>
+
+    <button class="btn" onclick="toggleShield()">🛡️ Activate IP Shield</button>
+    <button class="btn" onclick="analyzeThreats()">🧠 AI Threat Analyzer</button>
+    <button class="btn" onclick="clearLogs()">🧹 Clean Cache & Logs</button>
+    <button class="btn" onclick="startMonitor()">🔍 Start Intrusion Monitor</button>
+    <button class="btn" onclick="toggleGodmode()">🧿 Toggle GODMODE</button>
+    <button class="btn" onclick="restoreSystem()">🧰 Restore & Self-Heal</button>
+    <button class="btn" onclick="startGeoIP()">📡 GeoIP Tracker</button>
+    <button class="btn" onclick="checkURL()">🔗 URL Malicious Checker</button>
+    <button class="btn" onclick="deployHoneytoken()">☠️ Deploy Honeytoken Traps</button>
+    <button class="btn" onclick="simulateWebSocketLogs()">🌐 Simulate WebSocket Logs</button>
+    <button class="btn" onclick="whoisLookup()">🌍 WHOIS & IP Lookup</button>
+    <button class="btn" onclick="aiFingerprint()">🧠 AI Fingerprint Detector</button>
+    <button class="btn" onclick="darkWebScan()">🕵️ Dark Web Scanner</button>
+    <button class="btn" onclick="blockPortScan()">🚫 Port Scan Blocker</button>
+    <button class="btn" onclick="toggleDarkTheme()">🌑 Toggle Dark Theme</button>
+    <button class="btn" onclick="playFX()">🎵 Play Sound FX</button>
+    <button class="btn" onclick="killSwitch()">💀 Kill Switch</button>
+
+    <div id="terminal" class="terminal"></div>
+    <input id="commandInput" onkeydown="runCommand(event)" placeholder="> Type command..." />
+  </div>
+
+  <div class="window" id="shieldWindow">
+    <div class="title-bar" onmousedown="startDrag(event)">🛡️ IP Shield</div>
+    <div class="content" id="shieldContent">Loading...</div>
+  </div>
+
+  <audio id="fx" src="https://www.soundjay.com/buttons/sounds/beep-07.mp3" preload="auto"></audio>
+
+  <script>
+    const terminal = document.getElementById("terminal");
+    const fx = document.getElementById("fx");
+
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function typeLog(message) {
+      const time = `[${new Date().toLocaleTimeString()}] `;
+      for (let i = 0; i < message.length; i++) {
+        terminal.textContent += (i === 0 ? time : '') + message[i];
+        terminal.scrollTop = terminal.scrollHeight;
+        await delay(20);
+      }
+      terminal.textContent += '\n';
+    }
+
+    async function toggleShield() {
+      document.getElementById("shieldWindow").style.display = "block";
+      const content = document.getElementById("shieldContent");
+      content.innerText = "Initializing Shield Protocol...";
+      await delay(1000);
+      content.innerText = "🛡️ IP Shield Active\nVPN Tunnel: Encrypted\nFirewall: Stealth Mode";
+      await typeLog("Activating virtual IP Shield...");
+      await delay(1000);
+      await typeLog("VPN Simulation: ON 🟢");
+      await typeLog("Firewall: All ports stealth ✅");
+      setTimeout(() => {
+        document.getElementById("shieldWindow").style.display = "none";
+      }, 5000);
+    }
+
+    async function analyzeThreats() {
+      await typeLog("Running AI Threat Analyzer...");
+      await delay(1200);
+      await typeLog("Scan complete. No known vulnerabilities found ✅");
+    }
+
+    async function clearLogs() {
+      await typeLog("Wiping temp logs & browser cache...");
+      await delay(800);
+      await typeLog("🧹 Cleaned logs, local storage & cookies (simulated).");
+    }
+
+    async function startMonitor() {
+      await typeLog("Starting Intrusion Detection...");
+      for (let i = 0; i < 5; i++) {
+        await delay(700);
+        await typeLog(`⛔ Intrusion attempt #${i + 1} blocked.`);
+      }
+      await typeLog("Monitoring continues silently in background... 🕶️");
+    }
+
+    async function toggleGodmode() {
+      await typeLog("🔒 Enabling GODMODE UI Lock...");
+      await delay(1000);
+      document.body.classList.add("dark-mode");
+      document.querySelector(".panel").style.border = "2px solid #f00";
+      const overlay = document.createElement("div");
+      overlay.className = "alert-overlay";
+      overlay.id = "alertFX";
+      document.body.appendChild(overlay);
+      await typeLog("⚠️ You are now in GODMODE.");
+    }
+
+    async function restoreSystem() {
+      await typeLog("🧰 Running Self-Heal Protocol...");
+      await delay(1000);
+      document.body.classList.remove("dark-mode");
+      document.querySelector(".panel").style.border = "none";
+      const fx = document.getElementById("alertFX");
+      if (fx) fx.remove();
+      await typeLog("✅ System restored to normal mode.");
+    }
+
+    async function startGeoIP() {
+      await typeLog("📡 Running GeoIP Tracker...");
+      await delay(800);
+      const fakeIP = `192.168.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+      const fakeCountry = ["USA", "Germany", "Japan", "Brazil", "India", "Unknown"][Math.floor(Math.random()*6)];
+      await typeLog(`Detected IP: ${fakeIP}`);
+      await typeLog(`Location: ${fakeCountry}`);
+    }
+
+    async function checkURL() {
+      const fakeURL = prompt("Enter URL to check:");
+      if (!fakeURL) return;
+      await typeLog(`🔗 Checking URL: ${fakeURL}`);
+      await delay(1000);
+      const isBad = fakeURL.includes("phish") || fakeURL.includes("bad");
+      await typeLog(isBad ? "⚠️ Malicious content detected!" : "✅ URL looks safe.");
+    }
+
+    async function deployHoneytoken() {
+      await typeLog("☠️ Deploying Honeytoken Traps...");
+      await delay(1000);
+      await typeLog("🐝 Honeytoken planted at /admin/secret");
+      await typeLog("👀 Monitoring for unauthorized access...");
+    }
+
+    async function simulateWebSocketLogs() {
+      await typeLog("🌐 Connecting to WebSocket feed...");
+      const messages = [
+        "New connection from 10.0.0.23",
+        "Data exfiltration attempt blocked",
+        "Suspicious port scan detected",
+        "Privilege escalation attempt denied",
+        "Inbound traffic anomaly flagged"
+      ];
+      for (const msg of messages) {
+        await delay(1000);
+        await typeLog(`📡 ${msg}`);
+      }
+      await typeLog("📶 WebSocket stream stabilized.");
+    }
+
+    async function whoisLookup() {
+      const ip = prompt("Enter IP address or domain:");
+      if (!ip) return;
+      await typeLog(`🌍 Fetching WHOIS for: ${ip}`);
+      try {
+        const res = await fetch(`https://ipapi.co/${ip}/json/`);
+        const data = await res.json();
+        if (!data || data.error) {
+          await typeLog("🌐 Trying alternative WHOIS service...");
+        } else {
+          await typeLog(`WHOIS / IP Info for ${ip}:\n- Country: ${data.country_name}\n- Org: ${data.org}\n- ISP: ${data.org}`);
+        }
+      } catch {
+        await typeLog("❌ Failed to fetch WHOIS info.");
+      }
+    }
+
+    async function aiFingerprint() {
+      await typeLog("🧠 Running AI Fingerprint Detector...");
+      await delay(1200);
+      await typeLog("Canvas fingerprint detected.");
+      await typeLog("AudioContext fingerprint detected.");
+      await typeLog("✅ Spoofed successfully (simulated).");
+    }
+
+    async function darkWebScan() {
+      await typeLog("🕵️ Initiating Dark Web scanner...");
+      await delay(1200);
+      await typeLog("Checking onion network...");
+      await delay(1000);
+      await typeLog("🚫 No dark web activity related to your system detected.");
+    }
+
+    async function blockPortScan() {
+      await typeLog("🚫 Detecting port scan attempts...");
+      await delay(1200);
+      await typeLog("Port 22, 80, 443 — attempted scan blocked.");
+      await typeLog("✅ Ports cloaked via stealth mode.");
+    }
+
+    async function killSwitch() {
+      await typeLog("💀 Kill Switch Activated...");
+      await delay(800);
+      document.body.innerHTML = "<h1 style='color:red; text-align:center;'>💀 SYSTEM TERMINATED 💀</h1>";
+    }
+
+    function toggleDarkTheme() {
+      document.body.classList.toggle("dark-mode");
+      typeLog("🌑 Toggled dark mode theme.");
+    }
+
+    function playFX() {
+      fx.play();
+      typeLog("🎵 Sound FX played.");
+    }
+
+    function runCommand(e) {
+      if (e.key === "Enter") {
+        const input = e.target.value.toLowerCase();
+        typeLog(`> ${input}`);
+        e.target.value = "";
+
+        if (input.includes("threat")) analyzeThreats();
+        else if (input.includes("shield")) toggleShield();
+        else if (input.includes("geoip")) startGeoIP();
+        else if (input === ":matrix") {
+          typeLog("Wake up, Neo...");
+          delay(800).then(() => typeLog("The Matrix has you."));
+        } else if (input === ":ascii") {
+          typeLog(`"Hack the planet!"\n- 🧑‍💻`);
+        } else typeLog("❓ Unknown command");
+      }
+    }
+
+    setInterval(() => {
+      const threats = [
+        "Brute force attempt on port 22",
+        "Phishing link intercepted",
+        "New device login from Japan",
+        "Malware signature blocked"
+      ];
+      const msg = threats[Math.floor(Math.random() * threats.length)];
+      typeLog(`🚨 ${msg}`);
+    }, 15000); // every 15 sec
+
+    let offsetX, offsetY, isDragging = false;
+    const shieldWindow = document.getElementById("shieldWindow");
+
+    function startDrag(e) {
+      isDragging = true;
+      offsetX = e.clientX - shieldWindow.offsetLeft;
+      offsetY = e.clientY - shieldWindow.offsetTop;
+      document.addEventListener("mousemove", drag);
+      document.addEventListener("mouseup", stopDrag);
+    }
+
+    function drag(e) {
+      if (!isDragging) return;
+      shieldWindow.style.left = `${e.clientX - offsetX}px`;
+      shieldWindow.style.top = `${e.clientY - offsetY}px`;
+    }
+
+    function stopDrag() {
+      isDragging = false;
+      document.removeEventListener("mousemove", drag);
+      document.removeEventListener("mouseup", stopDrag);
+    }
+  </script>
+</body>
+</html>

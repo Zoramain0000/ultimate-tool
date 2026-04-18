@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays USB Device Activity Monitor</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  height:100%;
+  font-family:Segoe UI,Arial,sans-serif;
+  color:#d6d6d6;
+  overflow-x:hidden;
+}
+
+/* BACKGROUND VIDEO */
+.bg-video{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:-2;
+}
+
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0);
+  z-index:-1;
+}
+
+header{
+  padding:20px;
+  text-align:center;
+  background:rgba(255,255,255,0.0);
+  border-bottom:1px solid rgba(255,255,255,0.1);
+  text-shadow:0 0 6px #000;
+}
+header h1{
+  letter-spacing:3px;
+  font-size:28px;
+}
+header span{
+  color:#00ff88;
+  font-size:12px;
+  text-shadow:0 0 6px #000;
+}
+
+.container{
+  max-width:1100px;
+  margin:30px auto;
+  padding:20px;
+  background:rgba(255,255,255,0.0);
+}
+
+.section{margin-bottom:30px}
+.section h2{
+  font-size:18px;
+  margin-bottom:12px;
+  border-left:4px solid #00ff88;
+  padding-left:10px;
+  color:#bfbfbf;
+  text-shadow:0 0 6px #000;
+}
+
+button{
+  width:100%;
+  padding:14px;
+  background:rgba(0,0,0,0.1);
+  border:1px solid #00ff88;
+  color:#00ff88;
+  border-radius:6px;
+  cursor:pointer;
+  transition:.3s;
+  font-size:14px;
+  margin-bottom:10px;
+}
+button:hover{
+  background:#00ff88;
+  color:black;
+  transform:scale(1.02);
+  box-shadow:0 0 15px rgba(0,255,136,0.4);
+}
+
+button.active{
+  background:#00ff88;
+  color:black;
+  animation:pulse 1s infinite;
+}
+@keyframes pulse{
+  0%,100%{transform:scale(1.02)}
+  50%{transform:scale(1.05)}
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:14px;
+}
+
+.card{
+  background:rgba(0,0,0,0.05);
+  padding:14px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.05);
+  font-size:14px;
+  text-shadow:0 0 6px #000;
+  position:relative;
+  overflow:hidden;
+}
+
+.card::before{
+  content:'';
+  position:absolute;
+  top:0;right:0;
+  width:4px;
+  height:100%;
+  background:#00ff88;
+  opacity:0.3;
+}
+
+.card.active::before{
+  animation:scan 2s infinite;
+  background:linear-gradient(90deg,#00ff88,#ffaa00,#ff4d4d,#00ff88);
+}
+@keyframes scan{
+  0%{transform:translateX(100%)}
+  100%{transform:translateX(-100%)}
+}
+
+.card span{
+  display:block;
+  font-size:11px;
+  color:#aaa;
+  margin-bottom:5px;
+  text-shadow:0 0 4px #000;
+}
+
+.safe{color:#00ff88}
+.warn{color:#ffaa00}
+.bad{color:#ff4d4d}
+.device-id{font-family:monospace;background:rgba(0,255,136,0.1);padding:2px 6px;border-radius:3px}
+
+.log{
+  background:rgba(0,0,0,0.05);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:6px;
+  padding:12px;
+  font-family:monospace;
+  font-size:13px;
+  max-height:280px;
+  overflow:auto;
+  color:#8aff8a;
+  text-shadow:0 0 4px #000;
+  line-height:1.4;
+}
+
+.device-list{
+  max-height:300px;
+  overflow:auto;
+  margin-top:10px;
+}
+
+.device-item{
+  background:rgba(0,0,0,0.1);
+  padding:10px;
+  margin-bottom:8px;
+  border-radius:6px;
+  border-left:3px solid #00ff88;
+  font-family:monospace;
+  font-size:12px;
+}
+
+.device-item.active{
+  border-left-color:#ffaa00;
+  box-shadow:0 0 10px rgba(255,170,0,0.3);
+  animation:pulse 1.5s infinite;
+}
+
+.device-item.volatile{
+  border-left-color:#ff4d4d;
+  background:rgba(255,77,77,0.1);
+}
+
+.status-indicator{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  display:inline-block;
+  margin-right:8px;
+}
+.status-online{background:#00ff88}
+.status-offline{background:#666}
+.status-volatile{background:#ff4d4d;animation:pulse 1s infinite}
+
+footer{
+  text-align:center;
+  padding:15px;
+  font-size:12px;
+  color:#777;
+  background:rgba(255,255,255,0.0);
+  border-top:1px solid rgba(255,255,255,0.1);
+  text-shadow:0 0 6px #000;
+}
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>🔌 ZERO DAYS • USB DEVICE ACTIVITY MONITOR</h1>
+  <span>Real-time USB enumeration & behavioral analysis</span>
+</header>
+
+<div class="container">
+
+  <div class="section">
+    <h2>USB Monitoring Controls</h2>
+    <button id="scanBtn" onclick="startUSBMonitor()">🚀 Start USB Monitoring</button>
+    <button id="enumerateBtn" onclick="enumerateUSB()">📋 Enumerate USB Devices</button>
+    <button onclick="exportReport()">📤 Export Activity Report</button>
+    <div style="font-size:12px;color:#aaa;margin-top:8px;">
+      Status: <span id="monitorStatus">Inactive</span> | 
+      <span id="deviceCount">0</span> devices tracked
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Live USB Device Inventory</h2>
+    <div class="grid">
+      <div class="card">
+        <span>Total USB Devices</span>
+        <div id="totalDevices" class="safe">0</div>
+      </div>
+      <div class="card">
+        <span>Active Ports</span>
+        <div id="activePorts" class="safe">0</div>
+      </div>
+      <div class="card">
+        <span>Volatile Devices</span>
+        <div id="volatileCount" class="bad">0</div>
+      </div>
+      <div class="card">
+        <span>Storage Devices</span>
+        <div id="storageCount" class="warn">0</div>
+      </div>
+    </div>
+    <div class="device-list" id="deviceList"></div>
+  </div>
+
+  <div class="section">
+    <h2>USB Activity Timeline</h2>
+    <div class="log" id="activityLog"></div>
+  </div>
+
+</div>
+
+<footer>
+  Browser-based USB behavioral analysis • WebUSB + MediaDevice tracking<br>
+  Educational & ethical device monitoring tool • No backend required
+</footer>
+
+<script>
+let usbDevices = [];
+let monitorInterval = null;
+let deviceHistory = [];
+const log = msg => {
+  const l = document.getElementById("activityLog");
+  const time = new Date().toLocaleTimeString();
+  l.innerHTML += `<div>[${time}] ${msg}</div>`;
+  l.scrollTop = l.scrollHeight;
+};
+
+const addDeviceToHistory = (device, action) => {
+  deviceHistory.unshift({
+    deviceId: device.deviceId || device.id,
+    vendorId: device.vendorId,
+    productId: device.productId,
+    action,
+    timestamp: new Date().toISOString(),
+    type: classifyDevice(device)
+  });
+  if (deviceHistory.length > 100) deviceHistory.pop();
+};
+
+const classifyDevice = device => {
+  const vid = device.vendorId?.toString(16).toUpperCase() || '';
+  const pid = device.productId?.toString(16).toUpperCase() || '';
+  
+  const storageVids = ['0781', '0951', '0BDA']; // SanDisk, Kingston, Realtek
+  const keyboardVids = ['046D', '1C4F']; // Logitech, HID
+  const webcamVids = ['046D', '0C45']; // Logitech, Microdia
+  
+  if (storageVids.some(v => vid.startsWith(v))) return 'STORAGE';
+  if (keyboardVids.some(v => vid.startsWith(v))) return 'KEYBOARD';
+  if (webcamVids.some(v => vid.startsWith(v))) return 'WEBCAM';
+  return 'UNKNOWN';
+};
+
+async function enumerateUSB() {
+  log("🔍 Enumerating USB devices via WebUSB...");
+  
+  try {
+    if (!navigator.usb) {
+      log("❌ WebUSB API not supported");
+      return;
+    }
+    
+    const devices = await navigator.usb.getDevices();
+    usbDevices = devices.map((device, idx) => ({
+      id: idx,
+      deviceId: device.deviceId,
+      usbProductId: device.productId,
+      usbVendorId: device.vendorId,
+      productName: device.productName,
+      manufacturerName: device.manufacturerName,
+      serialNumber: device.serialNumber,
+      configuration: device.configuration,
+      connected: true,
+      firstSeen: new Date().toISOString(),
+      type: classifyDevice(device)
+    }));
+    
+    updateDeviceDisplay();
+    log(`✅ Found ${usbDevices.length} USB devices`);
+    
+    // Track media devices as USB peripherals
+    const mediaDevices = await navigator.mediaDevices.enumerateDevices();
+    const usbMedia = mediaDevices.filter(d => 
+      d.deviceId && !d.label.includes('default') && 
+      (d.kind === 'videoinput' || d.kind === 'audioinput')
+    );
+    
+    usbMedia.forEach((md, idx) => {
+      usbDevices.push({
+        id: `media_${idx}`,
+        deviceId: md.deviceId,
+        productName: md.label || 'Media Device',
+        type: md.kind === 'videoinput' ? 'WEBCAM' : 'MIC',
+        connected: true,
+        firstSeen: new Date().toISOString()
+      });
+    });
+    
+    updateDeviceDisplay();
+    
+  } catch(e) {
+    log(`❌ USB enumeration failed: ${e.message}`);
+  }
+}
+
+function updateDeviceDisplay() {
+  const total = usbDevices.filter(d => d.connected).length;
+  const volatile = usbDevices.filter(d => d.volatile).length;
+  const storage = usbDevices.filter(d => d.type === 'STORAGE').length;
+  const activePorts = new Set(usbDevices.filter(d => d.connected).map(d => d.usbVendorId)).size;
+  
+  document.getElementById("totalDevices").textContent = total;
+  document.getElementById("activePorts").textContent = activePorts;
+  document.getElementById("volatileCount").textContent = volatile;
+  document.getElementById("storageCount").textContent = storage;
+  document.getElementById("deviceCount").textContent = total;
+  
+  const list = document.getElementById("deviceList");
+  list.innerHTML = usbDevices
+    .filter(d => d.connected)
+    .map(device => `
+      <div class="device-item ${device.volatile ? 'volatile' : ''} ${device.active ? 'active' : ''}">
+        <span class="status-indicator ${device.volatile ? 'status-volatile' : 'status-online'}"></span>
+        <strong>${device.productName || `USB [${device.usbVendorId?.toString(16)?.toUpperCase() || '??'}:${device.usbProductId?.toString(16)?.toUpperCase() || '??'}]`}</strong><br>
+        <small>ID: <span class="device-id">${device.deviceId?.slice(0,16) || device.id}...</span> | Type: <span class="safe">${device.type}</span></small>
+      </div>
+    `).join('');
+}
+
+async function startUSBMonitor() {
+  const btn = document.getElementById("scanBtn");
+  if (monitorInterval) {
+    clearInterval(monitorInterval);
+    monitorInterval = null;
+    btn.textContent = "🚀 Start USB Monitoring";
+    btn.classList.remove("active");
+    document.getElementById("monitorStatus").textContent = "Inactive";
+    log("⏹️ USB monitoring stopped");
+    return;
+  }
+  
+  btn.textContent = "⏹️ Stop Monitoring";
+  btn.classList.add("active");
+  document.getElementById("monitorStatus").textContent = "ACTIVE";
+  
+  await enumerateUSB();
+  
+  monitorInterval = setInterval(async () => {
+    const prevDevices = [...usbDevices];
+    
+    try {
+      await enumerateUSB();
+      
+      // Detect changes
+      usbDevices.forEach(device => {
+        const prev = prevDevices.find(p => p.deviceId === device.deviceId || p.id === device.id);
+        if (!prev) {
+          device.firstSeen = new Date().toISOString();
+          addDeviceToHistory(device, "CONNECTED");
+          log(`🔌 NEW USB DEVICE: ${device.productName || 'Unknown'} [${device.usbVendorId?.toString(16)?.toUpperCase()}:${device.usbProductId?.toString(16)?.toUpperCase()}]`);
+          device.active = true;
+        } else if (!device.connected && prev.connected) {
+          addDeviceToHistory(device, "DISCONNECTED");
+          log(`🔌 USB DEVICE REMOVED: ${device.productName || 'Unknown'}`);
+          device.volatile = true;
+        }
+      });
+      
+      updateDeviceDisplay();
+      
+    } catch(e) {
+      log(`⚠️ Monitor error: ${e.message}`);
+    }
+  }, 2000);
+  
+  log("🚀 USB device monitoring started (2s intervals)");
+}
+
+function exportReport() {
+  const report = {
+    totalDevices: usbDevices.length,
+    activeDevices: usbDevices.filter(d => d.connected).length,
+    deviceHistory,
+    snapshot: usbDevices.filter(d => d.connected),
+    generated: new Date().toISOString()
+  };
+  
+  const dataStr = JSON.stringify(report, null, 2);
+  const dataBlob = new Blob([dataStr], {type: 'application/json'});
+  const url = URL.createObjectURL(dataBlob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `usb-activity-${Date.now()}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+  
+  log("📤 USB activity report exported");
+}
+
+// Auto-start demo on load
+window.addEventListener('load', () => {
+  log("🔌 USB Device Activity Monitor initialized");
+  log("📱 Tracking WebUSB + MediaDevices (webcams/mics)");
+  log("⚠️ Volatile storage devices flagged as potential threats");
+});
+</script>
+
+</body>
+</html>

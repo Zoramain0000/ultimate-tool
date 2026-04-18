@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>UUID Generator Log</title>
+<style>
+  body {
+    margin: 0; padding: 0;
+    background-color: #000; 
+    color: red;
+    font-family: 'Consolas', monospace, monospace;
+    display: flex; flex-direction: column; height: 100vh;
+  }
+
+  #bgVideo {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+    z-index: -1;
+    object-fit: cover;
+    filter: brightness(0.4);
+  }
+
+  header {
+    padding: 12px 20px;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #330000;
+  }
+  label {
+    font-weight: bold;
+    font-size: 14px;
+    color: #ff3333;
+    text-shadow: 0 0 2px black;
+  }
+  select, input[type=button] {
+    font-family: monospace;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+  }
+  select {
+    background: rgba(0,0,0,0.5);
+    color: red;
+    border: 1px solid #500000;
+  }
+  input[type=button] {
+    background: red;
+    color: green;
+    font-weight: bold;
+    border: 1px solid #500000;
+  }
+  input[type=button]:hover {
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+  }
+  input[type=text] {
+    flex-grow: 1;
+    min-width: 180px;
+    font-family: monospace;
+    font-size: 14px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: none;
+    outline: none;
+    background: rgba(0,0,0,0.5);
+    color: red;
+    border: 1px solid #500000;
+  }
+  input[type=text]:focus {
+    border-color: red;
+  }
+  #totalCount {
+    background: rgba(0,0,0,0.8);
+    color: #00ff00;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid #00ff00;
+    font-weight: bold;
+    min-width: 120px;
+    text-align: center;
+    font-size: 14px;
+  }
+  #logContainer {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.5);
+    position: relative;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  thead tr {
+    background: rgba(0,0,0,0.8);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    border-bottom: 1px solid red;
+  }
+  th, td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #333;
+    white-space: nowrap;
+    text-align: left;
+  }
+  th {
+    color: green;
+    text-transform: uppercase;
+  }
+  tbody tr:hover {
+    background: #330000;
+    color: #fff;
+  }
+  #loadingIndicator {
+    padding: 10px 0;
+    text-align: center;
+    color: red;
+    font-style: italic;
+  }
+
+  #logContainer::-webkit-scrollbar {
+    width: 8px;
+  }
+  #logContainer::-webkit-scrollbar-track {
+    background: #000;
+  }
+  #logContainer::-webkit-scrollbar-thumb {
+    background: #500000;
+  }
+  #logContainer::-webkit-scrollbar-thumb:hover {
+    background: red;
+  }
+
+  @media (max-width: 600px) {
+    th, td {
+      padding: 6px 8px;
+      font-size: 11px;
+    }
+    input[type=text] {
+      font-size: 12px;
+      background: rgba(0,0,0,0.5);
+      color: red;
+    }
+    select, input[type=button] {
+      font-size: 12px;
+      padding: 5px 10px;
+    }
+    #totalCount {
+      font-size: 12px;
+      padding: 4px 8px;
+      min-width: 100px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<video autoplay muted loop id="bgVideo">
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+  Your browser does not support HTML5 video.
+</video>
+
+<header>
+  <label for="formatSelect">UUID Version:</label>
+  <select id="formatSelect" aria-label="Select UUID version">
+    <option value="v4">v4 (Random)</option>
+    <option value="nil">Nil (Empty)</option>
+  </select>
+  
+  <input type="button" id="generateBtn" value="Generate UUIDs" aria-label="Generate UUID logs" />
+  <input type="text" id="searchInput" placeholder="Filter UUID..." aria-label="Search logs" />
+  <span id="totalCount">Total: 0</span>
+  <input type="button" id="downloadBtn" value="Download Logs" aria-label="Download generated logs" />
+</header>
+
+<div id="logContainer" tabindex="0" aria-live="polite" aria-relevant="additions">
+  <table role="grid" aria-rowcount="0" aria-colcount="4" aria-label="Generated logs">
+    <thead>
+      <tr>
+        <th scope="col">UUID</th>
+        <th scope="col">Version</th>
+        <th scope="col">Time</th>
+        <th scope="col">Status</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+  <div id="loadingIndicator" hidden>Generating...</div>
+</div>
+
+<script>
+(() => {
+  const formatSelect = document.getElementById('formatSelect');
+  const generateBtn = document.getElementById('generateBtn');
+  const searchInput = document.getElementById('searchInput');
+  const logBody = document.getElementById('logBody');
+  const logContainer = document.getElementById('logContainer');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const totalCount = document.getElementById('totalCount');
+
+  const BATCH_SIZE = 500;
+  const MAX_LOGS = 10000;
+
+  let totalLogsGenerated = 0;
+  let currentFormat = 'v4';
+  let allEntries = [];
+
+  function generateUUIDv4() {
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      const buf = new Uint8Array(16);
+      crypto.getRandomValues(buf);
+      
+      buf[6] = (buf[6] & 0x0f) | 0x40; 
+      buf[8] = (buf[8] & 0x3f) | 0x80; 
+
+      const hex = Array.from(buf).map(b => b.toString(16).padStart(2, '0')).join('');
+      return [
+        hex.substring(0, 8),
+        hex.substring(8, 12),
+        hex.substring(12, 16),
+        hex.substring(16, 20),
+        hex.substring(20, 32)
+      ].join('-');
+    } else {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+  }
+
+  function getNilUUID() {
+    return '00000000-0000-0000-0000-000000000000';
+  }
+
+  function getTimestamp() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hour = String(now.getHours()).padStart(2, '0');
+    const minute = String(now.getMinutes()).padStart(2, '0');
+    const second = String(now.getSeconds()).padStart(2, '0');
+    const ms = String(now.getMilliseconds()).padStart(3, '0');
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}.${ms}`;
+  }
+
+  function createRow(entry) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-family: monospace; color: #ffcccc;">${entry.id}</td>
+      <td>${entry.version}</td>
+      <td>${entry.time}</td>
+      <td style="color: #00ff00;">ACTIVE</td>
+    `;
+    return tr;
+  }
+
+  function generateEntry() {
+    let id = '';
+    let ver = '';
+    
+    if (currentFormat === 'nil') {
+      id = getNilUUID();
+      ver = 'Nil';
+    } else {
+      id = generateUUIDv4();
+      ver = 'v4';
+    }
+
+    return {
+      id: id,
+      version: ver,
+      time: getTimestamp()
+    };
+  }
+
+  function updateTotalCount() {
+    totalCount.textContent = `Total: ${totalLogsGenerated}`;
+  }
+
+  function loadMoreLogs() {
+    if (totalLogsGenerated >= MAX_LOGS) {
+      loadingIndicator.textContent = "Max limit reached.";
+      loadingIndicator.hidden = false;
+      return;
+    }
+    loadingIndicator.hidden = false;
+    
+    requestAnimationFrame(() => {
+      const fragment = document.createDocumentFragment();
+      for (let i = 0; i < BATCH_SIZE && totalLogsGenerated < MAX_LOGS; i++, totalLogsGenerated++) {
+        const entry = generateEntry();
+        allEntries.push(entry);
+        fragment.appendChild(createRow(entry));
+      }
+      logBody.appendChild(fragment);
+      loadingIndicator.hidden = true;
+      updateTotalCount();
+      updateAriaRowCount();
+    });
+  }
+
+  function resetLogs() {
+    totalLogsGenerated = 0;
+    allEntries = [];
+    logBody.innerHTML = '';
+    loadingIndicator.textContent = 'Generating...';
+    loadingIndicator.hidden = true;
+    updateTotalCount();
+    updateAriaRowCount();
+  }
+
+  function filterLogs() {
+    const filter = searchInput.value.toLowerCase();
+    if (!filter) {
+      [...logBody.children].forEach(tr => tr.style.display = "");
+      return;
+    }
+    [...logBody.children].forEach(tr => {
+      const haystack = tr.textContent.toLowerCase();
+      tr.style.display = haystack.includes(filter) ? "" : "none";
+    });
+  }
+
+  function updateAriaRowCount() {
+    const totalRows = logBody.children.length;
+    logBody.parentElement.setAttribute('aria-rowcount', totalRows);
+  }
+
+  logContainer.addEventListener('scroll', () => {
+    if (loadingIndicator.hidden &&
+        (logContainer.scrollTop + logContainer.clientHeight >= logContainer.scrollHeight - 50) &&
+        searchInput.value.trim() === '') {
+      loadMoreLogs();
+    }
+  });
+
+  generateBtn.addEventListener('click', () => {
+    currentFormat = formatSelect.value;
+    resetLogs();
+    loadMoreLogs();
+    searchInput.value = '';
+  });
+
+  searchInput.addEventListener('input', () => {
+    filterLogs();
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    // Create multiple download formats
+    const csvContent = "data:text/csv;charset=utf-8," + 
+      "UUID,Version,Time,Status\n" + 
+      allEntries.map(e => `"${e.id}",${e.version},"${e.time}",ACTIVE`).join("\n");
+    
+    const txtContent = "data:text/plain;charset=utf-8," + 
+      allEntries.map(e => `${e.id} | ${e.version} | ${e.time} | ACTIVE`).join('\n');
+
+    // Create blob for better file handling
+    const csvBlob = new Blob([allEntries.map(e => `"${e.id}","${e.version}","${e.time}","ACTIVE"`).join('\n')], 
+      { type: 'text/csv;charset=utf-8;' });
+    const txtBlob = new Blob([allEntries.map(e => `${e.id} | ${e.version} | ${e.time} | ACTIVE`).join('\n')], 
+      { type: 'text/plain;charset=utf-8;' });
+
+    // CSV Download
+    const csvLink = document.createElement("a");
+    csvLink.href = URL.createObjectURL(csvBlob);
+    csvLink.download = `uuid_logs_${currentFormat}_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.csv`;
+    csvLink.style.display = "none";
+    document.body.appendChild(csvLink);
+    csvLink.click();
+    document.body.removeChild(csvLink);
+
+    // TXT Download (also available)
+    const txtLink = document.createElement("a");
+    txtLink.href = URL.createObjectURL(txtBlob);
+    txtLink.download = `uuid_logs_${currentFormat}_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.txt`;
+    txtLink.style.display = "none";
+    document.body.appendChild(txtLink);
+    txtLink.click();
+    document.body.removeChild(txtLink);
+
+    // Clean up URLs
+    setTimeout(() => {
+      URL.revokeObjectURL(csvLink.href);
+      URL.revokeObjectURL(txtLink.href);
+    }, 100);
+  });
+
+  // Initialize
+  currentFormat = formatSelect.value;
+  updateTotalCount();
+  loadMoreLogs();
+})();
+</script>
+
+</body>
+</html>

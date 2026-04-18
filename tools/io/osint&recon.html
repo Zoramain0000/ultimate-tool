@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays • OSINT Intelligence Suite</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  height:100%;
+  font-family:Segoe UI,Arial,sans-serif;
+  color:#d6d6d6;
+  overflow-x:hidden;
+}
+
+.bg-video{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:-2;
+}
+
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0);
+  z-index:-1;
+}
+
+header{
+  padding:20px;
+  text-align:center;
+  background:rgba(255,255,255,0.0);
+  border-bottom:1px solid rgba(255,255,255,0.1);
+  text-shadow:0 0 6px #000;
+}
+header h1{
+  letter-spacing:3px;
+  font-size:28px;
+}
+header span{
+  color:#00ff88;
+  font-size:12px;
+  text-shadow:0 0 6px #000;
+}
+
+.container{
+  max-width:1200px;
+  margin:30px auto;
+  padding:20px;
+  background:rgba(255,255,255,0.0);
+}
+
+.search-section{
+  margin-bottom:30px;
+  padding:20px;
+  background:rgba(0,0,0,0.1);
+  border-radius:12px;
+  border:1px solid rgba(0,255,136,0.2);
+}
+input,select{
+  width:100%;
+  padding:12px;
+  background:rgba(0,0,0,0.1);
+  border:1px solid rgba(255,255,255,0.2);
+  border-radius:6px;
+  color:#fff;
+  margin-bottom:12px;
+  font-size:14px;
+  box-sizing:border-box;
+}
+
+button{
+  padding:12px 24px;
+  background:rgba(0,0,0,0.1);
+  border:1px solid #00ff88;
+  color:#00ff88;
+  border-radius:6px;
+  cursor:pointer;
+  transition:.3s;
+  font-size:14px;
+}
+button:hover{
+  background:#00ff88;
+  color:black;
+  transform:scale(1.05);
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:16px;
+  margin-bottom:30px;
+}
+
+.module-card{
+  background:rgba(0,0,0,0.15);
+  padding:20px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.1);
+  text-shadow:0 0 6px #000;
+  cursor:pointer;
+  transition:.3s;
+  position:relative;
+  overflow:hidden;
+}
+.module-card:hover{
+  transform:translateY(-5px);
+  box-shadow:0 10px 30px rgba(0,255,136,0.2);
+  border-color:#00ff88;
+}
+.module-card.active{
+  border-color:#00ff88;
+  box-shadow:0 0 20px rgba(0,255,136,0.4);
+}
+
+.module-icon{
+  font-size:24px;
+  margin-bottom:12px;
+  display:block;
+}
+
+.module-title{
+  font-size:16px;
+  font-weight:bold;
+  margin-bottom:8px;
+  color:#00ff88;
+}
+
+.module-results{
+  font-size:12px;
+  line-height:1.4;
+  max-height:120px;
+  overflow:auto;
+}
+
+.breach-item,.leak-item{
+  background:rgba(255,77,77,0.2);
+  padding:6px 10px;
+  margin:4px 0;
+  border-radius:4px;
+  border-left:3px solid #ff4d4d;
+  font-family:monospace;
+  font-size:11px;
+}
+
+.safe-item{
+  background:rgba(0,255,136,0.2);
+  border-left-color:#00ff88;
+  color:#8aff8a;
+}
+
+.warning-item{
+  background:rgba(255,170,0,0.2);
+  border-left-color:#ffaa00;
+}
+
+.log{
+  background:rgba(0,0,0,0.15);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:8px;
+  padding:16px;
+  font-family:monospace;
+  font-size:13px;
+  max-height:300px;
+  overflow:auto;
+  color:#8aff8a;
+  text-shadow:0 0 4px #000;
+}
+
+.loading{
+  color:#ffaa00;
+  font-style:italic;
+}
+
+.result-count{
+  position:absolute;
+  top:10px;
+  right:10px;
+  background:rgba(0,255,136,0.8);
+  color:black;
+  padding:4px 8px;
+  border-radius:20px;
+  font-size:11px;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>🕵️ ZERO DAYS • OSINT INTELLIGENCE SUITE</h1>
+  <span>22+ Real-time breach & exposure analysis tools</span>
+</header>
+
+<div class="container">
+
+  <div class="search-section">
+    <h2 style="margin-bottom:15px;color:#00ff88;border-left:4px solid #00ff88;padding-left:12px;">Target Input</h2>
+    <input id="targetInput" placeholder="Enter email, username, domain, or IP">
+    <div style="display:flex;gap:10px;">
+      <select id="toolSelect">
+        <option value="breach">Public Breach Checker</option>
+        <option value="username">Username Footprint</option>
+        <option value="email">Email Metadata</option>
+        <option value="domain">Domain History</option>
+        <option value="cert">Certificate Monitor</option>
+        <option value="subdomain">Subdomain Enum</option>
+        <option value="bucket">Cloud Buckets</option>
+        <option value="paste">Paste Leaks</option>
+        <option value="code">Code Leaks</option>
+        <option value="camera">Camera Exposure</option>
+      </select>
+      <button onclick="runAnalysis()">🔍 ANALYZE TARGET</button>
+      <button onclick="runFullSuite()">💥 FULL SUITE SCAN</button>
+    </div>
+  </div>
+
+  <div class="grid" id="resultsGrid"></div>
+
+  <div class="log-section">
+    <h2 style="margin-bottom:12px;color:#bfbfbf;">Live Analysis Log</h2>
+    <div class="log" id="analysisLog"></div>
+  </div>
+
+</div>
+
+<script>
+const log = msg => {
+  const l = document.getElementById("analysisLog");
+  l.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+  l.scrollTop = l.scrollHeight;
+};
+
+const API_ENDPOINTS = {
+  breach: 'https://haveibeenpwned.com/api/v3/breachedaccount/',
+  username: 'https://username.dontpwn.me/api/username/',
+  email: 'https://emailrep.io/',
+  domain: 'https://crt.sh/?q=',
+  cert: 'https://crt.sh/?q=',
+  paste: 'https://pastebin.com/search?q=',
+  camera: 'https://www.shodan.io/search?query=port:554+has_screenshot:true'
+};
+
+async function runAnalysis() {
+  const target = document.getElementById("targetInput").value.trim();
+  if (!target) {
+    alert("Enter a target (email/username/domain)");
+    return;
+  }
+  
+  const tool = document.getElementById("toolSelect").value;
+  log(`🚀 Running ${tool.toUpperCase()} analysis on: ${target}`);
+  
+  try {
+    const results = await analyzeTarget(target, tool);
+    displayModule(tool, results);
+    log(`✅ ${tool.toUpperCase()} analysis complete`);
+  } catch(e) {
+    log(`❌ ${tool.toUpperCase()} failed: ${e.message}`);
+  }
+}
+
+async function runFullSuite() {
+  const target = document.getElementById("targetInput").value.trim();
+  if (!target) return;
+  
+  log(`💥 FULL OSINT SUITE: Scanning ${target} across 10 tools...`);
+  
+  const tools = Object.keys(API_ENDPOINTS);
+  const allResults = {};
+  
+  for (const tool of tools) {
+    try {
+      log(`⏳ ${tool.toUpperCase()}...`);
+      const results = await analyzeTarget(target, tool);
+      allResults[tool] = results;
+      displayModule(tool, results);
+    } catch(e) {
+      allResults[tool] = { error: e.message };
+    }
+  }
+  
+  log(`✅ Full suite complete: ${Object.keys(allResults).length}/10 tools executed`);
+}
+
+async function analyzeTarget(target, tool) {
+  const results = { target, tool, timestamp: new Date().toISOString(), findings: [] };
+  
+  switch(tool) {
+    case 'breach':
+      const breachRes = await fetch(`https://haveibeenpwned.com/api/v3/breachedaccount/${encodeURIComponent(target)}?truncateResponse=true`, {
+        headers: { 'User-Agent': 'ZeroDaysOSINT' }
+      });
+      if (breachRes.ok) {
+        const breaches = await breachRes.json();
+        results.findings = breaches.map(b => ({
+          name: b.Name,
+          domain: b.Domain,
+          date: b.BreachDate,
+          accounts: b.PwnCount || 0,
+          verified: b.IsVerified,
+          severity: 'CRITICAL'
+        }));
+      }
+      break;
+      
+    case 'username':
+      const userRes = await fetch(`https://username.dontpwn.me/api/username/${encodeURIComponent(target)}`);
+      const userData = await userRes.json();
+      if (userData.status === 'success' && userData.found > 0) {
+        results.findings = userData.sites.map(site => ({
+          platform: site,
+          url: `https://${site}`,
+          accounts: 1,
+          verified: true,
+          severity: 'MEDIUM'
+        }));
+      }
+      break;
+      
+    case 'email':
+      const emailRes = await fetch(`https://emailrep.io/${encodeURIComponent(target)}`);
+      const emailData = await emailRes.json();
+      results.findings = [
+        { name: 'Reputation', value: emailData.reputation || 'unknown', severity: emailData.reputation === 'high' ? 'SAFE' : 'WARNING' },
+        { name: 'Daily Change', value: emailData.daily_change || 0, severity: 'INFO' },
+        { name: 'Suspicious', value: emailData.suspicious || false, severity: emailData.suspicious ? 'CRITICAL' : 'SAFE' }
+      ];
+      break;
+      
+    case 'domain':
+      const domainRes = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(target)}&type=1`);
+      const domainData = await domainRes.json();
+      if (domainData.Status === 0 && domainData.Answer) {
+        results.findings = domainData.Answer.map(ans => ({
+          name: 'DNS Record',
+          value: ans.data,
+          type: ans.type,
+          severity: 'INFO'
+        }));
+      }
+      break;
+      
+    case 'cert':
+      // Certificate Transparency via crt.sh
+      const certRes = await fetch(`https://crt.sh/?q=${encodeURIComponent(target)}&output=json`);
+      const certData = await certRes.json();
+      if (certData.length > 0) {
+        results.findings = certData.slice(0, 5).map(cert => ({
+          name: 'Certificate',
+          issuer: cert.issuer,
+          commonName: cert.common_name,
+          notBefore: cert.not_before,
+          notAfter: cert.not_after,
+          severity: 'WARNING'
+        }));
+      }
+      break;
+      
+    case 'subdomain':
+      const subRes = await fetch(`https://api.hackertarget.com/hostsearch/?q=${encodeURIComponent(target)}`);
+      const subdomains = subRes.text().split('\n').filter(line => line.trim());
+      results.findings = subdomains.slice(0, 10).map(sub => ({
+        name: 'Subdomain',
+        subdomain: sub.split(' ')[0],
+        ip: sub.split(' ')[1] || 'unknown',
+        severity: 'INFO'
+      }));
+      break;
+      
+    case 'bucket':
+      // S3 bucket discovery via public scanners
+      const bucketRes = await fetch(`https://buckets.grayhatwarfare.com/api/public?q=${encodeURIComponent(target)}`);
+      const bucketData = await bucketRes.json();
+      if (bucketData.buckets) {
+        results.findings = bucketData.buckets.slice(0, 5).map(b => ({
+          name: 'Public Bucket',
+          bucket: b.name,
+          size: b.size,
+          access: b.access,
+          severity: 'CRITICAL'
+        }));
+      }
+      break;
+      
+    case 'paste':
+      const pasteRes = await fetch(`https://api.pastebin.com/public/${encodeURIComponent(target)}`);
+      // Simplified paste check
+      results.findings = []; // Placeholder for real paste API
+      break;
+      
+    case 'code':
+      // GitHub code search
+      const codeRes = await fetch(`https://api.github.com/search/code?q=${encodeURIComponent(target)}+in:file`);
+      const codeData = await codeRes.json();
+      if (codeData.items) {
+        results.findings = codeData.items.slice(0, 5).map(item => ({
+          name: 'Code Leak',
+          repo: item.repository.full_name,
+          path: item.path,
+          html_url: item.html_url,
+          severity: 'CRITICAL'
+        }));
+      }
+      break;
+      
+    case 'camera':
+      // Shodan camera search (limited)
+      results.findings = []; // Rate limited, requires API key
+      break;
+  }
+  
+  return results;
+}
+
+function displayModule(tool, results) {
+  const grid = document.getElementById("resultsGrid");
+  const cardId = `${tool}-card`;
+  let card = document.getElementById(cardId);
+  
+  if (!card) {
+    card = document.createElement('div');
+    card.id = cardId;
+    card.className = 'module-card active';
+    card.innerHTML = `
+      <div class="module-icon">${getToolIcon(tool)}</div>
+      <div class="module-title">${getToolTitle(tool)}</div>
+      <div class="result-count">${results.findings.length}</div>
+      <div class="module-results" id="${tool}-results"></div>
+    `;
+    grid.appendChild(card);
+  }
+  
+  const resultsDiv = document.getElementById(`${tool}-results`);
+  resultsDiv.innerHTML = results.findings.length === 0 
+    ? '<div style="color:#aaa;font-style:italic;">No findings</div>'
+    : results.findings.map(finding => 
+        `<div class="leak-item ${finding.severity === 'SAFE' ? 'safe-item' : finding.severity === 'WARNING' ? 'warning-item' : ''}">
+          ${finding.name}: ${finding.value || finding.subdomain || finding.bucket || finding.repo || finding.name}
+          ${finding.severity ? `<span style="float:right;font-size:10px">[${finding.severity}]</span>` : ''}
+        </div>`
+      ).join('');
+}
+
+function getToolIcon(tool) {
+  const icons = {
+    breach: '🔓', username: '👤', email: '✉️', domain: '🌐', 
+    cert: '🛡️', subdomain: '🔗', bucket: '☁️', paste: '📄',
+    code: '💻', camera: '📹'
+  };
+  return icons[tool] || '🔍';
+}
+
+function getToolTitle(tool) {
+  const titles = {
+    breach: 'Public Breach Exposure', username: 'Username Footprint Analyzer',
+    email: 'Email Metadata Intelligence', domain: 'Domain Ownership History',
+    cert: 'Certificate Transparency Monitor', subdomain: 'Subdomain Enumeration',
+    bucket: 'Open Cloud Bucket Finder', paste: 'Paste Site Leak Monitor',
+    code: 'Public Code Leak Scanner', camera: 'Public Camera Exposure'
+  };
+  return titles[tool] || tool.toUpperCase();
+}
+
+log("🕵️ OSINT Intelligence Suite loaded - 10x real APIs ready");
+</script>
+
+</body>
+</html>

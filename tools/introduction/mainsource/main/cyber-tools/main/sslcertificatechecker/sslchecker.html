@@ -1,0 +1,250 @@
+# Advanced SSL Certificate Checker
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced SSL Certificate Checker</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      background-color: ;
+      margin: 0;
+      padding: 20px;
+      color: #2c3e50;
+    }
+
+    .container {
+      max-width: 900px;
+      background: rgb(0, 0, 0);
+      margin: auto;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #00ff4c;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    input[type="text"], select {
+      flex: 1;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      min-width: 220px;
+    }
+
+    button {
+      padding: 12px 18px;
+      background-color: #fc0000;
+      color: rgb(0, 255, 21);
+      border: none;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out;
+    }
+
+    button:hover {
+      background-color: #b92929;
+    }
+
+    .status-box {
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    .valid {
+      background-color: #e9f9ec;
+      color: #ae2727;
+    }
+
+    .invalid {
+      background-color: #fdecea;
+      color: #c0392b;
+    }
+
+    .warning {
+      color: #e67e22;
+    }
+
+    .details {
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      font-size: 14px;
+    }
+
+    .details strong {
+      display: inline-block;
+      width: 180px;
+      color: #333;
+    }
+
+    .details ul {
+      margin: 10px 0 0 20px;
+      padding: 0;
+    }
+
+    .details li {
+      margin-bottom: 5px;
+    }
+
+    @media (max-width: 500px) {
+      .input-group {
+        flex-direction: column;
+      }
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Advanced SSL Certificate Checker</h1>
+    <div class="input-group">
+      <input type="text" id="domainInput" placeholder="Enter domain (e.g., example.com)" />
+      <select id="sigAlgoSelect">
+        <option value="random">Random Signature Algorithm</option>
+        <option value="all">All Signature Algorithms</option>
+      </select>
+      <select id="pubKeyAlgoSelect">
+        <option value="random">Random Public Key Algorithm</option>
+        <option value="all">All Public Key Algorithms</option>
+      </select>
+      <button onclick="checkSSL()">Check</button>
+    </div>
+    <div id="output"></div>
+  </div>
+
+  <script>
+    function generateMockIP(domain) {
+      let hash = 0;
+      for (let i = 0; i < domain.length; i++) {
+        hash = domain.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const ip = [
+        (hash >> 24) & 255,
+        (hash >> 16) & 255,
+        (hash >> 8) & 255,
+        hash & 255
+      ].map(octet => Math.abs(octet % 256));
+      return ip.join('.');
+    }
+
+    function simulateCertificateHistory(domain) {
+      const history = [
+        { issuer_name: "Let's Encrypt", serial_number: "1234567890", id: 1 },
+        { issuer_name: "DigiCert Inc", serial_number: "0987654321", id: 2 },
+        { issuer_name: "Sectigo", serial_number: "1122334455", id: 3 }
+      ];
+      return history.map(cert => `
+        <li>
+          <strong>Issuer:</strong> ${cert.issuer_name}<br/>
+          <strong>Serial:</strong> ${cert.serial_number}<br/>
+          <a href="https://crt.sh/?id=${cert.id}" target="_blank">View on crt.sh</a>
+        </li>
+      `).join('');
+    }
+
+    function simulateSSLData(domain, showAllSigAlgos, showAllPubKeyAlgos) {
+      const now = new Date();
+      const validFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const validTo = new Date(now.getTime() + (Math.random() * 90 + 10) * 24 * 60 * 60 * 1000);
+      const daysRemaining = Math.round((validTo - now) / (1000 * 60 * 60 * 24));
+
+      const issuers = ['Let\'s Encrypt', 'DigiCert Inc', 'Sectigo', 'GlobalSign', 'ZeroSSL'];
+      const commonNames = ['www.' + domain, domain];
+      const signatureAlgos = ['SHA256-RSA', 'ECDSA-SHA384', 'SHA1-RSA'];
+      const publicKeyAlgos = ['RSA', 'ECDSA'];
+      const keySizes = [2048, 4096, 384];
+
+      return {
+        status: daysRemaining > 0 ? 'Valid' : 'Expired',
+        issuer: issuers[Math.floor(Math.random() * issuers.length)],
+        commonName: commonNames[Math.floor(Math.random() * commonNames.length)],
+        signatureAlgorithms: showAllSigAlgos ? signatureAlgos : [signatureAlgos[Math.floor(Math.random() * signatureAlgos.length)]],
+        publicKeyAlgorithms: showAllPubKeyAlgos ? publicKeyAlgos : [publicKeyAlgos[Math.floor(Math.random() * publicKeyAlgos.length)]],
+        keySize: keySizes[Math.floor(Math.random() * keySizes.length)],
+        validFrom: validFrom.toDateString(),
+        validTo: validTo.toDateString(),
+        daysRemaining: daysRemaining,
+        certChain: ['Leaf Certificate', 'Intermediate CA', 'Root CA']
+      };
+    }
+
+    async function checkSSL() {
+      const domain = document.getElementById('domainInput').value.trim();
+      const sigOption = document.getElementById('sigAlgoSelect').value;
+      const pubOption = document.getElementById('pubKeyAlgoSelect').value;
+      const output = document.getElementById('output');
+      output.innerHTML = '';
+
+      if (!domain.match(/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)) {
+        output.innerHTML = `<div class="status-box invalid">❌ Invalid domain format</div>`;
+        return;
+      }
+
+      output.innerHTML = `<div class="status-box">🔍 Simulating SSL check for ${domain}...</div>`;
+
+      try {
+        const data = simulateSSLData(
+          domain,
+          sigOption === 'all',
+          pubOption === 'all'
+        );
+
+        const mockIP = generateMockIP(domain);
+        const historyHTML = simulateCertificateHistory(domain);
+        const isValid = data.status.toLowerCase() === 'valid';
+
+        output.innerHTML = `
+          <div class="status-box ${isValid ? 'valid' : 'invalid'}">
+            ${isValid ? '✅ SSL is valid' : '❌ SSL is expired or invalid'}
+            ${data.daysRemaining <= 15 ? '<span class="warning">⚠️ Expiring soon!</span>' : ''}
+          </div>
+          <div class="details">
+            <strong>Domain:</strong> ${domain}<br/>
+            <strong>IP Address:</strong> ${mockIP}<br/>
+            <strong>Port:</strong> 443<br/>
+            <strong>Status:</strong> ${data.status}<br/>
+            <strong>Issuer:</strong> ${data.issuer}<br/>
+            <strong>Common Name (CN):</strong> ${data.commonName}<br/>
+            <strong>Signature Algorithm(s):</strong>
+            <ul>${data.signatureAlgorithms.map(algo => `<li>${algo}</li>`).join('')}</ul>
+            <strong>Public Key Algorithm(s):</strong>
+            <ul>${data.publicKeyAlgorithms.map(algo => `<li>${algo}</li>`).join('')}</ul>
+            <strong>Key Size:</strong> ${data.keySize}<br/>
+            <strong>Valid From:</strong> ${data.validFrom}<br/>
+            <strong>Valid To:</strong> ${data.validTo}<br/>
+            <strong>Days Remaining:</strong> ${data.daysRemaining} days<br/>
+            <strong>Certificate Chain:</strong>
+            <ul>${data.certChain.map(c => `<li>${c}</li>`).join('')}</ul>
+            <strong>Certificate History:</strong>
+            <ul>${historyHTML}</ul>
+          </div>
+        `;
+      } catch (err) {
+        output.innerHTML = `<div class="status-box invalid">❌ Error simulating SSL check: ${err.message}</div>`;
+      }
+    }
+  </script>
+</body>
+</html>

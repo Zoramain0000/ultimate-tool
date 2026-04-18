@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZERODAYS • DNS & Domain Analyzer</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:Arial,Helvetica,sans-serif;color:#d1d1d1;overflow-x:hidden;}
+
+/* BACKGROUND VIDEO */
+.bg-video{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  object-fit:cover;z-index:-2;filter:brightness(0.3);
+}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:-1;}
+
+header{
+  background:rgba(0,0,0,0.7);padding:18px;text-align:center;border-bottom:1px solid #1f1f1f;
+}
+header h1{font-size:26px;letter-spacing:2px;}
+
+.container{
+  max-width:1000px;margin:30px auto;padding:20px;
+  background:rgba(0,0,0,0.65);border-radius:10px;box-shadow:0 0 25px rgba(0,0,0,0.8);
+}
+
+.section{margin-bottom:25px;}
+.section h2{
+  font-size:18px;margin-bottom:10px;color:#9f9f9f;
+  border-left:4px solid #555;padding-left:10px;
+}
+
+input{
+  width:100%;padding:12px;border-radius:6px;border:1px solid #444;
+  background:black;color:#fff;margin-bottom:10px;
+}
+
+button{
+  padding:12px 20px;background:black;border:1px solid #333;color:white;
+  cursor:pointer;border-radius:6px;transition:.3s;
+}
+button:hover{background:#111;transform:scale(1.05);}
+
+.result-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;
+}
+.card{
+  background:rgba(15,15,15,0.85);padding:14px;border-radius:8px;border:1px solid #222;font-size:14px;
+}
+.card span{display:block;color:#777;font-size:12px;margin-bottom:4px;}
+
+.log{
+  background:black;padding:12px;border-radius:6px;font-family:monospace;
+  font-size:13px;color:#8aff8a;max-height:250px;overflow:auto;border:1px solid #222;
+}
+
+footer{
+  background:rgba(0,0,0,0.7);text-align:center;padding:15px;font-size:13px;color:#777;
+}
+</style>
+</head>
+
+<body>
+
+<!-- BACKGROUND VIDEO -->
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERODAYS • DNS & DOMAIN ANALYZER</h1>
+</header>
+
+<div class="container">
+
+  <div class="section">
+    <h2>Enter Domain or IP</h2>
+    <input type="text" id="domainInput" placeholder="example.com" />
+    <button onclick="analyzeDomain()">Analyze</button>
+  </div>
+
+  <div class="section">
+    <h2>Results</h2>
+    <div class="result-grid" id="results"></div>
+  </div>
+
+  <div class="section">
+    <h2>Activity Log</h2>
+    <div class="log" id="log"></div>
+  </div>
+
+</div>
+
+<footer>
+  Technology information system tools for cyber‑security<br>
+  Educational & ethical use only
+</footer>
+
+<script>
+const log = msg => {
+  const l = document.getElementById("log");
+  l.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+  l.scrollTop = l.scrollHeight;
+};
+
+const addResult = (title, value) => {
+  const container = document.getElementById("results");
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `<span>${title}</span><div>${value || "-"}</div>`;
+  container.appendChild(card);
+};
+
+async function analyzeDomain(){
+  const domain = document.getElementById("domainInput").value.trim();
+  if(!domain){ alert("Enter a valid domain or IP."); return; }
+
+  log(`Starting analysis for: ${domain}`);
+  document.getElementById("results").innerHTML = "";
+
+  try{
+    // 1️⃣ DNS Records (A, MX, NS, TXT, CNAME)
+    const dnsRes = await fetch(`https://api.hackertarget.com/dnslookup/?q=${domain}`);
+    const dnsText = await dnsRes.text();
+    addResult("DNS Records", `<pre>${dnsText}</pre>`);
+    log("DNS records fetched.");
+
+    // 2️⃣ Reverse DNS Lookup
+    const revRes = await fetch(`https://api.hackertarget.com/reversedns/?q=${domain}`);
+    const revText = await revRes.text();
+    addResult("Reverse DNS", `<pre>${revText}</pre>`);
+    log("Reverse DNS fetched.");
+
+    // 3️⃣ WHOIS Lookup
+    // Replace YOUR_API_KEY with your key from https://jsonwhoisapi.com/
+    const whoisRes = await fetch(`https://jsonwhoisapi.com/api/v1/whois?identifier=${domain}`,{
+      headers:{ "Authorization":"Token h1vahLFBQScA4CApfdp9Mg" }
+    });
+    const whoisData = await whoisRes.json();
+    addResult("WHOIS", `<pre>${JSON.stringify(whoisData, null, 2)}</pre>`);
+    log("WHOIS data fetched.");
+
+    // 4️⃣ Domain Expiry
+    addResult("Domain Expiry", whoisData.expires || "-");
+
+    // 5️⃣ Subdomain Enumeration (Hackertarget)
+    const subRes = await fetch(`https://api.hackertarget.com/hostsearch/?q=${domain}`);
+    const subText = await subRes.text();
+    addResult("Subdomains", `<pre>${subText}</pre>`);
+    log("Subdomains fetched.");
+
+    // 6️⃣ TXT, SPF, DKIM, DMARC check (via DNS)
+    const txtRes = await fetch(`https://api.hackertarget.com/dnslookup/?q=${domain}`);
+    const txtText = await txtRes.text();
+    addResult("TXT/SPF/DKIM/DMARC", `<pre>${txtText}</pre>`);
+    log("TXT/SPF/DKIM/DMARC records fetched.");
+
+    log("Analysis completed successfully.");
+  }catch(e){
+    log("Error fetching data. Check API keys and internet connection.");
+    console.error(e);
+  }
+}
+</script>
+
+</body>
+</html>

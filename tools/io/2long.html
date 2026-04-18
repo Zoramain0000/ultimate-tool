@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Log IP with Country Filter v3.9 - Cloudflare QR Enhanced</title>
+
+<!-- Cloudflare QRCode Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+  /* ORIGINAL AESTHETIC RESTORED */
+  body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Consolas', 'Courier New', monospace;
+    color: red;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: rgba(0,0,0,0.1);
+  }
+
+  /* Background Video - Restored Original Source */
+  #bgVideo {
+    position: fixed;
+    top: 0;
+    left: 0;
+    min-width: 100%;
+    min-height: 100%;
+    z-index: -1;
+    object-fit: cover;
+    filter: brightness(0.3) contrast(1.2);
+  }
+
+  header {
+    padding: 12px 20px;
+    background: rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    backdrop-filter: blur(4px);
+    border-bottom: 1px solid rgba(255,0,0,0.3);
+    z-index: 10;
+  }
+
+  label {
+    font-weight: bold;
+    font-size: 13px;
+    white-space: nowrap;
+    text-transform: uppercase;
+    color: #ff5555;
+  }
+
+  select, input[type=button], input[type=text] {
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid #500;
+    outline: none;
+    background: rgba(0,0,0,0.1);
+    color: red;
+  }
+
+  input[type=button] {
+    background: #800000;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    font-weight: bold;
+    border-color: red;
+  }
+
+  input[type=button]:hover {
+    background: red;
+    color: black;
+    box-shadow: 0 0 15px red;
+  }
+
+  input[type=text] {
+    flex-grow: 1;
+    min-width: 150px;
+  }
+  
+  input[type=text]:focus, select:focus {
+    border-color: red;
+    box-shadow: 0 0 5px rgba(255,0,0,0.5);
+  }
+
+  #logContainer {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.1);
+    padding: 10px 0;
+    position: relative;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead tr {
+    background: rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  }
+
+  th, td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #330000;
+    white-space: nowrap;
+    text-align: left;
+  }
+
+  th {
+    color: #ff5555;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 1px;
+    border-bottom: 2px solid red;
+  }
+
+  tbody tr {
+    transition: background 0.1s;
+  }
+
+  tbody tr:hover {
+    background: rgba(255,0,0,0.2);
+    cursor: pointer;
+    text-shadow: 0 0 2px red;
+  }
+
+  tbody tr.clickable { cursor: pointer; }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #050505; }
+  ::-webkit-scrollbar-thumb { background: #800000; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: red; }
+
+  /* QR Modal Styling */
+  #qrModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  #qrModal.active {
+    opacity: 1;
+  }
+
+  #qrModalContent {
+    background: rgba(10,0,0,0.95);
+    padding: 25px;
+    border-radius: 8px;
+    border: 2px solid red;
+    text-align: center;
+    max-width: 95%;
+    max-height: 95%;
+    overflow-y: auto;
+    box-shadow: 0 0 50px rgba(255,0,0,0.3);
+    position: relative;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+  }
+  
+  #qrModal.active #qrModalContent {
+    transform: scale(1);
+  }
+
+  #qrModalContent h3 {
+    margin: 0 0 15px 0;
+    font-size: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: red;
+    text-shadow: 0 0 10px red;
+    border-bottom: 1px solid #500;
+    padding-bottom: 10px;
+  }
+
+  #qrSizeSelector {
+    margin-bottom: 15px;
+    padding: 5px;
+    background: black;
+    color: red;
+    border: 1px solid red;
+    font-family: inherit;
+    cursor: pointer;
+    width: 200px;
+  }
+
+  #qrImageContainer {
+    margin: 0 auto 20px auto;
+    border: 4px solid #500;
+    border-radius: 4px;
+    box-shadow: inset 0 0 30px #000;
+    background: #ffffff; /* Pure white background is critical for scanning */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: width 0.3s ease, height 0.3s ease;
+    overflow: hidden;
+    position: relative;
+    /* Flex ensures centering */
+  }
+
+  /* Container for the cloudflared qrcode.js output */
+  #qrcode {
+    padding: 10px;
+    background: #fff;
+  }
+  
+  #qrcode img {
+    display: block; /* Remove bottom spacing */
+  }
+
+  #qrHiddenOverlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #ff3333;
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 10;
+    border-radius: 2px;
+  }
+
+  .qr-hidden #qrcode {
+    filter: blur(20px) grayscale(100%);
+    opacity: 0.1;
+    transition: all 0.3s ease;
+  }
+
+  .qr-hidden #qrHiddenOverlay {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  #qrDetails {
+    background: #000;
+    border: 1px solid #500;
+    color: #ccc;
+    padding: 10px;
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    text-align: left;
+    white-space: pre-wrap;
+    max-height: 150px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+  }
+
+  #qrStatus {
+    font-size: 12px;
+    color: #ffaa00;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .modal-btn {
+    background: #200;
+    color: red;
+    border: 1px solid red;
+    padding: 8px 16px;
+    font-family: monospace;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .modal-btn:hover {
+    background: red;
+    color: black;
+    box-shadow: 0 0 10px red;
+  }
+
+  .btn-exit { border-color: #ff3333; }
+  .btn-hide { border-color: #666; color: #aaa; }
+  .btn-hide:hover { background: #666; color: black; box-shadow: none;}
+  .btn-show { display: none; background: #002200; color: #0f0; border-color: #0f0; }
+  .btn-show:hover { background: #0f0; color: black; box-shadow: 0 0 10px #0f0; }
+  .btn-download { border-color: #0055ff; color: #55aaff; }
+  .btn-download:hover { background: #0055ff; color: white; box-shadow: 0 0 10px #0055ff; }
+
+  #loadingIndicator {
+    padding: 10px 0;
+    text-align: center;
+    color: #ff5555;
+    font-style: italic;
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+  @media (max-width: 600px) {
+    th, td { padding: 6px 4px; font-size: 10px; }
+    header { padding: 10px; gap: 5px; flex-direction: column; align-items: stretch; }
+    select, input[type=button] { width: 100%; box-sizing: border-box; }
+    #qrModalContent { padding: 15px; width: 95%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Original Background Video (Preserved Filename) -->
+<video autoplay muted loop id="bgVideo">
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+  <!-- Fallback message if video is missing locally -->
+  Your browser does not support the video tag.
+</video>
+
+<header>
+  <div style="display:flex; gap:10px; flex-wrap:wrap; width:100%;">
+    <div style="display:flex; gap:5px; align-items:center;">
+      <label for="categorySelect">Category:</label>
+      <select id="categorySelect">
+        <option value="network">Network</option>
+        <option value="security">Security</option>
+        <option value="firewall">Firewall</option>
+        <option value="web">Web</option>
+        <option value="system">System</option>
+      </select>
+    </div>
+
+    <div style="display:flex; gap:5px; align-items:center;">
+      <label for="countrySelect">Country:</label>
+      <select id="countrySelect" aria-label="Select country for logs"></select>
+    </div>
+
+    <div style="display:flex; gap:5px; align-items:center;">
+      <label for="ipTypeSelect">IP Type:</label>
+      <select id="ipTypeSelect">
+        <option value="ipv1">IPv1</option>
+        <option value="ipv2">IPv2</option>
+        <option value="ipv3">IPv3</option>
+        <option value="ipv4">IPv4</option>
+        <option value="ipv5">IPv5</option>
+        <option value="ipv6">IPv6</option>
+        <option value="ipv7">IPv7</option>
+        <option value="ipv8">IPv8</option>
+        <option value="ipv9">IPv9</option>
+        <option value="mac">MAC Addr</option>
+      </select>
+    </div>
+
+    <div style="display:flex; gap:5px; align-items:center;">
+      <label for="portRangeSelect">Port Range:</label>
+      <select id="portRangeSelect">
+        <option value="wellknown">Well Known (1-1024)</option>
+        <option value="all">All Ports (1-65535)</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap; width:100%; margin-top:10px;">
+    <input type="button" id="generateBtn" value="GENERATE LOGS" />
+    <input type="text" id="searchInput" placeholder="Search logs..." />
+    <input type="button" id="downloadBtn" value="DOWNLOAD CSV" />
+  </div>
+</header>
+
+<div id="logContainer" tabindex="0" aria-live="polite">
+  <table role="grid">
+    <thead>
+      <tr>
+        <th scope="col">Primary Address</th>
+        <th scope="col">Secondary</th>
+        <th scope="col">MAC</th>
+        <th scope="col">Port</th>
+        <th scope="col">Country</th>
+        <th scope="col">Date</th>
+        <th scope="col">Time</th>
+        <th scope="col">User-Agent</th>
+        <th scope="col">Event</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+  <div id="loadingIndicator" hidden>Intercepting packets...</div>
+</div>
+
+<!-- QR Modal -->
+<div id="qrModal">
+  <div id="qrModalContent">
+    <h3>Authentic Log QR</h3>
+    
+    <select id="qrSizeSelector">
+      <option value="128">Size: Small (128px)</option>
+      <option value="256" selected>Size: Medium (256px)</option>
+      <option value="512">Size: Large (512px)</option>
+    </select>
+    
+    <div id="qrImageContainer">
+      <!-- Cloudflared qrcode.js will inject an IMG here -->
+      <div id="qrcode"></div>
+      <div id="qrHiddenOverlay">
+        <div style="font-size:40px; margin-bottom:10px;">🔒</div>
+        <div>CONTENT HIDDEN</div>
+      </div>
+    </div>
+    
+    <div id="qrStatus"></div>
+    <div id="qrDetails"></div>
+    
+    <div class="modal-actions">
+      <button id="btnHide" class="modal-btn btn-hide">🚫 Hide QR</button>
+      <button id="btnShow" class="modal-btn btn-show">👁 Reveal QR</button>
+      <button id="btnDownloadQR" class="modal-btn btn-download">💾 Save Image</button>
+      <button id="btnExit" class="modal-btn btn-exit">❌ Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/**
+ * ------------------------------------------------------------------
+ * MAIN APPLICATION LOGIC
+ * ------------------------------------------------------------------
+ */
+(() => {
+const countries = [
+    "United States", "Canada", "United Kingdom", "Germany", "France", "Australia", "India",
+    "Brazil", "Japan", "Russia", "China", "Mexico", "Italy", "South Korea", "Netherlands",
+    "Spain", "Sweden", "Norway", "Poland", "Turkey", "South Africa", "Argentina", "Belgium",
+    "Switzerland", "New Zealand", "Singapore", "Malaysia", "Thailand", "Indonesia", "Vietnam",
+    "Ireland", "Czech Republic", "Portugal", "Greece", "Finland", "Denmark", "Colombia",
+    "Chile", "Egypt", "United Arab Emirates", "Saudi Arabia", "Israel", "Philippines",
+    "Hungary", "Romania", "Ukraine", "Pakistan", "Bangladesh", "Morocco", "Algeria", "Angola",
+    "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain",
+    "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia",
+    "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso",
+    "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic",
+    "Chad", "Chile", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba",
+    "Cyprus", "Czech Republic", "Democratic Republic of the Congo", "Denmark", "Djibouti",
+    "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea",
+    "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon",
+    "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau",
+    "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran",
+    "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan",
+    "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho",
+    "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi",
+    "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius",
+    "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco",
+    "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand",
+    "Nicaragua", "Niger", "Nigeria", "North Macedonia", "Norway", "Oman", "Pakistan",
+    "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines",
+    "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis",
+    "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe",
+    "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia",
+    "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan",
+    "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Tajikistan",
+    "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia",
+    "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom",
+    "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
+    "Yemen", "Zambia", "Zimbabwe"
+  ];
+
+const categories = {
+  network: ["TCP SYN","UDP Packet","DNS Query","ARP Request","ICMP Ping"],
+  security: ["LOGIN SUCCESS","LOGIN FAILED","BRUTE FORCE","SQL INJECT","XSS ATTEMPT"],
+  firewall: ["DENY TCP","ALLOW UDP","DROP PORT ","BLOCK ","REJECT ICMP"],
+  web: ["GET /index.html","POST /login","404 NOT FOUND","500 ERROR","HEAD /api", "200 OK "],
+  system: ["USER LOGIN","FILE ACCESS","SERVICE START","PROCESS KILL","DISK FULL"]
+};
+
+const elements = {
+  countrySelect: document.getElementById('countrySelect'),
+  categorySelect: document.getElementById('categorySelect'),
+  ipTypeSelect: document.getElementById('ipTypeSelect'),
+  portRangeSelect: document.getElementById('portRangeSelect'),
+  generateBtn: document.getElementById('generateBtn'),
+  searchInput: document.getElementById('searchInput'),
+  logBody: document.getElementById('logBody'),
+  logContainer: document.getElementById('logContainer'),
+  loadingIndicator: document.getElementById('loadingIndicator'),
+  downloadBtn: document.getElementById('downloadBtn'),
+  
+  // Modal Elements
+  qrModal: document.getElementById('qrModal'),
+  qrImageContainer: document.getElementById('qrImageContainer'),
+  qrDiv: document.getElementById('qrcode'), // Target div for Cloudflare lib
+  qrDetails: document.getElementById('qrDetails'),
+  qrStatus: document.getElementById('qrStatus'),
+  qrSizeSelector: document.getElementById('qrSizeSelector'),
+  btnHide: document.getElementById('btnHide'),
+  btnShow: document.getElementById('btnShow'),
+  btnDownloadQR: document.getElementById('btnDownloadQR'),
+  btnExit: document.getElementById('btnExit'),
+};
+
+let isQRHidden = false;
+let qrCounter = 0;
+let allEntries = [];
+let currentCountry = null;
+let currentQRData = null;
+let qrCodeObj = null; // Store the qrcode.js instance
+
+function populateCountries() { 
+  countries.forEach(c => {
+    const o = document.createElement('option'); 
+    o.value = c; 
+    o.textContent = c; 
+    elements.countrySelect.appendChild(o); 
+  }); 
+}
+
+function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+function generateAddress(type) {
+  switch(type) {
+    case 'ipv1': return `${randInt(0,255)}.${randInt(0,255)}.${randInt(0,255)}.${randInt(0,255)}`; 
+    case 'ipv2': return `${randInt(0,255)}.${randInt(0,255)}.${randInt(0,255)}.${randInt(0,255)}`; 
+    case 'ipv3': return `${randInt(0,255)}.${randInt(0,255)}.${randInt(0,255)}.${randInt(0,255)}`; 
+    case 'ipv4': return `${randInt(1,255)}.${randInt(0,255)}.${randInt(0,255)}.${randInt(1,254)}`;
+    case 'ipv5': return `${randInt(1,255)}.${randInt(0,255)}.${randInt(0,255)}.${randInt(1,254)}:${randInt(0,65535)}`; 
+    case 'ipv6': return `${randInt(1000,9999).toString(16)}:${randInt(1000,9999).toString(16)}:${randInt(1000,9999).toString(16)}:${randInt(1000,9999).toString(16)}:${randInt(1000,9999).toString(16)}:${randInt(1000,9999).toString(16)}:${randInt(1000,9999).toString(16)}:${randInt(1000,9999).toString(16)}`;
+    case 'ipv7': return `7::${randInt(1000,9999).toString(16)}:${randInt(1000,9999).toString(16)}`; 
+    case 'ipv8': return `8::${randInt(1000,9999).toString(16)}:${randInt(1000,9999).toString(16)}::${randInt(1,65535)}`; 
+    case 'ipv9': return `9::${randInt(100,999)}:${randInt(1000,9999).toString(16)}::${randInt(1,65535)}`; 
+    case 'mac': return Array(6).fill().map(() => randInt(0,255).toString(16).padStart(2,'0')).join(':');
+    default: return '0.0.0.0';
+  }
+}
+
+function randomPort() { 
+  const range = elements.portRangeSelect.value;
+  if (range === 'wellknown') {
+    return randInt(1, 1024);
+  } else {
+    return randInt(1, 65535);
+  }
+}
+
+function randomDate() { 
+  const y = 2024 + randInt(0,2), m = randInt(1,12), d = randInt(1,28); 
+  return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`; 
+}
+
+function randomTime() { 
+  const h = randInt(0,23), m = randInt(0,59), s = randInt(0,59); 
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; 
+}
+
+function generateUserAgent() {
+  return `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/116.0.0.0 Safari/537.36`;
+}
+
+function randomEvent() {
+  const cat = elements.categorySelect.value;
+  return categories[cat][randInt(0, categories[cat].length - 1)];
+}
+
+const BATCH_SIZE = 1000, MAX_LOGS = 99999999999;
+let totalLogsGenerated = 0;
+
+function createRow(entry) {
+  const tr = document.createElement('tr');
+  tr.className = 'clickable';
+  tr.dataset.entry = JSON.stringify(entry);
+  tr.innerHTML = `
+    <td>${entry.primaryAddress}</td>
+    <td>${entry.secondaryAddress}</td>
+    <td>${entry.mac}</td>
+    <td>${entry.port}</td>
+    <td>${entry.country}</td>
+    <td>${entry.date}</td>
+    <td>${entry.time}</td>
+    <td>${entry.userAgent}</td>
+    <td>${entry.event}</td>
+  `;
+  return tr;
+}
+
+function generateLogEntryForCountry(country) {
+  const ipType = elements.ipTypeSelect.value;
+  const primaryAddress = generateAddress(ipType);
+  const secondaryAddress = ipType === 'mac' ? generateAddress('ipv4') : generateAddress('mac');
+  
+  return {
+    primaryAddress,
+    secondaryAddress,
+    mac: ipType === 'mac' ? primaryAddress : generateAddress('mac'),
+    port: randomPort(),
+    country,
+    date: randomDate(),
+    time: randomTime(),
+    userAgent: generateUserAgent(),
+    event: randomEvent()
+  };
+}
+
+function loadMoreLogs() {
+  if(totalLogsGenerated >= MAX_LOGS) {
+    elements.loadingIndicator.textContent = "End of logs reached.";
+    elements.loadingIndicator.hidden = false;
+    return;
+  }
+  elements.loadingIndicator.hidden = false;
+  setTimeout(() => {
+    const fragment = document.createDocumentFragment();
+    for(let i = 0; i < BATCH_SIZE && totalLogsGenerated < MAX_LOGS; i++, totalLogsGenerated++) {
+      const entry = generateLogEntryForCountry(currentCountry);
+      allEntries.push(entry);
+      fragment.appendChild(createRow(entry));
+    }
+    elements.logBody.appendChild(fragment);
+    elements.loadingIndicator.hidden = true;
+  }, 100);
+}
+
+function resetLogs() {
+  totalLogsGenerated = 0;
+  allEntries = [];
+  elements.logBody.innerHTML = '';
+  elements.loadingIndicator.hidden = true;
+}
+
+function filterLogs() {
+  const filter = elements.searchInput.value.toLowerCase();
+  [...elements.logBody.children].forEach(tr => {
+    const text = tr.textContent.toLowerCase();
+    tr.style.display = text.includes(filter) ? "" : "none";
+  });
+}
+
+// ✅ CLOUDFLARED QR GENERATION (Using qrcode.js)
+function generateQRImage() {
+    if (!currentQRData) return;
+
+    qrCounter++;
+    const size = parseInt(elements.qrSizeSelector.value);
+    
+    // Clear previous QR code
+    elements.qrDiv.innerHTML = "";
+    
+    // Update container dimensions to match QR size
+    elements.qrImageContainer.style.width = (size + 20) + 'px'; // +20 for padding
+    elements.qrImageContainer.style.height = (size + 20) + 'px';
+    
+    elements.qrStatus.textContent = `Generating Authentic QR #${qrCounter}...`;
+    
+    try {
+        // Create new QR Code using Cloudflare library
+        qrCodeObj = new QRCode(elements.qrDiv, {
+            text: currentQRData,
+            width: size,
+            height: size,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+        
+        elements.qrStatus.textContent = `✅ Authentic QR #${qrCounter} READY`;
+    } catch (e) {
+        console.error("QR Generation Error:", e);
+        elements.qrStatus.textContent = "❌ Generation Failed";
+    }
+}
+
+function showQRModal(entry) {
+  const timestamp = new Date().toISOString();
+  currentQRData = `LogID:${qrCounter+1}\nIP:${entry.primaryAddress}\nMAC:${entry.mac}\nPort:${entry.port}\nCN:${entry.country}\nDT:${entry.date} ${entry.time}\nEV:${entry.event}`;
+  
+  elements.qrDetails.textContent = currentQRData;
+  
+  // Show modal
+  elements.qrModal.style.display = 'flex';
+  setTimeout(() => elements.qrModal.classList.add('active'), 10);
+  
+  // Reset UI state
+  elements.qrModalContent.classList.remove('qr-hidden');
+  elements.btnHide.style.display = 'inline-block';
+  elements.btnShow.style.display = 'none';
+  
+  // Generate the QR
+  generateQRImage();
+}
+
+// ✅ EVENT LISTENERS
+elements.generateBtn.onclick = () => {
+  currentCountry = elements.countrySelect.value;
+  resetLogs();
+  loadMoreLogs();
+};
+
+elements.logContainer.onscroll = () => {
+  if(!elements.loadingIndicator.hidden || elements.searchInput.value.trim()) return;
+  if(elements.logContainer.scrollTop + elements.logContainer.clientHeight >= elements.logContainer.scrollHeight - 50) {
+    loadMoreLogs();
+  }
+};
+
+// Table Row Click (Delegation)
+elements.logBody.addEventListener('click', (e) => {
+  const tr = e.target.closest('tr');
+  if (tr && tr.classList.contains('clickable')) {
+    try {
+      const entry = JSON.parse(tr.dataset.entry);
+      showQRModal(entry);
+    } catch(err) {
+      console.error("Failed to parse entry", err);
+    }
+  }
+});
+
+// Resize Listener
+elements.qrSizeSelector.addEventListener('change', () => {
+    generateQRImage();
+});
+
+// Modal Controls
+elements.btnHide.onclick = () => {
+  elements.qrModalContent.classList.add('qr-hidden');
+  elements.btnHide.style.display = 'none';
+  elements.btnShow.style.display = 'inline-block';
+};
+
+elements.btnShow.onclick = () => {
+  elements.qrModalContent.classList.remove('qr-hidden');
+  elements.btnHide.style.display = 'inline-block';
+  elements.btnShow.style.display = 'none';
+};
+
+elements.btnDownloadQR.onclick = () => {
+    // Find the img generated by qrcode.js
+    const img = elements.qrDiv.querySelector('img');
+    if (img) {
+        const link = document.createElement('a');
+        link.download = `AUTH-QR-${Date.now()}.png`;
+        link.href = img.src;
+        link.click();
+    } else {
+        alert("QR Code image not ready.");
+    }
+};
+
+function closeModal() {
+  elements.qrModal.classList.remove('active');
+  setTimeout(() => {
+      elements.qrModal.style.display = 'none';
+      currentQRData = null;
+      // Clear QR code on close to save memory
+      elements.qrDiv.innerHTML = "";
+  }, 300);
+}
+
+elements.btnExit.onclick = closeModal;
+elements.qrModal.onclick = (e) => {
+  if(e.target === elements.qrModal) closeModal();
+};
+
+// Other Listeners
+elements.searchInput.oninput = filterLogs;
+elements.downloadBtn.onclick = () => {
+  const csv = "Primary,Secondary,MAC,Port,Country,Date,Time,User-Agent,Event\n" + 
+    allEntries.map(e => `"${e.primaryAddress}","${e.secondaryAddress}","${e.mac}",${e.port},"${e.country}","${e.date}","${e.time}","${e.userAgent}","${e.event}"`).join("\n");
+  const link = document.createElement("a");
+  link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  link.download = `logs-${Date.now()}.csv`;
+  link.click();
+};
+
+// Initialize
+populateCountries();
+elements.countrySelect.value = 'United States';
+currentCountry = 'United States';
+loadMoreLogs();
+})();
+</script>
+</body>
+</html>

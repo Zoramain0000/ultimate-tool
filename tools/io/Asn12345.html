@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ASN12345 Live BGP Intelligence</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+html, body {
+    margin: 0;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    font-family: monospace;
+    color: #00ffcc;
+    overflow: hidden;
+}
+
+video {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.25;
+    z-index: -1;
+}
+
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); }
+
+header {
+    padding: 12px;
+    background: rgba(0,0,0,0.5);
+    border-bottom: 1px solid #00ffcc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+button {
+    background: transparent;
+    color: #00ffcc;
+    border: 1px solid #00ffcc;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+button:hover { background: #00ffcc; color: #000; }
+
+main {
+    display: grid;
+    grid-template-columns: 70% 30%;
+    height: calc(100vh - 55px);
+}
+
+.table-wrap {
+    overflow-y: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+th, td {
+    padding: 6px;
+    border-bottom: 1px solid rgba(0,255,204,.15);
+}
+
+tr:hover { background: rgba(0,255,204,.08); cursor: pointer; }
+
+.A { color: #00ff00; }
+.W { color: #ff5555; }
+
+.details {
+    border-left: 1px solid #00ffcc;
+    padding: 10px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.6);
+}
+
+pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 11px;
+    color: #00ffaa;
+}
+</style>
+</head>
+<body>
+
+<video autoplay muted loop>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <div>
+    ASN12345 LIVE BGP LOGS  
+    | Live: <span id="liveCount">0</span>  
+    | Captured: <span id="capCount">0</span>
+  </div>
+  <button onclick="capture()">📌 Capture Log</button>
+</header>
+
+<main>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Type</th>
+          <th>Prefix</th>
+          <th>AS Path</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <div class="details">
+    <b>Log Details</b>
+    <pre id="details">Select a log entry…</pre>
+  </div>
+</main>
+
+<script>
+const ASN = 12345;
+const rows = document.getElementById("rows");
+const details = document.getElementById("details");
+const liveCount = document.getElementById("liveCount");
+const capCount = document.getElementById("capCount");
+
+let count = 0;
+let captured = 0;
+let selectedRow = null;
+
+const ws = new WebSocket("wss://ris-live.ripe.net/v1/ws/");
+
+ws.onopen = () => {
+  ws.send(JSON.stringify({
+    type: "ris_subscribe",
+    data: { type: "UPDATE", path: [ASN] }
+  }));
+};
+
+ws.onmessage = e => {
+  const msg = JSON.parse(e.data);
+  if (!msg.data || !msg.data.path) return;
+
+  count++;
+  liveCount.textContent = count;
+
+  const tr = document.createElement("tr");
+  tr.className = msg.data.type;
+
+  tr.innerHTML = `
+    <td>${new Date().toISOString()}</td>
+    <td class="${msg.data.type}">${msg.data.type}</td>
+    <td>${msg.data.prefix || "-"}</td>
+    <td>${msg.data.path.join(" ")}</td>
+  `;
+
+  tr.onclick = () => {
+    selectedRow = tr;
+    details.textContent = JSON.stringify(msg.data, null, 2);
+  };
+
+  rows.appendChild(tr);
+  rows.parentElement.scrollTop = rows.parentElement.scrollHeight;
+};
+
+function capture() {
+  if (!selectedRow) return;
+  selectedRow.style.background = "rgba(255,255,0,.15)";
+  captured++;
+  capCount.textContent = captured;
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,442 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ZeroDays Advanced Tool Suite</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 30px;
+      background:rgba(0, 0, 0, 0.5);
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: red;
+    }
+    h2 {
+        color: red;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 15px;
+    }
+
+    select, input[type="number"], input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border-radius: 6px;
+      border: none;
+      font-size: 1rem;
+    }
+
+    button {
+      background-color: #ff1900;
+      color: #00fb2a;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 15px;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+        background:rgba(0, 0, 0, 0.5);
+    }
+
+    .output-box {
+      margin-top: 20px;
+      background: #1c1c1c;
+      padding: 15px;
+      border-radius: 6px;
+      word-break: break-word;
+      font-family: monospace;
+      font-size: 1rem;
+      position: relative;
+    }
+
+    .section {
+      margin-top: 40px;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    .editor {
+      height: 200px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 10px;
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>ZeroDays Advanced Tool Suite</h1>
+
+    <!-- QR Code Generator -->
+    <div class="section">
+      <h2>📱 QR Code Generator</h2>
+      <input type="text" id="qrInput" placeholder="Enter text or URL..." />
+      <button onclick="generateQRCode()">Generate QR Code</button>
+      <div class="output-box" id="qrOutput"></div>
+    </div>
+
+    <!-- WiFi QR Code Generator -->
+    <div class="section">
+      <h2>📶 WiFi QR Code Generator</h2>
+      <input type="text" id="wifiSSID" placeholder="SSID" />
+      <input type="text" id="wifiPassword" placeholder="Password" />
+      <select id="wifiEncryption">
+        <option value="WPA">WPA</option>
+        <option value="WEP">WEP</option>
+        <option value="nopass">No Password</option>
+      </select>
+      <button onclick="generateWiFiQRCode()">Generate WiFi QR Code</button>
+      <div class="output-box" id="wifiQROutput"></div>
+    </div>
+
+    <!-- SVG Placeholder Generator -->
+    <div class="section">
+      <h2>🖼️ SVG Placeholder Generator</h2>
+      <input type="text" id="svgWidth" placeholder="Width (e.g., 300)" />
+      <input type="text" id="svgHeight" placeholder="Height (e.g., 200)" />
+      <input type="text" id="svgText" placeholder="Text (e.g., Placeholder)" />
+      <button onclick="generateSVGPlaceholder()">Generate SVG Placeholder</button>
+      <div class="output-box" id="svgOutput"></div>
+    </div>
+
+    <!-- Git Cheatsheet -->
+    <div class="section">
+      <h2>📚 Git Cheatsheet</h2>
+      <div class="output-box" id="gitCheatsheetOutput">
+        <pre>
+          git init - Initialize a new Git repository
+          git clone [url] - Clone a repository
+          git add [file] - Stage changes
+          git commit -m "message" - Commit changes
+          git push - Push changes to remote
+          git pull - Fetch and merge changes from remote
+          git status - Check the status of the repository
+          git log - View commit history
+        </pre>
+      </div>
+    </div>
+
+    <!-- Random Port Generator -->
+    <div class="section">
+      <h2>🔢 Random Port Generator</h2>
+      <button onclick="generateRandomPort()">Generate Random Port</button>
+      <div class="output-box" id="randomPortOutput"></div>
+    </div>
+
+    <!-- Crontab Generator -->
+    <div class="section">
+      <h2>🕒 Crontab Generator</h2>
+      <input type="text" id="cronMinute" placeholder="Minute (0-59)" />
+      <input type="text" id="cronHour" placeholder="Hour (0-23)" />
+      <input type="text" id="cronDay" placeholder="Day of Month (1-31)" />
+      <input type="text" id="cronMonth" placeholder="Month (1-12)" />
+      <input type="text" id="cronWeekday" placeholder="Day of Week (0-6)" />
+      <input type="text" id="cronCommand" placeholder="Command to run" />
+      <button onclick="generateCrontab()">Generate Crontab Entry</button>
+      <div class="output-box" id="crontabOutput"></div>
+    </div>
+
+    <!-- JSON Prettify and Format -->
+    <div class="section">
+      <h2>📄 JSON Prettify and Format</h2>
+      <textarea id="jsonInputPrettify" placeholder="Enter JSON..."></textarea>
+      <button onclick="prettifyJSON()">Prettify JSON</button>
+      <div class="output-box" id="jsonPrettifyOutput"></div>
+    </div>
+
+    <!-- JSON Minify -->
+    <div class="section">
+      <h2>📄 JSON Minify</h2>
+      <textarea id="jsonInputMinify" placeholder="Enter JSON..."></textarea>
+      <button onclick="minifyJSON()">Minify JSON</button>
+      <div class="output-box" id="jsonMinifyOutput"></div>
+    </div>
+
+    <!-- SQL Prettify and Format -->
+    <div class="section">
+      <h2>📄 SQL Prettify and Format</h2>
+      <textarea id="sqlInput" placeholder="Enter SQL..."></textarea>
+      <button onclick="prettifySQL()">Prettify SQL</button>
+      <div class="output-box" id="sqlPrettifyOutput"></div>
+    </div>
+
+    <!-- Chmod Calculator -->
+    <div class="section">
+      <h2>🔒 Chmod Calculator</h2>
+      <input type="text" id="chmodInput" placeholder="Enter permissions (e.g., 755)" />
+      <button onclick="calculateChmod()">Calculate Chmod</button>
+      <div class="output-box" id="chmodOutput"></div>
+    </div>
+
+    <!-- Docker Run to Docker Compose Converter -->
+    <div class="section">
+      <h2>🐳 Docker Run to Docker Compose Converter</h2>
+      <textarea id="dockerRunInput" placeholder="Enter Docker run command..."></textarea>
+      <button onclick="convertDockerRunToCompose()">Convert to Docker Compose</button>
+      <div class="output-box" id="dockerComposeOutput"></div>
+    </div>
+
+    <!-- XML Formatter -->
+    <div class="section">
+      <h2>📄 XML Formatter</h2>
+      <textarea id="xmlInput" placeholder="Enter XML..."></textarea>
+      <button onclick="formatXML()">Format XML</button>
+      <div class="output-box" id="xmlOutput"></div>
+    </div>
+
+    <!-- YAML Prettify and Format -->
+    <div class="section">
+      <h2>📄 YAML Prettify and Format</h2>
+      <textarea id="yamlInput" placeholder="Enter YAML..."></textarea>
+      <button onclick="prettifyYAML()">Prettify YAML</button>
+      <div class="output-box" id="yaml Output"></div>
+    </div>
+
+    <!-- Email Normalizer -->
+    <div class="section">
+      <h2>📧 Email Normalizer</h2>
+      <input type="text" id="emailInput" placeholder="Enter email..." />
+      <button onclick="normalizeEmail()">Normalize Email</button>
+      <div class="output-box" id="emailOutput"></div>
+    </div>
+
+    <!-- Regex Tester -->
+    <div class="section">
+      <h2>🔍 Regex Tester</h2>
+      <input type="text" id="regexInput" placeholder="Enter regex..." />
+      <input type="text" id="testString" placeholder="Enter string to test..." />
+      <button onclick="testRegex()">Test Regex</button>
+      <div class="output-box" id="regexTestOutput"></div>
+    </div>
+
+    <!-- Regex Cheatsheet -->
+    <div class="section">
+      <h2>📜 Regex Cheatsheet</h2>
+      <div class="output-box" id="regexCheatsheetOutput">
+        <pre>
+          . - Any character
+          * - Zero or more occurrences
+          + - One or more occurrences
+          ? - Zero or one occurrence
+          [] - Character class
+          () - Grouping
+          \ - Escape character
+        </pre>
+      </div>
+    </div>
+
+    <!-- IPv4 Subnet Calculator -->
+    <div class="section">
+      <h2>🌐 IPv4 Subnet Calculator</h2>
+      <input type="text" id="subnetInput" placeholder="Enter IP address and subnet mask..." />
+      <button onclick="calculateSubnet()">Calculate Subnet</button>
+      <div class="output-box" id="subnetOutput"></div>
+    </div>
+
+    <!-- IPv4 Address Converter -->
+    <div class="section">
+      <h2>🔄 IPv4 Address Converter</h2>
+      <input type="text" id="ipv4Input" placeholder="Enter IPv4 address..." />
+      <button onclick="convertIPv4()">Convert IPv4</button>
+      <div class="output-box" id="ipv4Output"></div>
+    </div>
+
+    <!-- IPv4 Range Expander -->
+    <div class="section">
+      <h2>📈 IPv4 Range Expander</h2>
+      <input type="text" id="ipv4RangeInput" placeholder="Enter IPv4 range (e.g., 192.168.1.1-192.168.1.10)" />
+      <button onclick="expandIPv4Range()">Expand Range</button>
+      <div class="output-box" id="ipv4RangeOutput"></div>
+    </div>
+
+    <!-- IPv6 ULA Generator -->
+    <div class="section">
+      <h2>🌐 IPv6 ULA Generator</h2>
+      <button onclick="generateIPv6ULA()">Generate IPv6 ULA</button>
+      <div class="output-box" id="ipv6Output"></div>
+    </div>
+  </div>
+
+  <script>
+    // QR Code Generator
+    function generateQRCode() {
+      const text = document.getElementById('qrInput').value;
+      const qrCode = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(text)}`;
+      document.getElementById('qrOutput').innerHTML = `<img src="${qrCode}" alt="QR Code" />`;
+    }
+
+    // WiFi QR Code Generator
+    function generateWiFiQRCode() {
+      const ssid = document.getElementById('wifiSSID').value;
+      const password = document.getElementById('wifiPassword').value;
+      const encryption = document.getElementById('wifiEncryption').value;
+      const wifiString = `WIFI:S:${ssid};T:${encryption};P:${password};;`;
+      const qrCode = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(wifiString)}`;
+      document.getElementById('wifiQROutput').innerHTML = `<img src="${qrCode}" alt="WiFi QR Code" />`;
+    }
+
+    // SVG Placeholder Generator
+    function generateSVGPlaceholder() {
+      const width = document.getElementById('svgWidth').value;
+      const height = document.getElementById('svgHeight').value;
+      const text = document.getElementById('svgText').value;
+      const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="20">${text}</text></svg>`;
+      document.getElementById('svgOutput').innerHTML = svg;
+    }
+
+    // Random Port Generator
+    function generateRandomPort() {
+ const port = Math.floor(Math.random() * (65535 - 1024 + 1)) + 1024;
+      document.getElementById('randomPortOutput').innerText = `Random Port: ${port}`;
+    }
+
+    // Crontab Generator
+    function generateCrontab() {
+      const minute = document.getElementById('cronMinute').value;
+      const hour = document.getElementById('cronHour').value;
+      const day = document.getElementById('cronDay').value;
+      const month = document.getElementById('cronMonth').value;
+      const weekday = document.getElementById('cronWeekday').value;
+      const command = document.getElementById('cronCommand').value;
+      const crontabEntry = `${minute} ${hour} ${day} ${month} ${weekday} ${command}`;
+      document.getElementById('crontabOutput').innerText = crontabEntry;
+    }
+
+    // JSON Prettify
+    function prettifyJSON() {
+      const jsonInput = document.getElementById('jsonInputPrettify').value;
+      try {
+        const json = JSON.parse(jsonInput);
+        const prettyJSON = JSON.stringify(json, null, 2);
+        document.getElementById('jsonPrettifyOutput').innerText = prettyJSON;
+      } catch (e) {
+        document.getElementById('jsonPrettifyOutput').innerText = 'Invalid JSON';
+      }
+    }
+
+    // JSON Minify
+    function minifyJSON() {
+      const jsonInput = document.getElementById('jsonInputMinify').value;
+      try {
+        const json = JSON.parse(jsonInput);
+        const minifiedJSON = JSON.stringify(json);
+        document.getElementById('jsonMinifyOutput').innerText = minifiedJSON;
+      } catch (e) {
+        document.getElementById('jsonMinifyOutput').innerText = 'Invalid JSON';
+      }
+    }
+
+    // SQL Prettify
+    function prettifySQL() {
+      const sqlInput = document.getElementById('sqlInput').value;
+      // Simple prettification (for demonstration purposes)
+      const prettySQL = sqlInput.replace(/;/g, ';\n').replace(/,/g, ',\n');
+      document.getElementById('sqlPrettifyOutput').innerText = prettySQL;
+    }
+
+    // Chmod Calculator
+    function calculateChmod() {
+      const permissions = document.getElementById('chmodInput').value;
+      const chmodOutput = `Chmod: ${permissions}`;
+      document.getElementById('chmodOutput').innerText = chmodOutput;
+    }
+
+    // Docker Run to Docker Compose Converter
+    function convertDockerRunToCompose() {
+      const dockerRunInput = document.getElementById('dockerRunInput').value;
+      // Placeholder for conversion logic
+      const dockerComposeOutput = `Docker Compose equivalent for: ${dockerRunInput}`;
+      document.getElementById('dockerComposeOutput').innerText = dockerComposeOutput;
+    }
+
+    // XML Formatter
+    function formatXML() {
+      const xmlInput = document.getElementById('xmlInput').value;
+      // Simple formatting (for demonstration purposes)
+      const formattedXML = xmlInput.replace(/></g, '>\n<');
+      document.getElementById('xmlOutput').innerText = formattedXML;
+    }
+
+    // YAML Prettify
+    function prettifyYAML() {
+      const yamlInput = document.getElementById('yamlInput').value;
+      // Simple prettification (for demonstration purposes)
+      const prettyYAML = yamlInput.replace(/:/g, ':\n').replace(/-/g, '- ');
+      document.getElementById('yamlOutput').innerText = prettyYAML;
+    }
+
+    // Email Normalizer
+    function normalizeEmail() {
+      const emailInput = document.getElementById('emailInput').value;
+      const normalizedEmail = emailInput.toLowerCase().trim();
+      document.getElementById('emailOutput').innerText = normalizedEmail;
+    }
+
+    // Regex Tester
+    function testRegex() {
+      const regexInput = document.getElementById('regexInput').value;
+      const testString = document.getElementById('testString').value;
+      const regex = new RegExp(regexInput);
+      const result = regex.test(testString) ? 'Match found!' : 'No match found.';
+      document.getElementById('regexTestOutput').innerText = result;
+    }
+
+    // IPv4 Subnet Calculator
+    function calculateSubnet() {
+      const subnetInput = document.getElementById('subnetInput').value;
+      // Placeholder for subnet calculation logic
+      const subnetOutput = `Subnet calculation for: ${subnetInput}`;
+      document.getElementById('subnetOutput').innerText = subnetOutput;
+    }
+
+    // IPv4 Address Converter
+    function convertIPv4() {
+      const ipv4Input = document.getElementById('ipv4Input').value;
+      // Placeholder for IPv4 conversion logic
+      const ipv4Output = `Converted IPv4 address: ${ipv4Input}`;
+      document.getElementById('ipv4Output').innerText = ipv4Output;
+    }
+
+    // IPv4 Range Expander
+    function expandIPv4Range() {
+      const ipv4RangeInput = document.getElementById('ipv4RangeInput').value;
+      // Placeholder for range expansion logic
+      const ipv4RangeOutput = `Expanded IPv4 range: ${ipv4RangeInput}`;
+      document.getElementById('ipv4RangeOutput').innerText = ipv4RangeOutput;
+    }
+
+    // IPv6 ULA Generator
+    function generateIPv6ULA() {
+      const ula = `fd${Math.floor(Math.random() * 16777216).toString(16)}`;
+      document.getElementById('ipv6Output').innerText = `Generated IPv6 ULA: ${ula}`;
+    }
+  </script>
+</body>
+</html>

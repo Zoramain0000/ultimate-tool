@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays • Username Finder</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:Arial,Helvetica,sans-serif;color:#d1d1d1;overflow-x:hidden}
+
+/* BACKGROUND VIDEO */
+.bg-video{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  object-fit:cover;z-index:-2;filter:brightness(0.3);
+}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:-1}
+
+header{
+  background:rgba(0,0,0,0.7);
+  padding:18px;text-align:center;
+  border-bottom:1px solid #1f1f1f;
+}
+header h1{font-size:26px;letter-spacing:2px}
+
+.container{
+  max-width:950px;margin:30px auto;padding:20px;
+  background:rgba(0,0,0,0.65);
+  border-radius:10px;
+  box-shadow:0 0 25px rgba(0,0,0,0.8);
+}
+
+.section{margin-bottom:25px}
+.section h2{
+  font-size:18px;margin-bottom:10px;
+  color:#9f9f9f;border-left:4px solid #555;
+  padding-left:10px;
+}
+
+input{
+  width:100%;padding:12px;border-radius:6px;
+  border:1px solid #444;background:black;color:#fff;
+  margin-bottom:10px;
+}
+
+button{
+  padding:12px 20px;background:black;
+  border:1px solid #333;color:white;
+  cursor:pointer;border-radius:6px;
+  transition:.3s;
+}
+button:hover{background:#111;transform:scale(1.05)}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:14px;
+}
+
+.card{
+  background:rgba(15,15,15,0.9);
+  border:1px solid #222;
+  border-radius:8px;
+  padding:12px;
+}
+
+.card span{
+  display:block;font-size:12px;
+  color:#777;margin-bottom:6px;
+}
+
+.card a{
+  display:block;color:#00ff7f;
+  text-decoration:none;font-size:14px;
+  word-break:break-all;
+}
+.card a:hover{text-decoration:underline}
+
+.log{
+  background:black;padding:12px;border-radius:6px;
+  font-family:monospace;font-size:13px;
+  color:#8aff8a;max-height:200px;
+  overflow:auto;border:1px solid #222;
+}
+
+footer{
+  background:rgba(0,0,0,0.7);
+  text-align:center;padding:15px;
+  font-size:13px;color:#777;
+}
+</style>
+</head>
+
+<body>
+
+<!-- BACKGROUND VIDEO -->
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • USERNAME SOCIAL FINDER</h1>
+</header>
+
+<div class="container">
+
+  <div class="section">
+    <h2>Enter Username</h2>
+    <input id="username" placeholder="e.g. johndoe123">
+    <button onclick="search()">Search Username</button>
+  </div>
+
+  <div class="section">
+    <h2>Detected Profiles</h2>
+    <div class="grid" id="results"></div>
+  </div>
+
+  <div class="section">
+    <h2>Activity Log</h2>
+    <div class="log" id="log"></div>
+  </div>
+
+</div>
+
+<footer>
+  Technology information system tools for cyber‑security<br>
+  Educational & ethical use only
+</footer>
+
+<script>
+const platforms = {
+  "Facebook":"https://www.facebook.com/",
+  "Instagram":"https://www.instagram.com/",
+  "Twitter / X":"https://twitter.com/",
+  "TikTok":"https://www.tiktok.com/@",
+  "YouTube":"https://www.youtube.com/@",
+  "Reddit":"https://www.reddit.com/user/",
+  "GitHub":"https://github.com/",
+  "GitLab":"https://gitlab.com/",
+  "LinkedIn":"https://www.linkedin.com/in/",
+  "Pinterest":"https://www.pinterest.com/",
+  "Snapchat":"https://www.snapchat.com/add/",
+  "Telegram":"https://t.me/",
+  "Medium":"https://medium.com/@",
+  "Vimeo":"https://vimeo.com/",
+  "SoundCloud":"https://soundcloud.com/",
+  "Steam":"https://steamcommunity.com/id/",
+  "Twitch":"https://www.twitch.tv/",
+  "Flickr":"https://www.flickr.com/people/",
+  "Dribbble":"https://dribbble.com/",
+  "Behance":"https://www.behance.net/",
+  "DeviantArt":"https://www.deviantart.com/",
+  "CodePen":"https://codepen.io/",
+  "Replit":"https://replit.com/@",
+  "HackerOne":"https://hackerone.com/",
+  "Bugcrowd":"https://bugcrowd.com/",
+  "Keybase":"https://keybase.io/",
+  "WhatsApp":"https://wa.me/",
+  "Discord":"https://discord.com/users/",
+  "Skype":"https://join.skype.com/invite/",
+  "VKontakte":"https://vk.com/",
+  "XING":"https://www.xing.com/profile/",
+  "Ok.ru":"https://ok.ru/profile/",
+  "Trello":"https://trello.com/",
+  "Slack":"https://slack.com/",
+  "Foursquare":"https://foursquare.com/user/",
+  "MySpace":"https://myspace.com/",
+  "Tumblr":"https://www.tumblr.com/blog/",
+  "Ello":"https://ello.co/",
+  "Mix":"https://mix.com/",
+  "Letterboxd":"https://letterboxd.com/",
+  "SoundClick":"https://www.soundclick.com/",
+  "Bandcamp":"https://bandcamp.com/",
+  "Disqus":"https://disqus.com/by/",
+  "Vero":"https://www.vero.co/",
+  "Anchor":"https://anchor.fm/",
+  "Gravatar":"https://en.gravatar.com/",
+  "Triller":"https://triller.co/@",
+  "WeHeartIt":"https://weheartit.com/",
+  "Steemit":"https://steemit.com/@",
+  "Mastodon":"https://mastodon.social/@",
+  "Pixiv":"https://www.pixiv.net/users/",
+  "Goodreads":"https://www.goodreads.com/user/show/",
+  "Wattpad":"https://www.wattpad.com/user/",
+  "Ravelry":"https://www.ravelry.com/people/",
+  "Taringa":"https://www.taringa.net/",
+  "Flipboard":"https://flipboard.com/@",
+  "Caffeine":"https://www.caffeine.tv/",
+  "VK Music":"https://vk.com/audio?id=",
+  "Anchor.fm":"https://anchor.fm/",
+  "Meetup":"https://www.meetup.com/members/",
+  "ResearchGate":"https://www.researchgate.net/profile/",
+  "Academia.edu":"https://www.academia.edu/",
+  "Soundation":"https://soundation.com/user/",
+  "BandLab":"https://www.bandlab.com/",
+  "Riot Games":"https://profile.riotgames.com/",
+  "Epic Games":"https://www.epicgames.com/id/",
+  "Roblox":"https://www.roblox.com/users/",
+  "SteamCommunity":"https://steamcommunity.com/id/",
+  "Xbox":"https://account.xbox.com/en-us/Profile?gamertag=",
+  "PSN":"https://my.playstation.com/profile/",
+  "Nintendo":"https://www.nintendo.com/players/",
+  "TwitchGames":"https://www.twitch.tv/",
+  "Patreon":"https://www.patreon.com/",
+  "OnlyFans":"https://onlyfans.com/",
+  "Substack":"https://substack.com/profile/",
+  "Ko-fi":"https://ko-fi.com/",
+  "BuyMeACoffee":"https://www.buymeacoffee.com/",
+  "OpenSea":"https://opensea.io/",
+  "Rarible":"https://rarible.com/",
+  "Foundation":"https://foundation.app/@",
+  "SuperRare":"https://superrare.com/",
+  "Zora":"https://zora.co/",
+  "Etsy":"https://www.etsy.com/shop/",
+  "Deezer":"https://www.deezer.com/us/artist/",
+  "Pandora":"https://www.pandora.com/profile/",
+  "Mixcloud":"https://www.mixcloud.com/",
+  "AnchorPodcast":"https://anchor.fm/",
+  "AnchorEpisodes":"https://anchor.fm/",
+  "Libsyn":"https://libsyn.com/user/",
+  "Podbean":"https://www.podbean.com/u/",
+  "Spotify":"https://open.spotify.com/user/",
+  "AppleMusic":"https://music.apple.com/profile/",
+  "Tidal":"https://tidal.com/browse/user/",
+  "Soundtrap":"https://www.soundtrap.com/",
+  "Audiomack":"https://audiomack.com/",
+  "Boomplay":"https://www.boomplay.com/",
+  "YouNow":"https://www.younow.com/",
+  "Caffeine.tv":"https://www.caffeine.tv/@",
+  "Trakt.tv":"https://trakt.tv/users/",
+  "Letterboxd":"https://letterboxd.com/",
+  "Criticker":"https://www.criticker.com/user/",
+  "Fandom":"https://www.fandom.com/users/",
+  "Wikia":"https://www.wikia.com/User:",
+  "WikiaFandom":"https://www.fandom.com/User:",
+  "WikiTree":"https://www.wikitree.com/wiki/",
+  "IMDb":"https://www.imdb.com/user/",
+  "FilmAffinity":"https://www.filmaffinity.com/en/user/",
+  "AllTrails":"https://www.alltrails.com/members/",
+  "Strava":"https://www.strava.com/athletes/",
+  "Garmin":"https://connect.garmin.com/modern/profile/",
+  "Runkeeper":"https://runkeeper.com/user/"
+};
+
+
+const log = msg=>{
+  const l=document.getElementById("log");
+  l.innerHTML+=`[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+  l.scrollTop=l.scrollHeight;
+};
+
+function search(){
+  const user=document.getElementById("username").value.trim();
+  if(!user){alert("Enter a username");return}
+
+  log(`Searching username: ${user}`);
+  const box=document.getElementById("results");
+  box.innerHTML="";
+
+  Object.entries(platforms).forEach(([name,url])=>{
+    const full=url+user;
+    const card=document.createElement("div");
+    card.className="card";
+    card.innerHTML=`
+      <span>${name}</span>
+      <a href="${full}" target="_blank">${full}</a>
+    `;
+    box.appendChild(card);
+  });
+
+  log("Profile generation completed.");
+}
+</script>
+
+</body>
+</html>

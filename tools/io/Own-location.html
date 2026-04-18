@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays IP Detection</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  height:100%;
+  font-family:Arial,Helvetica,sans-serif;
+  color:#d1d1d1;
+  overflow-x:hidden;
+}
+
+/* 🎥 BACKGROUND VIDEO */
+.bg-video{
+  position:fixed;
+  top:0;left:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:-2;
+  filter:brightness(0.3);
+}
+
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.35);
+  z-index:-1;
+}
+
+header{
+  background:rgba(0,0,0,0.7);
+  padding:18px;
+  text-align:center;
+  border-bottom:1px solid #1f1f1f;
+}
+
+header h1{
+  font-size:26px;
+  letter-spacing:2px;
+}
+
+.container{
+  max-width:900px;
+  margin:30px auto;
+  padding:20px;
+  background:rgba(0,0,0,0.65);
+  border-radius:10px;
+  box-shadow:0 0 25px rgba(0,0,0,0.8);
+}
+
+.section{
+  margin-bottom:25px;
+}
+
+.section h2{
+  font-size:18px;
+  margin-bottom:10px;
+  color:#9f9f9f;
+  border-left:4px solid #555;
+  padding-left:10px;
+}
+
+.data-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:12px;
+}
+
+.card{
+  background:rgba(15,15,15,0.85);
+  padding:14px;
+  border-radius:8px;
+  border:1px solid #222;
+  font-size:14px;
+}
+
+.card span{
+  display:block;
+  color:#777;
+  font-size:12px;
+  margin-bottom:4px;
+}
+
+.status-safe{color:#00ff7f}
+.status-warn{color:#ffaa00}
+
+button{
+  padding:12px 20px;
+  background:black;
+  border:1px solid #333;
+  color:white;
+  cursor:pointer;
+  border-radius:6px;
+  transition:.3s;
+}
+
+button:hover{
+  background:#111;
+  transform:scale(1.05);
+}
+
+.log{
+  background:black;
+  padding:12px;
+  border-radius:6px;
+  font-family:monospace;
+  font-size:13px;
+  color:#8aff8a;
+  max-height:200px;
+  overflow:auto;
+  border:1px solid #222;
+}
+
+footer{
+  background:rgba(0,0,0,0.7);
+  text-align:center;
+  padding:15px;
+  font-size:13px;
+  color:#777;
+}
+</style>
+</head>
+
+<body>
+
+<!-- BACKGROUND VIDEO -->
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • IP TRACKER</h1>
+</header>
+
+<div class="container">
+
+  <div class="section">
+    <h2>Detected Network Identity</h2>
+    <div class="data-grid">
+      <div class="card"><span>IP Address</span><div id="ip">Loading…</div></div>
+      <div class="card"><span>ISP</span><div id="isp">Loading…</div></div>
+      <div class="card"><span>ASN</span><div id="asn">Loading…</div></div>
+      <div class="card"><span>Timezone</span><div id="timezone">Loading…</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Geolocation</h2>
+    <div class="data-grid">
+      <div class="card"><span>Country</span><div id="country">Loading…</div></div>
+      <div class="card"><span>Region</span><div id="region">Loading…</div></div>
+      <div class="card"><span>City</span><div id="city">Loading…</div></div>
+      <div class="card"><span>Coordinates</span><div id="coords">Loading…</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Security Assessment</h2>
+    <div class="data-grid">
+      <div class="card"><span>Proxy / VPN</span><div id="proxy" class="status-safe">Unknown</div></div>
+      <div class="card"><span>Network Type</span><div id="type">Public</div></div>
+      <div class="card"><span>Risk Level</span><div id="risk" class="status-safe">Low</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <button onclick="refreshIP()">Refresh Intelligence</button>
+  </div>
+
+  <div class="section">
+    <h2>Activity Log</h2>
+    <div class="log" id="log"></div>
+  </div>
+
+</div>
+
+<footer>
+  Technology information system tools for cyber‑security<br>
+  Educational & ethical use only
+</footer>
+
+<script>
+const log = msg => {
+  const l = document.getElementById("log");
+  l.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+  l.scrollTop = l.scrollHeight;
+};
+
+async function refreshIP(){
+  log("Requesting IP intelligence…");
+  try{
+    const res = await fetch("https://ipapi.co/json/");
+    const d = await res.json();
+
+    document.getElementById("ip").textContent = d.ip || "N/A";
+    document.getElementById("isp").textContent = d.org || "N/A";
+    document.getElementById("asn").textContent = d.asn || "N/A";
+    document.getElementById("timezone").textContent = d.timezone || "N/A";
+
+    document.getElementById("country").textContent = d.country_name || "N/A";
+    document.getElementById("region").textContent = d.region || "N/A";
+    document.getElementById("city").textContent = d.city || "N/A";
+    document.getElementById("coords").textContent = `${d.latitude}, ${d.longitude}`;
+
+    log("IP data successfully loaded.");
+  }catch(e){
+    log("Error fetching IP data.");
+  }
+}
+
+refreshIP();
+</script>
+
+</body>
+</html>

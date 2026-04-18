@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays • Connected Device Anomaly Detector</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  height:100%;
+  font-family:Arial,Helvetica,sans-serif;
+  color:#d1d1d1;
+  overflow-x:hidden;
+}
+
+.bg-video{
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  object-fit:cover;
+  z-index:-2;
+  filter:brightness(0.3);
+}
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.35);
+  z-index:-1;
+}
+
+header{
+  background:rgba(0,0,0,0.7);
+  padding:18px;
+  text-align:center;
+  border-bottom:1px solid #1f1f1f;
+}
+header h1{
+  letter-spacing:2px;
+  font-size:20px;
+}
+
+.container{
+  max-width:900px;
+  margin:30px auto;
+  padding:20px;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(8px);
+  border-radius:12px;
+  box-shadow:0 0 30px rgba(0,0,0,0.9);
+}
+
+.section{margin-bottom:25px}
+
+button{
+  width:100%;
+  padding:12px;
+  background:rgba(0,0,0,0.6);
+  color:#fff;
+  border:1px solid #333;
+  border-radius:6px;
+  margin-bottom:10px;
+  font-family:inherit;
+  cursor:pointer;
+}
+button:hover{
+  background:rgba(20,20,20,0.8);
+}
+
+.status{
+  font-size:13px;
+  color:#aaa;
+  margin-top:5px;
+}
+
+.log{
+  background:rgba(0,0,0,0.75);
+  border:1px solid #222;
+  padding:12px;
+  max-height:350px;
+  overflow:auto;
+  font-family:monospace;
+  font-size:13px;
+}
+
+.device-group{
+  margin-bottom:20px;
+  border:1px solid #333;
+  border-radius:8px;
+  overflow:hidden;
+}
+
+.device-header{
+  background:rgba(40,40,40,0.8);
+  padding:10px 15px;
+  font-weight:bold;
+  color:#6ecbff;
+  border-bottom:1px solid #444;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.table-entry{
+  display:flex;
+  padding:8px 15px;
+  border-bottom:1px solid #222;
+  gap:15px;
+}
+
+.table-key{
+  color:#6ecbff;
+  min-width:140px;
+  font-weight:bold;
+  flex:0 0 auto;
+}
+
+.table-value{
+  color:#8aff8a;
+  flex:1;
+  word-break:break-all;
+  font-size:12px;
+}
+
+.copy-top{
+  background:#1a1a1a;
+  color:#0f0;
+  border:none;
+  padding:6px 12px;
+  border-radius:4px;
+  font-size:13px;
+  cursor:pointer;
+  margin-left:10px;
+  font-weight:bold;
+}
+
+.ip-address{
+  background:rgba(0,100,0,0.3);
+  padding:2px 6px;
+  border-radius:3px;
+  font-family:monospace;
+  color:#90ff90 !important;
+}
+
+.anomaly .device-header{
+  background:rgba(255,107,107,0.2) !important;
+  color:#ff6b6b;
+  border-bottom:1px solid #ff6b6b;
+}
+.anomaly .table-key{color:#ff6b6b !important}
+.anomaly .table-value{color:#ffaa88 !important}
+.anomaly .ip-address{color:#ff8888 !important}
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • CONNECTED DEVICE ANOMALY DETECTOR</h1>
+</header>
+
+<div class="container">
+
+  <div class="section">
+    <button onclick="scanBluetooth()">🛰️ Scan Bluetooth Devices</button>
+    <button onclick="scanNetwork()">🌐 Scan Local Network (IPs)</button>
+    <button onclick="scanMedia()">📹 Scan Media Devices</button>
+    <button onclick="scanSensors()">📱 Scan Sensors</button>
+    <div class="status" id="status">Click buttons to discover REAL connected devices via Web APIs</div>
+  </div>
+
+  <div class="section">
+    <div class="log" id="output"></div>
+  </div>
+
+  <div class="section">
+    <button onclick="exportTXT()">Export TXT</button>
+    <button onclick="exportJSON()">Export JSON</button>
+    <button onclick="clearAll()">Clear All</button>
+  </div>
+
+</div>
+
+<script>
+let deviceData = {};
+
+async function scanBluetooth() {
+  const status = document.getElementById('status');
+  status.textContent = '🛰️ Scanning Bluetooth via Web Bluetooth API...';
+  
+  try {
+    if (!navigator.bluetooth) throw new Error('Web Bluetooth API not supported');
+    
+    const opts = {
+      acceptAllDevices: true,
+      optionalServices: ['battery_service', 'device_information']
+    };
+    
+    const device = await navigator.bluetooth.requestDevice(opts);
+    
+    deviceData.bluetooth = {
+      name: device.name || 'Unknown Device',
+      id: device.id,
+      gattConnected: device.gatt?.connected || false,
+      services: device.optionalServices || [],
+      timestamp: new Date().toISOString()
+    };
+    
+    status.textContent = `✅ Bluetooth: ${device.name || 'Device'} connected`;
+    displayResults();
+    
+  } catch(e) {
+    deviceData.bluetooth = { error: e.message };
+    status.textContent = `⚠️ Bluetooth: ${e.message}`;
+    displayResults();
+  }
+}
+
+async function scanNetwork() {
+  const status = document.getElementById('status');
+  status.textContent = '🌐 Scanning local network IPs via WebRTC ICE...';
+  
+  try {
+    const ips = await getLocalIPs();
+    const conn = navigator.connection || {};
+    
+    // Format IPs for display
+    const ipList = ips.map(ip => `<span class="ip-address">${ip}</span>`).join(', ');
+    
+    deviceData.network = {
+      localIPs: ips,
+      ipList: ipList, // HTML formatted for display
+      count: ips.length,
+      effectiveType: conn.effectiveType || 'unknown',
+      downlink: conn.downlink ? `${conn.downlink} Mbps` : 'unknown',
+      rtt: conn.rtt ? `${conn.rtt}ms` : 'unknown',
+      saveData: !!conn.saveData,
+      timestamp: new Date().toISOString()
+    };
+    
+    status.textContent = `✅ Network: Found ${ips.length} IPs (${ips.join(', ')})`;
+    displayResults();
+    
+  } catch(e) {
+    deviceData.network = { error: e.message };
+    status.textContent = `⚠️ Network: ${e.message}`;
+    displayResults();
+  }
+}
+
+async function scanMedia() {
+  const status = document.getElementById('status');
+  status.textContent = '📹 Scanning media devices...';
+  
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(d => d.kind === 'videoinput');
+    const audioDevices = devices.filter(d => d.kind === 'audioinput' || d.kind === 'audiooutput');
+    
+    deviceData.media = {
+      videoCount: videoDevices.length,
+      audioCount: audioDevices.length,
+      totalCount: devices.length,
+      videoDevices: videoDevices.map(d => ({
+        label: d.label || 'Hidden Device',
+        deviceId: d.deviceId.slice(0, 16) + '...'
+      })),
+      audioDevices: audioDevices.map(d => ({
+        label: d.label || 'Hidden Device',
+        deviceId: d.deviceId.slice(0, 16) + '...'
+      })),
+      timestamp: new Date().toISOString()
+    };
+    
+    status.textContent = `✅ Media: ${videoDevices.length} cameras, ${audioDevices.length} mics`;
+    displayResults();
+    
+  } catch(e) {
+    deviceData.media = { error: e.message };
+    status.textContent = `⚠️ Media: ${e.message}`;
+    displayResults();
+  }
+}
+
+async function scanSensors() {
+  const status = document.getElementById('status');
+  status.textContent = '📱 Scanning device sensors...';
+  
+  try {
+    const sensors = {};
+    
+    if ('DeviceOrientationEvent' in window) sensors.orientation = 'supported';
+    if ('DeviceMotionEvent' in window) sensors.motion = 'supported';
+    if ('ondeviceorientationabsolute' in window) sensors.absoluteOrientation = 'supported';
+    
+    if ('getBattery' in navigator) {
+      const battery = await navigator.getBattery();
+      sensors.battery = {
+        level: `${Math.round(battery.level * 100)}%`,
+        charging: battery.charging,
+        chargingTime: battery.chargingTime === Infinity ? 'N/A' : `${Math.round(battery.chargingTime/60)}min`
+      };
+    }
+    
+    deviceData.sensors = {
+      ...sensors,
+      userAgent: navigator.userAgent.slice(0, 100),
+      platform: navigator.platform,
+      language: navigator.language,
+      timestamp: new Date().toISOString()
+    };
+    
+    status.textContent = '✅ Sensors scan complete';
+    displayResults();
+    
+  } catch(e) {
+    deviceData.sensors = { error: e.message };
+    status.textContent = `⚠️ Sensors: ${e.message}`;
+    displayResults();
+  }
+}
+
+function getLocalIPs() {
+  return new Promise(resolve => {
+    const ips = [];
+    const pc = new RTCPeerConnection({ iceServers: [] });
+    
+    pc.onicecandidate = e => {
+      if (!e.candidate) {
+        pc.close();
+        resolve(ips);
+        return;
+      }
+      
+      const ipMatch = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(e.candidate.candidate);
+      if (ipMatch && !ips.includes(ipMatch[1]) && 
+          !ipMatch[1].includes('127.') && !ipMatch[1].includes('::1')) {
+        ips.push(ipMatch[1]);
+      }
+    };
+    
+    pc.createDataChannel('test');
+    pc.createOffer().then(offer => pc.setLocalDescription(offer));
+  });
+}
+
+function isAnomaly(data) {
+  let score = 0;
+  
+  if (data.media) {
+    const hiddenCount = data.media.videoDevices?.filter(d => !d.label).length || 0;
+    const audioCount = data.media.audioCount || 0;
+    if (hiddenCount > 0) score += 0.3;
+    if (audioCount > 3) score += 0.2;
+  }
+  
+  if (data.network) {
+    if (data.network.localIPs?.length > 2) score += 0.25;
+    if (data.network.effectiveType === 'slow-2g' || data.network.effectiveType === '2g') score += 0.2;
+  }
+  
+  if (data.bluetooth && (!data.bluetooth.name || data.bluetooth.name.includes('Unknown'))) {
+    score += 0.3;
+  }
+  
+  return score > 0.25;
+}
+
+function displayResults() {
+  const output = document.getElementById('output');
+  output.innerHTML = '';
+
+  Object.entries(deviceData).forEach(([key, data]) => {
+    const group = document.createElement('div');
+    group.className = `device-group ${isAnomaly({[key]: data}) ? 'anomaly' : ''}`;
+    
+    let tableRows = '';
+    
+    if (data.error) {
+      tableRows = `
+        <div class="table-entry">
+          <span class="table-key">Status</span>
+          <span class="table-value">ERROR: ${data.error}</span>
+        </div>
+      `;
+    } else {
+      // Convert data to key-value pairs for table display
+      const flattenData = {};
+      
+      if (key === 'media') {
+        flattenData['Video Devices'] = data.videoCount || 0;
+        flattenData['Audio Devices'] = data.audioCount || 0;
+        flattenData['Total Devices'] = data.totalCount || 0;
+      } else if (key === 'network') {
+        // SHOW ALL IP ADDRESSES prominently
+        flattenData['IP Addresses'] = data.ipList || 'None found';
+        flattenData['IP Count'] = data.count || 0;
+        flattenData['Connection Type'] = data.effectiveType || 'unknown';
+        flattenData['Download Speed'] = data.downlink || 'unknown';
+        flattenData['RTT'] = data.rtt || 'unknown';
+      } else if (key === 'bluetooth') {
+        flattenData['Device Name'] = data.name || 'Unknown';
+        flattenData['Device ID'] = data.id ? data.id.slice(0,20) + '...' : 'N/A';
+        flattenData['GATT Connected'] = data.gattConnected;
+      } else if (key === 'sensors') {
+        flattenData['Platform'] = data.platform || 'unknown';
+        flattenData['Battery Level'] = data.battery?.level || 'N/A';
+        flattenData['Sensors'] = Object.keys(data).filter(k => k !== 'timestamp' && !k.includes('userAgent')).length;
+      }
+      
+      Object.entries(flattenData).forEach(([k, v]) => {
+        tableRows += `
+          <div class="table-entry">
+            <span class="table-key">${k}</span>
+            <span class="table-value">${v}</span>
+          </div>
+        `;
+      });
+    }
+    
+    group.innerHTML = `
+      <div class="device-header">
+        <span>${key.toUpperCase()}</span>
+        <button class="copy-top" onclick="copyDevice('${key}')">📋 COPY ALL</button>
+      </div>
+      <div class="table-container">
+        ${tableRows}
+      </div>
+    `;
+    
+    output.appendChild(group);
+  });
+}
+
+function copyDevice(key) {
+  const fullData = deviceData[key];
+  navigator.clipboard.writeText(
+    `${key.toUpperCase()}\n${JSON.stringify(fullData, null, 2)}`
+  ).then(() => {
+    document.getElementById('status').textContent = `✅ Copied ${key} data (${fullData.localIPs?.length || 0} IPs)`;
+    setTimeout(() => {
+      document.getElementById('status').textContent = 'Click buttons to discover REAL connected devices via Web APIs';
+    }, 2000);
+  });
+}
+
+function exportTXT() {
+  if (!Object.keys(deviceData).length) {
+    document.getElementById('status').textContent = 'No scan data to export';
+    return;
+  }
+  
+  let txt = 'CONNECTED DEVICE ANOMALY REPORT\n';
+  txt += `Generated: ${new Date().toISOString()}\n\n`;
+  
+  Object.entries(deviceData).forEach(([key, data]) => {
+    txt += `${key.toUpperCase()}:\n`;
+    txt += `${JSON.stringify(data, null, 2)}\n\n`;
+  });
+  
+  download(txt, `device-anomaly-${Date.now()}.txt`);
+}
+
+function exportJSON() {
+  if (!Object.keys(deviceData).length) {
+    document.getElementById('status').textContent = 'No scan data to export';
+    return;
+  }
+  
+  download(JSON.stringify(deviceData, null, 2), `device-anomaly-${Date.now()}.json`);
+}
+
+function download(data, filename) {
+  const blob = new Blob([data], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function clearAll() {
+  deviceData = {};
+  document.getElementById('output').innerHTML = '';
+  document.getElementById('status').textContent = 'Results cleared - Ready to scan';
+}
+</script>
+
+</body>
+</html>

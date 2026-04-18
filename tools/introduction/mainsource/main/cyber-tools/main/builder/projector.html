@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Zero Days Alarm Clock</title>
+  <style>
+    :root {
+      --bg-light: red;
+      --bg-dark: #121212;
+      --text-light: red;
+      --text-dark: red;
+      --primary: #4caf50;
+      --secondary: #2196f3;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      color: var(--text-dark);
+      display: flex;
+      justify-content: center;
+      align-items: start;
+      padding: 30px;
+      transition: 0.3s;
+    }
+
+    .clock-container {
+      width: 100%;
+      max-width: 400px;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+      text-align: center;
+    }
+
+    .clock-title {
+      margin-bottom: 20px;
+    }
+
+    .clock {
+      font-size: 3rem;
+      font-weight: bold;
+    }
+
+    .date {
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+    }
+
+    .section {
+      margin-top: 25px;
+    }
+    div, h3, {
+      color: red;
+    }
+    button {
+      padding: 6px 12px;
+      margin: 4px;
+      border: none;
+      background: red;
+      color: green;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    input[type="time"],
+    input[type="number"] {
+      padding: 5px;
+      font-size: 1rem;
+      margin: 5px;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+
+    .switch input { display: none; }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: rgba(0, 0, 0, 0.5);
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--primary);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    #calendar {
+      font-size: 1rem;
+      margin-top: 10px;
+    }
+
+    body.light-mode {
+      background-color: var(--bg-light);
+      color: var(--text-light);
+    }
+
+    body.light-mode .clock-container {
+    background: rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="clock-container">
+    <h1 class="clock-title">Zero Days Alarm Clock</h1>
+
+    <div class="clock" id="clock"></div>
+    <div class="date" id="date"></div>
+
+    <div class="controls">
+      <label class="switch">
+        <input type="checkbox" id="modeToggle">
+        <span class="slider round"></span>
+      </label>
+      <span id="modeLabel">Light Mode</span>
+      <button id="formatToggle">Switch to 12-Hour</button>
+    </div>
+
+    <div class="section">
+      <h3>Alarm</h3>
+      <input type="time" id="alarmTime" />
+      <button id="setAlarmBtn">Set</button>
+      <button id="clearAlarmBtn">Clear</button>
+      <p id="alarmStatus">No alarm set.</p>
+    </div>
+
+    <div class="section">
+      <h3>Stopwatch</h <h3>Stopwatch</h3>
+      <div id="stopwatch">00:00:00</div>
+      <button id="startBtn">Start</button>
+      <button id="stopBtn">Stop</button>
+      <button id="resetBtn">Reset</button>
+    </div>
+
+    <div class="section">
+      <h3>Countdown Timer</h3>
+      <input type="number" id="countdownMinutes" placeholder="Minutes" />
+      <button id="startCountdown">Start</button>
+      <button id="stopCountdown">Stop</button>
+      <div id="countdownDisplay">00:00</div>
+    </div>
+
+    <div class="section">
+      <h3>Calendar</h3>
+      <div id="calendar"></div>
+    </div>
+  </div>
+
+  <audio id="beep" src="alarm_sound.mp3" preload="auto"></audio>
+  <script>
+    let is24Hour = true;
+    let alarmTime = localStorage.getItem("alarmTime") || null;
+    let stopwatchSeconds = 0;
+    let stopwatchInterval = null;
+    let countdownInterval = null;
+    let countdownTime = 0;
+
+    const beep = document.getElementById("beep");
+
+    function speak(text) {
+      const msg = new SpeechSynthesisUtterance(text);
+      msg.lang = 'en-US';
+      window.speechSynthesis.speak(msg);
+    }
+
+    function updateClock() {
+      const now = new Date();
+      let hours = now.getHours();
+      let suffix = "";
+
+      if (!is24Hour) {
+        suffix = hours >= 12 ? " PM" : " AM";
+        hours = hours % 12 || 12;
+      }
+
+      const mins = now.getMinutes().toString().padStart(2, "0");
+      const secs = now.getSeconds().toString().padStart(2, "0");
+
+      document.getElementById("clock").textContent =
+        `${hours.toString().padStart(2, "0")}:${mins}:${secs}${suffix}`;
+      document.getElementById("date").textContent =
+        now.toLocaleString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+      if (alarmTime === `${now.getHours().toString().padStart(2, "0")}:${mins}` && secs === "00") {
+        beep.play();
+        speak("Alarm ringing now.");
+        alert("Alarm is ringing!");
+        localStorage.removeItem("alarmTime");
+        alarmTime = null;
+        document.getElementById("alarmStatus").textContent = "No alarm set.";
+      }
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    document.getElementById("formatToggle").onclick = () => {
+      is24Hour = !is24Hour;
+      document.getElementById("formatToggle").textContent =
+        is24Hour ? "Switch to 12-Hour" : "Switch to 24-Hour";
+    };
+
+    document.getElementById("modeToggle").addEventListener("change", (e) => {
+      document.body.classList.toggle("light-mode", e.target.checked);
+      document.getElementById("modeLabel").textContent = e.target.checked ? "Dark Mode" : "Light Mode";
+    });
+
+    // Alarm
+    document.getElementById("setAlarmBtn").onclick = () => {
+      alarmTime = document.getElementById("alarmTime").value;
+      localStorage.setItem("alarmTime", alarmTime);
+      document.getElementById("alarmStatus").textContent = `Alarm set for ${alarmTime}`;
+    };
+    document.getElementById("clearAlarmBtn").onclick = () => {
+      alarmTime = null;
+      localStorage.removeItem("alarmTime");
+      document.getElementById("alarmStatus").textContent = "No alarm set.";
+    };
+    if (alarmTime) {
+      document.getElementById("alarmStatus").textContent = `Alarm set for ${alarmTime}`;
+    }
+
+    // Stopwatch
+    function updateStopwatch() {
+      const hrs = Math.floor(stopwatchSeconds / 3600).toString().padStart(2, "0");
+      const mins = Math.floor((stopwatchSeconds % 3600) / 60).toString().padStart(2, "0");
+      const secs = (stopwatchSeconds % 60).toString().padStart(2, "0");
+      document.getElementById("stopwatch").textContent = `${hrs}:${mins}:${secs}`;
+    }
+    document.getElementById("startBtn").onclick = () => {
+      if (!stopwatchInterval) {
+        stopwatchInterval = setInterval(() => {
+          stopwatchSeconds++;
+          updateStopwatch();
+        }, 1000);
+      }
+    };
+ document.getElementById("stopBtn").onclick = () => {
+      clearInterval(stopwatchInterval);
+      stopwatchInterval = null;
+    };
+    document.getElementById("resetBtn").onclick = () => {
+      stopwatchSeconds = 0;
+      updateStopwatch();
+      clearInterval(stopwatchInterval);
+      stopwatchInterval = null;
+    };
+    updateStopwatch();
+
+    // Countdown Timer
+    document.getElementById("startCountdown").onclick = () => {
+      const mins = parseInt(document.getElementById("countdownMinutes").value);
+      if (isNaN(mins)) return;
+      countdownTime = mins * 60;
+
+      countdownInterval = setInterval(() => {
+        if (countdownTime <= 0) {
+          clearInterval(countdownInterval);
+          document.getElementById("countdownDisplay").textContent = "00:00";
+          beep.play();
+          speak("Countdown complete.");
+          alert("Countdown finished!");
+        } else {
+          countdownTime--;
+          const m = Math.floor(countdownTime / 60).toString().padStart(2, "0");
+          const s = (countdownTime % 60).toString().padStart(2, "0");
+          document.getElementById("countdownDisplay").textContent = `${m}:${s}`;
+        }
+      }, 1000);
+    };
+    document.getElementById("stopCountdown").onclick = () => {
+      clearInterval(countdownInterval);
+    };
+
+    // Calendar
+    const calendarDiv = document.getElementById("calendar");
+    calendarDiv.textContent = new Date().toLocaleDateString(undefined, {
+      weekday: "long", year: "numeric", month: "long", day: "numeric"
+    });
+  </script>
+</body>
+</html>

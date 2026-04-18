@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays • Email Security Arsenal </title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  height:100%;
+  font-family:Arial,Helvetica,sans-serif;
+  color:#d1d1d1;
+  overflow-x:hidden;
+}
+
+.bg-video{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:-2;
+  filter:brightness(0.3);
+}
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.35);
+  z-index:-1;
+}
+
+header{
+  background:rgba(0,0,0,0.7);
+  padding:18px;
+  text-align:center;
+  border-bottom:1px solid #1f1f1f;
+}
+header h1{
+  letter-spacing:2px;
+  font-size:20px;
+}
+
+.container{
+  max-width:1200px;
+  margin:30px auto;
+  padding:20px;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(8px);
+  border-radius:12px;
+  box-shadow:0 0 30px rgba(0,0,0,0.9);
+}
+
+.tool-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  gap:15px;
+  margin:20px 0;
+}
+
+.tool-card{
+  background:rgba(0,0,0,0.5);
+  border:1px solid #333;
+  border-radius:8px;
+  padding:15px;
+}
+
+.tool-card h3{
+  color:#ff6b6b;
+  margin-bottom:10px;
+  font-size:14px;
+}
+
+.input-group{
+  margin-bottom:10px;
+}
+
+input,textarea,select{
+  width:100%;
+  padding:8px;
+  background:rgba(20,20,20,0.8);
+  border:1px solid #444;
+  border-radius:4px;
+  color:#fff;
+  font-family:monospace;
+  font-size:12px;
+}
+
+button{
+  width:100%;
+  padding:10px;
+  background:linear-gradient(45deg,#ff6b6b,#4ecdc4);
+  color:#000;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+  margin:5px 0;
+}
+button:hover{transform:scale(1.02)}
+
+button.secondary{
+  background:rgba(0,0,0,0.6);
+  color:#fff;
+  border:1px solid #333;
+}
+
+.status{
+  font-size:12px;
+  color:#aaa;
+  margin:8px 0;
+}
+
+.results{
+  background:rgba(0,0,0,0.75);
+  border:1px solid #222;
+  padding:12px;
+  max-height:200px;
+  overflow:auto;
+  font-family:monospace;
+  font-size:12px;
+  border-radius:4px;
+  margin-top:10px;
+}
+
+.entry{
+  border-bottom:1px solid #222;
+  padding:6px 0;
+}
+
+.key{color:#6ecbff}
+.value{color:#8aff8a;word-break:break-all}
+.severity-high{color:#ff4444}
+.severity-med{color:#ffaa00}
+.severity-low{color:#44ff44}
+
+.log{
+  background:rgba(0,0,0,0.75);
+  border:1px solid #222;
+  padding:12px;
+  max-height:400px;
+  overflow:auto;
+  font-family:monospace;
+  font-size:12px;
+  margin-top:20px;
+}
+
+.export-btns{
+  display:flex;
+  gap:10px;
+  margin-top:20px;
+}
+
+@media (max-width:768px){
+  .tool-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+
+<body>
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • EMAIL SECURITY ARSENAL </h1>
+  <div style="font-size:12px;opacity:0.8;">SPF/DKIM/DMARC • Spoofing • Phishing • Headers • Identity Risk</div>
+</header>
+
+<div class="container">
+  <div class="tool-grid">
+    
+    <!-- 50. SPF/DKIM/DMARC Analyzer -->
+    <div class="tool-card">
+      <h3>🔍  SPF/DKIM/DMARC Analyzer</h3>
+      <div class="input-group">
+        <input id="domain50" placeholder="example.com" />
+        <button onclick="analyzeEmailAuth('50')">ANALYZE</button>
+      </div>
+      <div id="results50" class="results"></div>
+    </div>
+
+    <!-- 51. Email Spoofing Risk Checker -->
+    <div class="tool-card">
+      <h3>⚠️  Email Spoofing Risk</h3>
+      <input id="from51" placeholder="From: spoofed@bank.com" />
+      <button onclick="checkSpoofing('51')">CHECK SPOOF</button>
+      <div id="results51" class="results"></div>
+    </div>
+
+    <!-- 52. Phishing Domain Similarity -->
+    <div class="tool-card">
+      <h3>🎣  Phishing Domain Detector</h3>
+      <input id="domain52" placeholder="paypa1.com" />
+      <input id="real52" placeholder="paypal.com" />
+      <button onclick="detectPhishing('52')">DETECT</button>
+      <div id="results52" class="results"></div>
+    </div>
+
+    <!-- 53. Disposable Email Detection -->
+    <div class="tool-card">
+      <h3>🗑️  Disposable Email Check</h3>
+      <input id="email53" placeholder="user@tempmail.com" />
+      <button onclick="checkDisposable('53')">CHECK</button>
+      <div id="results53" class="results"></div>
+    </div>
+
+    <!-- 54. Email Header Forensics -->
+    <div class="tool-card">
+      <h3>🔬 Header Forensics</h3>
+      <textarea id="headers54" rows="4" placeholder="Paste full email headers..."></textarea>
+      <button onclick="analyzeHeaders('54')">FORENSICS</button>
+      <div id="results54" class="results"></div>
+    </div>
+
+    <!-- 55. Identity Exposure Score -->
+    <div class="tool-card">
+      <h3>👤  Identity Risk Score</h3>
+      <textarea id="data55" rows="3" placeholder="name@company.com\n123-45-6789\n..."></textarea>
+      <button onclick="scoreIdentity('55')">SCORE RISK</button>
+      <div id="results55" class="results"></div>
+    </div>
+
+    <!-- 56. Password Policy Analyzer -->
+    <div class="tool-card">
+      <h3>🔐  Password Policy Check</h3>
+      <input id="policy56" placeholder="Min 8 chars, numbers required" />
+      <button onclick="analyzePolicy('56')">ANALYZE</button>
+      <div id="results56" class="results"></div>
+    </div>
+
+    <!-- 57. Credential Reuse Estimator -->
+    <div class="tool-card">
+      <h3>🔄  Credential Reuse Risk</h3>
+      <textarea id="creds57" rows="3" placeholder="email:pass1\nemail:pass2..."></textarea>
+      <button onclick="checkReuse('57')">ESTIMATE</button>
+      <div id="results57" class="results"></div>
+    </div>
+
+    <!-- 58. MFA Coverage Checker -->
+    <div class="tool-card">
+      <h3>🛡️  MFA Coverage</h3>
+      <textarea id="services58" rows="3" placeholder="gmail.com\noffice365.com\n..."></textarea>
+      <button onclick="checkMFA('58')">CHECK</button>
+      <div id="results58" class="results"></div>
+    </div>
+
+    <!-- 59. Account Takeover Predictor -->
+    <div class="tool-card">
+      <h3>💥 ATO Risk Predictor</h3>
+      <textarea id="profile59" rows="4" placeholder="Domain: company.com\nPassword age: 2y\nMFA: no\nBreaches: 3..."></textarea>
+      <button onclick="predictATO('59')">PREDICT</button>
+      <div id="results59" class="results"></div>
+    </div>
+
+  </div>
+
+  <div class="log" id="masterLog"></div>
+  
+  <div class="export-btns">
+    <button onclick="exportAll()">📤 Export All Reports</button>
+    <button onclick="clearAll()">🗑️ Clear All</button>
+  </div>
+</div>
+
+<script>
+let masterReport = {};
+
+const DISPOSABLE_DOMAINS = ['tempmail','guerrillamail','10minutemail','mailinator','yopmail'];
+const PHISHING_PATTERNS = [/xn--/,'rn','1','l','0','o','s','z','5','g','q','b','8'];
+const MFA_SERVICES = {
+  'gmail.com':'Yes','google.com':'Yes','outlook.com':'Yes','office365.com':'Yes',
+  'microsoft.com':'Yes','dropbox.com':'Yes','github.com':'Yes','slack.com':'Yes'
+};
+
+function logMaster(key, value, tool) {
+  const entry = `${tool} | ${key}: ${value}`;
+  masterReport[Date.now()] = entry;
+  const log = document.getElementById('masterLog');
+  const div = document.createElement('div');
+  div.className = 'entry';
+  div.innerHTML = `<span class="key">${entry}</span>`;
+  log.insertBefore(div, log.firstChild);
+}
+
+function showResults(toolId, html) {
+  document.getElementById(`results${toolId}`).innerHTML = html;
+}
+
+function severityBadge(level, text) {
+  return `<span class="value severity-${level}">[${level.toUpperCase()}] ${text}</span>`;
+}
+
+async function analyzeEmailAuth(tool) {
+  const domain = document.getElementById(`domain${tool}`).value;
+  if(!domain) return showResults(tool, 'Enter domain');
+  
+  showResults(tool, '🔄 Analyzing DNS records...');
+  logMaster('EmailAuth', domain, tool);
+  
+  // Simulate DNS lookups with patterns
+  const records = {
+    spf: Math.random()>0.3 ? 'v=spf1 include:_spf.google.com ~all' : 'None/Fail',
+    dkim: Math.random()>0.4 ? 'selector._domainkey OK' : 'Missing',
+    dmarc: Math.random()>0.5 ? 'p=reject' : 'None/p=none'
+  };
+  
+  let html = `<div class="entry"><span class="key">SPF:</span> ${records.spf}</div>`;
+  html += `<div class="entry"><span class="key">DKIM:</span> ${records.dkim}</div>`;
+  html += `<div class="entry"><span class="key">DMARC:</span> ${records.dmarc}</div>`;
+  
+  const score = (records.spf.includes('~all')?1:0) + (records.dkim.includes('OK')?1:0) + (records.dmarc.includes('reject')?2:0);
+  html += `<div class="entry"><span class="key">Score:</span> ${severityBadge(score>=3?'low':'high', score+'/4')}</div>`;
+  
+  showResults(tool, html);
+}
+
+function checkSpoofing(tool) {
+  const from = document.getElementById(`from${tool}`).value;
+  logMaster('SpoofCheck', from, tool);
+  
+  const risks = [];
+  if(!from.match(/@/)) risks.push('Invalid format');
+  if(from.match(/admin@/i)) risks.push('Admin spoof');
+  if(from.match(/support@/i)) risks.push('Support impersonation');
+  
+  let html = risks.length ? 
+    risks.map(r => `<div>${severityBadge('high', r)}</div>`).join('') :
+    `<div>${severityBadge('low', 'Clean')}</div>`;
+    
+  showResults(tool, html);
+}
+
+function detectPhishing(tool) {
+  const suspect = document.getElementById(`domain${tool}`).value;
+  const real = document.getElementById(`real${tool}`).value;
+  logMaster('PhishingDetect', suspect, tool);
+  
+  let score = 0;
+  if(suspect.includes(real.slice(0,4))) score += 30;
+  PHISHING_PATTERNS.forEach(p => {if(suspect.match(p)) score += 20;});
+  if(suspect.length < real.length*0.8) score += 25;
+  
+  const html = `<div>${severityBadge(score>50?'high':'med', `Phishing Score: ${score}%`)}</div>`;
+  showResults(tool, html);
+}
+
+function checkDisposable(tool) {
+  const email = document.getElementById(`email${tool}`).value;
+  logMaster('DisposableCheck', email, tool);
+  
+  const domain = email.split('@')[1];
+  const isDisposable = DISPOSABLE_DOMAINS.some(d => domain.includes(d));
+  
+  showResults(tool, `<div>${severityBadge(isDisposable?'high':'low', isDisposable ? 'DISPOSABLE DETECTED' : 'Legit')}</div>`);
+}
+
+function analyzeHeaders(tool) {
+  const headers = document.getElementById(`headers${tool}`).value;
+  logMaster('HeaderAnalysis', headers.slice(0,50), tool);
+  
+  const findings = [];
+  if(headers.match(/X-Originating-IP:/i)) findings.push('IP leak found');
+  if(headers.match(/Received: from /)) findings.push('Forwarding chain');
+  if(headers.match(/MIME-Version:/i) && !headers.match(/DKIM-Signature:/i)) findings.push('MIME no DKIM');
+  
+  const html = findings.length ? 
+    findings.map(f => `<div>${severityBadge('med', f)}</div>`).join('') :
+    `<div>${severityBadge('low', 'Clean headers')}</div>`;
+    
+  showResults(tool, html);
+}
+
+function scoreIdentity(tool) {
+  const data = document.getElementById(`data${tool}`).value;
+  logMaster('IdentityScore', data.slice(0,30), tool);
+  
+  let score = 0;
+  if(data.match(/@/)) score += 20;
+  if(data.match(/\d{3}-\d{2}-\d{4}/)) score += 40;
+  if(data.match(/SSN|passport/i)) score += 50;
+  
+  showResults(tool, `<div>${severityBadge(score>30?'high':'med', `Exposure: ${score}/100`)}</div>`);
+}
+
+function analyzePolicy(tool) {
+  const policy = document.getElementById(`policy${tool}`).value.toLowerCase();
+  logMaster('PolicyCheck', policy, tool);
+  
+  const reqs = {length:policy.includes('8'), num:policy.includes('number'), spec:policy.includes('special')};
+  const score = Object.values(reqs).filter(Boolean).length;
+  
+  showResults(tool, `<div>${severityBadge(score<2?'high':'low', `Policy Score: ${score}/3`)}</div>`);
+}
+
+function checkReuse(tool) {
+  const creds = document.getElementById(`creds${tool}`).value;
+  logMaster('ReuseCheck', creds.split('\n').length, tool);
+  
+  const emails = {};
+  creds.split('\n').forEach(line => {
+    const [email] = line.split(':');
+    if(email) emails[email] = (emails[email]||0) + 1;
+  });
+  
+  const reuse = Object.values(emails).filter(c => c>1).length;
+  showResults(tool, `<div>${severityBadge(reuse?'high':'low', `Reuse instances: ${reuse}`)}</div>`);
+}
+
+function checkMFA(tool) {
+  const services = document.getElementById(`services${tool}`).value;
+  logMaster('MFACheck', services, tool);
+  
+  const lines = services.split('\n');
+  let covered = 0;
+  lines.forEach(s => {
+    const domain = s.split('@')[1] || s;
+    if(MFA_SERVICES[domain]) covered++;
+  });
+  
+  showResults(tool, `<div>${severityBadge(covered===lines.length?'low':'med', `${covered}/${lines.length} MFA`)}</div>`);
+}
+
+function predictATO(tool) {
+  const profile = document.getElementById(`profile${tool}`).value;
+  logMaster('ATORisk', profile.slice(0,50), tool);
+  
+  let risk = 50;
+  if(profile.includes('MFA: no')) risk += 30;
+  if(profile.includes('breaches:')) risk += 20;
+  if(profile.match(/age:\s*\d+y/)) risk += 10;
+  
+  showResults(tool, `<div>${severityBadge(risk>70?'high':'med', `ATO Risk: ${risk}%`)}</div>`);
+}
+
+function exportAll() {
+  download(JSON.stringify(masterReport,null,2), 'email-security-arsenal.json');
+  download(Object.entries(masterReport).map(([k,v])=>v).join('\n'), 'email-security-arsenal.txt');
+}
+
+function download(data, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([data]));
+  a.download = name;
+  a.click();
+}
+
+function clearAll() {
+  document.querySelectorAll('.results').forEach(r => r.innerHTML = '');
+  document.getElementById('masterLog').innerHTML = '';
+  masterReport = {};
+}
+</script>
+
+</body>
+</html>

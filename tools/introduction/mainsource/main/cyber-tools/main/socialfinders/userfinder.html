@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Username Availability Checker</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+            background-color: #ffffff;
+            color: #01ff73;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: rgb(0, 0, 0);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 98%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #ff0000;
+            color: rgb(22, 255, 1);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #results {
+            margin-top: 20px;
+            text-align: left;
+            background-color: #080606; /* Dark background for terminal effect */
+            color: #00f870; /* Light text color */
+            padding: 10px;
+            border-radius: 5px;
+            max-height: 300px; /* Limit height */
+            overflow-y: auto; /* Scroll if content overflows */
+            font-family: 'Courier New', Courier, monospace; /* Monospace font for terminal effect */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Username Availability Checker</h1>
+        <input type="text" id="username" placeholder="Enter username" />
+        <button id="checkButton">Check Availability</button>
+        <div id="results"></div>
+    </div>
+    <script>
+        document.getElementById('checkButton').addEventListener('click', function() {
+            const username = document.getElementById('username').value;
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = ''; // Clear previous results
+
+            if (!username) {
+                resultsDiv.innerHTML = '<p>Please enter a username.</p>';
+                return;
+            }
+
+            const platforms = [
+                { name: 'Instagram', url: `https://www.instagram.com/${username}` },
+                { name: 'Facebook', url: `https://www.facebook.com/${username}` },
+                { name: 'Twitter', url: `https://www.twitter.com/${username}` },
+                { name: 'YouTube', url: `https://www.youtube.com/${username}` },
+                { name: 'GitHub', url: `https://www.github.com/${username}` },
+                { name: 'Blogspot', url: `https://${username}.blogspot.com` },
+                { name: 'Google Plus', url: `https://plus.google.com/${username}` },
+                { name: 'Reddit', url: `https://www.reddit.com/user/${username}` },
+                { name: 'WordPress', url: `https://${username}.wordpress.com` },
+                { name: 'Pinterest', url: `https://www.pinterest.com/${username}` },
+                { name: 'Tumblr', url: `https://${username}.tumblr.com` },
+                { name: 'Flickr', url: `https://www.flickr.com/people/${username}` },
+                { name: 'Steam', url: `https://steamcommunity.com/id/${username}` },
+                { name: 'Vimeo', url: `https://vimeo.com/${username}` },
+                { name: 'SoundCloud', url: `https://soundcloud.com/${username}` },
+                { name: 'Disqus', url: `https://disqus.com/${username}` },
+                { name: 'Medium', url: `https://medium.com/@${username}` },
+                { name: 'DeviantART', url: `https://${username}.deviantart.com` },
+                { name: 'VK', url: `https://vk.com/${username}` },
+                { name: 'About.me', url: `https://about.me/${username}` },
+                { name: 'Spotify', url: `https://open.spotify.com/user/${username}` },
+                { name: 'MixCloud', url: `https://www.mixcloud.com/${username}` },
+                { name: 'Scribd', url: `https://www.scribd.com/${username}` },
+                { name: 'Badoo', url: `https://www.badoo.com/en/${username}` },
+                { name: 'Patreon', url: `https://www.patreon.com/${username}` },
+                { name: 'BitBucket', url: `https://bitbucket.org/${username}` },
+                { name: 'CashMe', url: `https://cash.me/${username}` },
+                { name: 'Behance', url: `https://www.behance.net/${username}` },
+                { name: 'GoodReads', url: `https://www.goodreads.com/${username}` },
+                { name: 'Instructables', url: `https://www.instructables.com/member/${username}` },
+                { name: 'KeyBase', url: `https://keybase.io/${username}` },
+                { name: 'Kongregate', url: `https://kongregate.com/accounts/${username}` },
+                { name: 'LiveJournal', url: `https://${username}.livejournal.com` },
+                { name: 'AngelList', url: `https://angel.co/${username}` },
+                { name: 'Last.fm', url: `https://last.fm/user/${username}` },
+                { name: 'Dribbble', url: `https://dribbble.com/${username}` },
+                { name: 'Codecademy', url: `https://www.codecademy.com/${username}` },
+                { name: 'Gravatar', url: `https://en.gravatar.com/${username}` },
+                { name: 'Pastebin', url: `https://pastebin.com/u/${username}` },
+                { name: 'Foursquare', url: `https://foursquare.com/${username}` },
+                { name: 'Roblox', url: `https://www.roblox.com/user.aspx?username=${username}` },
+                { name: 'Gumroad', url: `https://www.gumroad.com/${username}` },
+                { name: 'Newgrounds', url: `https://${username}.newgrounds.com` },
+                { name: 'Wattpad', url: `https://www.wattpad.com/user/${username}` },
+                { name: 'Canva', url: `https://www.canva.com/${username}` },
+                { name: 'CreativeMarket', url: `https://creativemarket.com/${username}` },
+                { name: 'Trakt', url: `https://www.trakt.tv/users/${username}` },
+                { name: '500px', url: `https://500px.com/${username}` },
+                { name: 'Buzzfeed', url: `https://buzzfeed.com/${username}` },
+                { name: 'TripAdvisor', url: `https://tripadvisor.com/members/${username}` },
+                { name: 'HubPages', url: `https://${username}.hubpages.com` },
+                { name: 'Contently', url: `https://${username}.contently.com` },
+                { name: 'Houzz', url: `https://houzz.com/user/${username}` },
+                { name: 'blip.fm', url: `https://blip.fm/${username}` },
+                { name: 'Wikipedia', url: `https://www.wikipedia.org/wiki/User:${username}` },
+                { name: 'HackerNews', url: `https://news.ycombinator.com/user?id=${username}` },
+                { name: 'CodeMentor', url: `https://www.codementor.io/${username}` },
+                { name: 'ReverbNation', url: `https://www.reverbnation.com/${username}` },
+                { name: 'Designspiration', url: `https://www.designspiration.net/${username}` },
+                { name: 'Bandcamp', url: `https://www.bandcamp.com/${username}` },
+                { name: 'ColourLovers', url: `https://www.colourlovers.com/love/${username}` },
+                { name: 'IFTTT', url: `https://www.ifttt.com/p/${username}` },
+                { name: 'Ebay', url: `https://www.ebay.com/usr/${username}` },
+                { name: 'Slack', url: `https://${username}.slack.com` },
+                { name: 'OkCupid', url: `https://www.okcupid.com/profile/${username}` },
+                { name: 'Trip', url: `https://www.trip.skyscanner .com/user/${username}` },
+                { name: 'Ello', url: `https://ello.co/${username}` },
+                { name: 'Tracky', url: `https://tracky.com/user/${username}` },
+                { name: 'Tripit', url: `https://www.tripit.com/people/${username}#/profile/basic-info` },
+                { name: 'Basecamp', url: `https://${username}.basecamphq.com/login` }
+            ];
+
+            platforms.forEach(platform => {
+                fetch(platform.url)
+                    .then(response => {
+                        if (response.status === 404) {
+                            resultsDiv.innerHTML += `<p>${platform.name}: Not Found</p>`;
+                        } else {
+                            resultsDiv.innerHTML += `<p>${platform.name}: Found! <a href="${platform.url}" target="_blank">${platform.url}</a></p>`;
+                        }
+                    })
+                    .catch(error => {
+                        resultsDiv.innerHTML += `<p>${platform.name}: Error checking availability</p>`;
+                    });
+            });
+        });
+    </script>
+</body>
+</html>

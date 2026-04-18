@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ultimate Music Player</title>
+  <style>
+    body {
+      background: #000 url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s') no-repeat center center fixed;
+      background-size: cover;
+      color: red;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+    .player {
+      max-width: 800px;
+      margin: auto;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 0 10px #222;
+    }
+    input, button {
+      width: 100%;
+      margin: 5px 0;
+      padding: 10px;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: #fff;
+      border-radius: 5px;
+    }
+    button:hover {
+      background: rgba(255,255,255,0.2);
+      cursor: pointer;
+    }
+    audio, video, iframe {
+      width: 100%;
+      margin-top: 10px;
+      border-radius: 10px;
+    }
+    canvas {
+      width: 100%;
+      height: 100px;
+      background: #111;
+      margin-top: 10px;
+      border-radius: 8px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    .controls button {
+      flex: 1;
+    }
+    #playlist {
+      text-align: left;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 15px;
+      border-top: 1px solid #333;
+      padding-top: 10px;
+    }
+    .track {
+      padding: 8px;
+      border-bottom: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      background-color: transparent;
+      color: #fff;
+    }
+    .track.highlight {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    .track-name {
+      font-weight: bold;
+    }
+    .track-buttons {
+      display: flex;
+      gap: 5px;
+      margin-top: 5px;
+    }
+    .drop-area {
+      border: 2px dashed #555;
+      padding: 20px;
+      margin-top: 15px;
+      border-radius: 10px;
+      color: #ccc;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .drop-area.dragover {
+      border-color: #aaa;
+      background: rgba(255, 255, 255, 0.05);
+    }
+  </style>
+</head>
+<body>
+  <h1>Ultimate Music Player</h1>
+  <div class="player">
+    <input type="url" id="urlInput" placeholder="Enter MP3/MP4/YouTube URL" />
+    <input type="file" id="fileInput" accept="audio/*,video/mp4" multiple />
+    <button onclick="addFromUrl()">Add from URL</button>
+
+    <audio id="audioPlayer" controls style="display: none;"></audio>
+    <video id="videoPlayer" controls style="display: none;"></video>
+    <iframe id="embedFrame" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="display: none; height: 300px;"></iframe>
+    <canvas id="visualizer"></canvas>
+
+    <div class="controls">
+      <button onclick="playPrevious()">Previous</button>
+      <button onclick="playNext()">Next</button>
+    </div>
+
+    <input type="text" id="searchInput" placeholder="Search playlist..." oninput="searchPlaylist()" />
+    <div id="playlist"></div>
+
+    <div id="dropArea" class="drop-area">
+      Drag & Drop Audio/Video Files Here
+    </div>
+  </div>
+
+  <audio id="bgMusic" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" autoplay loop></audio>
+
+  <script>
+    const urlInput = document.getElementById("urlInput");
+    const fileInput = document.getElementById("fileInput");
+    const audioPlayer = document.getElementById("audioPlayer");
+    const videoPlayer = document.getElementById("videoPlayer");
+    const embedFrame = document.getElementById("embedFrame");
+    const canvas = document.getElementById("visualizer");
+    const ctx = canvas.getContext("2d");
+    const playlistDiv = document.getElementById("playlist");
+    const searchInput = document.getElementById("searchInput");
+    const dropArea = document.getElementById("dropArea");
+
+    let playlist = JSON.parse(localStorage.getItem("mediaPlaylist") || "[]");
+    let currentIndex = 0;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    function connectSource(media) {
+      const source = audioCtx.createMediaElementSource(media);
+      source.connect(analyser);
+      analyser.connect(audioCtx.destination);
+    }
+
+    connectSource(audioPlayer);
+    connectSource(videoPlayer);
+
+    function drawVisualizer() {
+      requestAnimationFrame(drawVisualizer);
+      analyser.getByteFrequencyData(dataArray);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const barWidth = canvas.width / dataArray.length;
+      for (let i = 0; i < dataArray.length; i++) {
+        const h = dataArray[i] / 1.5;
+        ctx.fillStyle = `rgb(${h + 100}, 50, 255)`;
+        ctx.fillRect(i * barWidth, canvas.height - h, barWidth, h);
+      }
+    }
+    drawVisualizer();
+
+    function savePlaylist() {
+      localStorage.setItem("mediaPlaylist", JSON.stringify(playlist));
+    }
+
+    function parseExternalEmbed(url) {
+      if (url.includes("youtube.com") || url.includes("youtu.be")) {
+        let id = url.includes("v=") ? url.split("v=")[1] : url.split("/").pop();
+        if (id.includes("&")) id = id.split("&")[0];
+        return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&mute=0`;
+      }
+      return null;
+    }
+
+    function addTrack(source, name, type, downloadable = true) {
+      playlist.push({ source, name, type, downloadable });
+      savePlaylist();
+      renderPlaylist();
+    }
+
+    function addFromUrl() {
+      const url = urlInput.value.trim();
+      if (!url) return;
+
+      const ext = url.split('.').pop().toLowerCase();
+      const isVideo = ext === "mp4";
+      const isAudio = ["mp3", "wav", "ogg", "m4a"].includes(ext);
+      const embed = parseExternalEmbed(url);
+
+      if (isVideo || isAudio) {
+        addTrack(url, url.split("/").pop(), isVideo ? "video" : "audio", true);
+      } else if (embed) {
+        addTrack(embed, "YouTube Video", "embed", false);
+      } else {
+        alert("Unsupported or unrecognized link.");
+        return;
+      }
+      urlInput.value = "";
+    }
+
+    fileInput.addEventListener("change", (e) => {
+      for (let file of e.target.files) {
+        const url = URL.createObjectURL(file);
+        const ext = file.name.split(".").pop().toLowerCase();
+        const type = ext === "mp4" ? "video" : "audio";
+        addTrack(url, file.name, type, false);
+      }
+    });
+
+    function renderPlaylist() {
+      playlistDiv.innerHTML = "";
+      playlist.forEach((track, index) => {
+        const div = document.createElement("div");
+        div.className = "track";
+        if (index === currentIndex) div.classList.add("highlight");
+
+        const name = document.createElement("div");
+        name.className = "track-name";
+        name.textContent = track.name;
+        name.onclick = () => {
+          currentIndex = index;
+          playCurrent();
+        };
+
+        const link = document.createElement("div");
+        link.textContent = track.source;
+        link.style.fontSize = "0.8em";
+        link.style.color = "#ccc";
+
+        const buttons = document.createElement("div");
+        buttons.className = "track-buttons";
+
+        const del = document.createElement("button");
+        del.textContent = "Delete";
+        del.onclick = (e) => {
+          e.stopPropagation();
+          playlist.splice(index, 1);
+          savePlaylist();
+          renderPlaylist();
+        };
+
+        const up = document.createElement("button");
+        up.textContent = "↑";
+        up.onclick = (e) => {
+          e.stopPropagation();
+          if (index > 0) {
+            [playlist[index], playlist[index - 1]] = [playlist[index - 1], playlist[index]];
+            savePlaylist();
+            renderPlaylist();
+          }
+        };
+
+        const down = document.createElement("button");
+        down.textContent = "↓";
+        down.onclick = (e) => {
+          e.stopPropagation();
+          if (index < playlist.length - 1) {
+            [playlist[index], playlist[index + 1]] = [playlist[index + 1], playlist[index]];
+            savePlaylist();
+            renderPlaylist();
+          }
+        };
+
+        buttons.append(del, up, down);
+        div.append(name, link, buttons);
+        playlistDiv.appendChild(div);
+      });
+    }
+
+    function playCurrent() {
+      const track = playlist[currentIndex];
+      if (!track) return;
+
+      [audioPlayer, videoPlayer].forEach(p => {
+        p.pause();
+        p.style.display = "none";
+        p.src = "";
+      });
+      embedFrame.style.display = "none";
+      embedFrame.src = "";
+
+      if (track.type === "video") {
+        videoPlayer.src = track.source;
+        videoPlayer.style.display = "block";
+        videoPlayer.play();
+      } else if (track.type === "audio") {
+        audioPlayer.src = track.source;
+        audioPlayer.style.display = "block";
+        audioPlayer.play();
+      } else if (track.type === "embed") {
+        embedFrame.src = track.source;
+        embedFrame.style.display = "block";
+      }
+      renderPlaylist();
+    }
+
+    function playNext() {
+      if (currentIndex < playlist.length - 1) {
+        currentIndex++;
+        playCurrent();
+      }
+    }
+
+    function playPrevious() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        playCurrent();
+      }
+    }
+
+    function searchPlaylist() {
+      const query = searchInput.value.toLowerCase();
+      const tracks = playlistDiv.querySelectorAll(".track");
+      playlist.forEach((track, index) => {
+        const match = track.name.toLowerCase().includes(query);
+        tracks[index].style.display = match ? "block" : "none";
+      });
+    }
+
+    dropArea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropArea.classList.add("dragover");
+    });
+
+    dropArea.addEventListener("dragleave", () => {
+      dropArea.classList.remove("dragover");
+    });
+
+    dropArea.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropArea.classList.remove("dragover");
+      const files = e.dataTransfer.files;
+      for (let file of files) {
+        const url = URL.createObjectURL(file);
+        const ext = file.name.split(".").pop().toLowerCase();
+        const type = ext === "mp4" ? "video" : "audio";
+        addTrack(url, file.name, type, false);
+      }
+    });
+
+    renderPlaylist();
+    if (playlist.length > 0) playCurrent();
+  </script>
+</body>
+</html>

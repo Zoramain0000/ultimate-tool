@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Powerful Proxy Server Log Generator - Cloudflare QR</title>
+
+<!-- Cloudflare QR Code Library (Powered by GitHub) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+  body {
+    margin: 0; padding: 0;
+    color: #0f0; /* Matrix Green */
+    font-family: 'Consolas', 'Courier New', monospace;
+    display: flex; flex-direction: column; height: 100vh;
+    background-color: #000;
+  }
+
+  /* Background Video */
+  #bgVideo {
+    position: fixed;
+    top: 0; left: 0;
+    min-width: 100%; min-height: 100%;
+    z-index: -1;
+    object-fit: cover;
+    filter: brightness(0.4) contrast(1.2) hue-rotate(180deg); /* Cyberpunk tint */
+  }
+
+  header {
+    padding: 12px 20px;
+    background: rgba(0,0,0,0.7);
+    border-bottom: 1px solid #00ff00;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    backdrop-filter: blur(5px);
+    z-index: 10;
+  }
+
+  label {
+    font-weight: bold;
+    font-size: 14px;
+    color: #00ff00;
+    text-transform: uppercase;
+  }
+
+  select, input[type=button] {
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 0; /* Edgy look */
+    border: 1px solid #00ff00;
+    outline: none;
+    cursor: pointer;
+    background: rgba(0,20,0,0.8);
+    color: #00ff00;
+    text-transform: uppercase;
+  }
+
+  select:focus, input[type=button]:focus {
+    box-shadow: 0 0 10px #00ff00;
+  }
+
+  input[type=button] {
+    background: #003300;
+    transition: all 0.2s;
+  }
+
+  input[type=button]:hover {
+    background: #00ff00;
+    color: black;
+    box-shadow: 0 0 15px #00ff00;
+  }
+
+  input[type=text] {
+    flex-grow: 1;
+    min-width: 180px;
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    padding: 6px 10px;
+    border: 1px solid #00ff00;
+    outline: none;
+    background: rgba(0,0,0,0.6);
+    color: #00ff00;
+  }
+
+  #logContainer {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.4);
+    position: relative;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead tr {
+    background: rgba(0,50,0,0.9);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    border-bottom: 2px solid #00ff00;
+  }
+
+  th, td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #003300;
+    white-space: nowrap;
+    text-align: left;
+  }
+
+  th {
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  tbody tr {
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  tbody tr:hover {
+    background: rgba(0,255,0,0.15);
+    text-shadow: 0 0 5px #00ff00;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 10px; }
+  ::-webkit-scrollbar-track { background: #001100; }
+  ::-webkit-scrollbar-thumb { background: #004400; border: 1px solid #00ff00; }
+  ::-webkit-scrollbar-thumb:hover { background: #00ff00; }
+
+  /* Modal Styles */
+  #qrModal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+  }
+
+  #qrModal.active { display: flex; }
+
+  .modal-content {
+    background: #000;
+    border: 2px solid #00ff00;
+    padding: 20px;
+    box-shadow: 0 0 30px rgba(0,255,0,0.2);
+    max-width: 90%;
+    text-align: center;
+    position: relative;
+  }
+
+  #qrcode {
+    margin: 15px auto;
+    border: 5px solid #fff; /* White border required for scanning */
+    padding: 10px;
+    background: #fff;
+    display: inline-block;
+  }
+
+  #qrTimer {
+    color: #00ff00;
+    font-size: 14px;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+
+  #logDetails {
+    background: #001100;
+    color: #ccc;
+    padding: 10px;
+    text-align: left;
+    font-size: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 15px;
+    border: 1px solid #004400;
+    word-break: break-all;
+  }
+
+  .close-btn {
+    margin-top: 15px;
+    padding: 10px 20px;
+    background: #003300;
+    color: #00ff00;
+    border: 1px solid #00ff00;
+    cursor: pointer;
+    font-family: inherit;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  .close-btn:hover { background: #00ff00; color: black; }
+
+  #loadingIndicator {
+    padding: 10px 0;
+    text-align: center;
+    color: #00ff00;
+    font-style: italic;
+    animation: blink 1s infinite;
+  }
+
+  @keyframes blink { 50% { opacity: 0.5; } }
+
+  @media (max-width: 600px) {
+    header { padding: 10px; flex-direction: column; align-items: stretch; }
+    th, td { padding: 6px 8px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Background Video -->
+<video autoplay muted loop id="bgVideo">
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+<header>
+  <label for="countrySelect">Proxy Region:</label>
+  <select id="countrySelect" aria-label="Select country for logs"></select>
+
+  <label for="portRangeSelect">Port Range:</label>
+  <select id="portRangeSelect">
+    <option value="wellknown">Well Known (1-1024)</option>
+    <option value="all">All Ports (1-65535)</option>
+  </select>
+
+  <input type="button" id="generateBtn" value="Generate Traffic" aria-label="Generate logs for selected country" />
+  <input type="text" id="searchInput" placeholder="Search logs..." aria-label="Search logs" />
+  <input type="button" id="downloadBtn" value="Download CSV" aria-label="Download generated logs" />
+</header>
+
+<div id="logContainer" tabindex="0" aria-live="polite">
+  <table role="grid">
+    <thead>
+      <tr>
+        <th scope="col">IP Address</th>
+        <th scope="col">Port</th>
+        <th scope="col">Protocol</th>
+        <th scope="col">Status</th>
+        <th scope="col">Latency</th>
+        <th scope="col">Country</th>
+        <th scope="col">Date</th>
+        <th scope="col">Time</th>
+        <th scope="col">User-Agent</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+  <div id="loadingIndicator" hidden>Routing traffic through proxy...</div>
+</div>
+
+<!-- QR Code Modal -->
+<div id="qrModal">
+  <div class="modal-content">
+    <h3 style="color:#00ff00; margin-top:0;">PROXY ACCESS TOKEN</h3>
+    <div id="qrTimer">Next Reset: 10:00</div>
+    <div id="qrcode"></div>
+    <div id="logDetails"></div>
+    <button class="close-btn" onclick="closeModal()">Close Connection</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const countries = [
+    "United States", "Canada", "United Kingdom", "Germany", "France", "Australia", "India",
+    "Brazil", "Japan", "Russia", "China", "Mexico", "Italy", "South Korea", "Netherlands",
+    "Spain", "Sweden", "Norway", "Poland", "Turkey", "South Africa", "Argentina", "Belgium",
+    "Switzerland", "New Zealand", "Singapore", "Malaysia", "Thailand", "Indonesia", "Vietnam",
+    "Ireland", "Czech Republic", "Portugal", "Greece", "Finland", "Denmark", "Colombia",
+    "Chile", "Egypt", "United Arab Emirates", "Saudi Arabia", "Israel", "Philippines",
+    "Hungary", "Romania", "Ukraine", "Pakistan", "Bangladesh", "Morocco", "Algeria", "Angola",
+    "Argentina", "Armenia", "Austria", "Azerbaijan", "Bahamas", "Bahrain",
+    "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia",
+    "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso",
+    "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic",
+    "Chad", "Chile", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba",
+    "Cyprus", "Czech Republic", "Democratic Republic of the Congo", "Denmark", "Djibouti",
+    "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea",
+    "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon",
+    "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau",
+    "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran",
+    "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan",
+    "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho",
+    "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi",
+    "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius",
+    "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco",
+    "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand",
+    "Nicaragua", "Niger", "Nigeria", "North Macedonia", "Norway", "Oman", "Pakistan",
+    "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines",
+    "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis",
+    "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe",
+    "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia",
+    "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan",
+    "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Tajikistan",
+    "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia",
+    "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom",
+    "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
+    "Yemen", "Zambia", "Zimbabwe"
+  ];
+
+  const browsers = [
+    { name: "Chrome", versions: ["114.0", "115.0", "116.0", "117.0"] },
+    { name: "Firefox", versions: ["114.0", "115.0", "116.0"] },
+    { name: "Safari", versions: ["15.1", "16.0", "16.1"] },
+    { name: "Edge", versions: ["114.0", "115.0", "116.0"] },
+    { name: "Opera", versions: ["88.0", "89.0", "90.0"] }
+  ];
+
+  const osVersions = {
+    windows: ["10.0", "11.0", "8.1"],
+    mac: ["10_15_7", "11_6", "12_3", "13_0"],
+    linux: ["x86_64", "arm64"],
+    android: ["10", "11", "12", "13"],
+    ios: ["14_4", "15_0", "15_1", "16_0"]
+  };
+
+  const devices = [
+    "Pixel 5", "Pixel 6", "Pixel 7", "Samsung Galaxy S21", "Samsung Galaxy S22", "OnePlus 9",
+    "iPhone 11", "iPhone 12", "iPhone 13", "iPhone 14", "iPad Pro"
+  ];
+
+  const elements = {
+    countrySelect: document.getElementById('countrySelect'),
+    portRangeSelect: document.getElementById('portRangeSelect'),
+    generateBtn: document.getElementById('generateBtn'),
+    searchInput: document.getElementById('searchInput'),
+    logBody: document.getElementById('logBody'),
+    logContainer: document.getElementById('logContainer'),
+    loadingIndicator: document.getElementById('loadingIndicator'),
+    downloadBtn: document.getElementById('downloadBtn'),
+    qrModal: document.getElementById('qrModal'),
+    qrCodeDiv: document.getElementById('qrcode'),
+    qrTimer: document.getElementById('qrTimer'),
+    logDetails: document.getElementById('logDetails')
+  };
+
+  // Auto-Reset Timer Variables
+  let qrInterval = null;
+  let qrSecondsLeft = 600; // 10 minutes
+  let currentQrData = null;
+  let currentQrObj = null; // Store QRCode instance
+
+  function populateCountries() {
+    countries.forEach(c => {
+      const option = document.createElement('option');
+      option.value = c;
+      option.textContent = c;
+      elements.countrySelect.appendChild(option);
+    });
+  }
+
+  function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function randomIP() {
+    return `${randInt(1, 255)}.${randInt(0, 255)}.${randInt(0, 255)}.${randInt(1, 254)}`;
+  }
+
+  function randomPort() {
+    const range = elements.portRangeSelect.value;
+    if (range === 'wellknown') {
+      return randInt(1, 1024);
+    } else {
+      return randInt(1, 65535);
+    }
+  }
+
+  function randomProtocol() {
+    const protos = ["HTTP", "HTTPS", "SOCKS5", "FTP", "SSH"];
+    return protos[randInt(0, protos.length - 1)];
+  }
+
+  function randomStatus() {
+    const codes = ["200 OK", "301 Moved", "302 Found", "400 Bad Req", "401 Unauth", "403 Forbid", "404 Not Found", "500 Err", "502 Bad Gate", "503 Unavail"];
+    return codes[randInt(0, codes.length - 1)];
+  }
+
+  function randomLatency() {
+    return `${randInt(10, 800)}ms`;
+  }
+
+  function randomDate() {
+    const year = 2024;
+    const month = randInt(1, 12);
+    const day = randInt(1, 28);
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+
+  function randomTime() {
+    const hour = randInt(0, 23);
+    const minute = randInt(0, 59);
+    const second = randInt(0, 59);
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`;
+  }
+
+  function generateUserAgent() {
+    const osType = randInt(1, 5);
+    let osString = "";
+    switch(osType) {
+      case 1:
+        osString = `Windows NT ${osVersions.windows[randInt(0, osVersions.windows.length -1)]}`;
+        break;
+      case 2:
+        osString = `Macintosh; Intel Mac OS X ${osVersions.mac[randInt(0, osVersions.mac.length -1)]}`;
+        break;
+      case 3:
+        osString = `X11; Linux ${osVersions.linux[randInt(0, osVersions.linux.length -1)]}`;
+        break;
+      case 4:
+        osString = `Linux; Android ${osVersions.android[randInt(0, osVersions.android.length -1)]}; ${devices[randInt(0, devices.length -1)]}`;
+        break;
+      case 5:
+        osString = `iPhone; CPU iPhone OS ${osVersions.ios[randInt(0, osVersions.ios.length -1)]} like Mac OS X`;
+        break;
+    }
+    const browser = browsers[randInt(0, browsers.length -1)];
+    const browserVer = browser.versions[randInt(0, browser.versions.length -1)];
+    if (browser.name === "Chrome" || browser.name === "Edge" || browser.name === "Opera") {
+      return `Mozilla/5.0 (${osString}) AppleWebKit/537.36 (KHTML, like Gecko) ${browser.name}/${browserVer} Safari/537.36`;
+    } else if (browser.name === "Firefox") {
+      return `Mozilla/5.0 (${osString}; rv:${browserVer}) Gecko/20100101 Firefox/${browserVer}`;
+    } else if (browser.name === "Safari") {
+      return `Mozilla/5.0 (${osString}) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/${browserVer} Safari/605.1.15`;
+    }
+    return `Mozilla/5.0 (${osString})`;
+  }
+
+  const BATCH_SIZE = 50;
+  const MAX_LOGS = 10000000;
+
+  let totalLogsGenerated = 0;
+  let currentCountry = null;
+  let allEntries = [];
+
+  function createRow(entry) {
+    const tr = document.createElement('tr');
+    tr.dataset.entry = JSON.stringify(entry);
+    tr.innerHTML = `
+      <td>${entry.ip}</td>
+      <td>${entry.port}</td>
+      <td>${entry.protocol}</td>
+      <td>${entry.status}</td>
+      <td>${entry.latency}</td>
+      <td>${entry.country}</td>
+      <td>${entry.date}</td>
+      <td>${entry.time}</td>
+      <td>${entry.userAgent}</td>
+    `;
+    return tr;
+  }
+
+  function generateLogEntryForCountry(country) {
+    return {
+      ip: randomIP(),
+      port: randomPort(),
+      protocol: randomProtocol(),
+      status: randomStatus(),
+      latency: randomLatency(),
+      country,
+      date: randomDate(),
+      time: randomTime(),
+      userAgent: generateUserAgent()
+    };
+  }
+
+  function loadMoreLogs() {
+    if (totalLogsGenerated >= MAX_LOGS) {
+      elements.loadingIndicator.textContent = "End of logs reached.";
+      elements.loadingIndicator.hidden = false;
+      return;
+    }
+    elements.loadingIndicator.hidden = false;
+    setTimeout(() => {
+      const fragment = document.createDocumentFragment();
+      for (let i = 0; i < BATCH_SIZE && totalLogsGenerated < MAX_LOGS; i++, totalLogsGenerated++) {
+        const entry = generateLogEntryForCountry(currentCountry);
+        allEntries.push(entry);
+        fragment.appendChild(createRow(entry));
+      }
+      elements.logBody.appendChild(fragment);
+      elements.loadingIndicator.hidden = true;
+    }, 100);
+  }
+
+  function resetLogs() {
+    totalLogsGenerated = 0;
+    allEntries = [];
+    elements.logBody.innerHTML = '';
+    elements.loadingIndicator.textContent = 'Routing traffic...';
+    elements.loadingIndicator.hidden = true;
+  }
+
+  function filterLogs() {
+    const filter = elements.searchInput.value.toLowerCase();
+    if (!filter) {
+      [...elements.logBody.children].forEach(tr => tr.style.display = "");
+      return;
+    }
+    [...elements.logBody.children].forEach(tr => {
+      const haystack = tr.textContent.toLowerCase();
+      tr.style.display = haystack.includes(filter) ? "" : "none";
+    });
+  }
+
+  // --- QR Code Logic ---
+
+  function stopQRTimer() {
+    if (qrInterval) clearInterval(qrInterval);
+    qrInterval = null;
+  }
+
+  function resetQRTimer() {
+    stopQRTimer();
+    qrSecondsLeft = 600;
+    updateTimerDisplay();
+    
+    qrInterval = setInterval(() => {
+      qrSecondsLeft--;
+      updateTimerDisplay();
+      
+      if (qrSecondsLeft <= 0) {
+        regenerateQR();
+        qrSecondsLeft = 600; // Reset
+      }
+    }, 1000);
+  }
+
+  function updateTimerDisplay() {
+    const m = Math.floor(qrSecondsLeft / 60);
+    const s = qrSecondsLeft % 60;
+    elements.qrTimer.textContent = `Token Refresh: ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+
+  function generateQRString(entry) {
+    // Create a complex string representing the proxy session
+    return `PROXY-TOKEN\nIP: ${entry.ip}\nPORT: ${entry.port}\nREGION: ${entry.country}\nPROTOCOL: ${entry.protocol}\nSESSION-ID: ${Date.now()}-${Math.floor(Math.random()*99999)}`;
+  }
+
+  function regenerateQR() {
+    if (!currentQrData) return;
+
+    // Clear existing QR
+    elements.qrCodeDiv.innerHTML = "";
+    
+    // Generate new string (slightly different session ID)
+    const newString = generateQRString(JSON.parse(currentQrData));
+    
+    // Render new QR using Cloudflare library
+    if (typeof QRCode !== 'undefined') {
+        currentQrObj = new QRCode(elements.qrCodeDiv, {
+            text: newString,
+            width: 200,
+            height: 200,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+    }
+    
+    // Reset timer
+    resetQRTimer();
+  }
+
+  function openQRModal(entry) {
+    currentQrData = JSON.stringify(entry);
+    
+    // Display details
+    elements.logDetails.textContent = `
+      IP: ${entry.ip}
+      Port: ${entry.port}
+      Protocol: ${entry.protocol}
+      Status: ${entry.status}
+      Country: ${entry.country}
+      Timestamp: ${entry.date} ${entry.time}
+    `;
+
+    elements.qrModal.classList.add('active');
+    
+    // Generate initial QR
+    regenerateQR();
+  }
+
+  window.closeModal = function() {
+    elements.qrModal.classList.remove('active');
+    stopQRTimer();
+    currentQrData = null;
+  };
+
+  // --- Event Listeners ---
+
+  elements.logContainer.addEventListener('scroll', () => {
+    if (elements.loadingIndicator.hidden &&
+        (elements.logContainer.scrollTop + elements.logContainer.clientHeight >= elements.logContainer.scrollHeight - 50) &&
+        elements.searchInput.value.trim() === '') {
+      loadMoreLogs();
+    }
+  });
+
+  // Click on row to open QR
+  elements.logBody.addEventListener('click', (e) => {
+    const tr = e.target.closest('tr');
+    if (tr) {
+      try {
+        const entry = JSON.parse(tr.dataset.entry);
+        openQRModal(entry);
+      } catch (err) {
+        console.error("Data error", err);
+      }
+    }
+  });
+
+  elements.generateBtn.addEventListener('click', () => {
+    const selected = elements.countrySelect.value;
+    if (!selected) return alert('Please select a country first.');
+    currentCountry = selected;
+    resetLogs();
+    loadMoreLogs();
+    elements.searchInput.value = '';
+  });
+
+  elements.searchInput.addEventListener('input', () => {
+    filterLogs();
+  });
+
+  elements.downloadBtn.addEventListener('click', () => {
+    const csvContent = "data:text/csv;charset=utf-8," + 
+      "IP,Port,Protocol,Status,Latency,Country,Date,Time,User-Agent\n" + 
+      allEntries.map(e => `${e.ip},${e.port},${e.protocol},${e.status},${e.latency},${e.country},${e.date},${e.time},${e.userAgent}`).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "proxy_logs.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+
+  // Initialize
+  populateCountries();
+  if (countries.length > 0) {
+    elements.countrySelect.value = countries[0];
+    currentCountry = countries[0];
+  }
+  loadMoreLogs();
+})();
+</script>
+
+</body>
+</html>

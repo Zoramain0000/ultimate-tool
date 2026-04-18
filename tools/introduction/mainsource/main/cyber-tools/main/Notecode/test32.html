@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Zero Days Notepad++</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- CodeMirror Core CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+  <!-- Theme -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/dracula.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/dialog/dialog.min.css">
+  <!-- Styling -->
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      background-color: #1e1e1e;
+      color: #fff;
+    }
+    #toolbar {
+      display: flex;
+      align-items: center;
+      background-color: #333;
+      padding: 10px;
+    }
+    #toolbar button, select {
+      margin-right: 10px;
+      padding: 5px 10px;
+      border: none;
+      cursor: pointer;
+      background-color: #0f0;
+      color: #000;
+      font-weight: bold;
+    }
+    #toolbar button:hover {
+      background-color: #fff;
+      color: #000;
+    }
+    #editor {
+      height: calc(100vh - 50px);
+    }
+    .CodeMirror {
+      height: 100% !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <button onclick="newFile()">New</button>
+    <button onclick="openFile()">Open</button>
+    <button onclick="saveFile()">Save</button>
+    <button onclick="exportFile()">Export</button>
+    <select id="languageSelect" onchange="changeLanguage(this.value)">
+      <option value="javascript">JavaScript</option>
+      <option value="htmlmixed">HTML</option>
+      <option value="css">CSS</option>
+      <option value="python">Python</option>
+      <option value="xml">XML</option>
+      <option value="markdown">Markdown</option>
+      <option value="php">PHP</option>
+      <option value="clike">C/C++</option>
+      <option value="sql">SQL</option>
+      <option value="shell">Shell</option>
+      <option value="yaml">YAML</option>
+      <option value="json">JSON</option>
+      <option value="a-net">A.NET</option>
+      <option value="abap">ABAP</option>
+      <option value="ada">Ada</option>
+      <option value="bash">Bash</option>
+      <option value="c">C</option>
+      <option value="csharp">C#</option>
+      <option value="cplus">C++</option>
+      <option value="dart">Dart</option>
+      <option value="elixir">Elixir</option>
+      <option value="fortran">Fortran</option>
+      <option value="go">Go</option>
+      <option value="haskell">Haskell</option>
+      <option value="java">Java</option>
+      <option value="kotlin">Kotlin</option>
+      <option value="lua">Lua</option>
+      <option value="perl">Perl</option>
+      <option value="php">PHP</option>
+      <option value="python">Python</option>
+      <option value="ruby">Ruby</option>
+      <option value="rust">Rust</option>
+      <option value="scala">Scala</option>
+      <option value="swift">Swift</option>
+      <option value="typescript">TypeScript</option>
+      <option value="visualbasic">Visual Basic</option>
+    </select>
+  </div>
+  <textarea id="editor"></textarea>
+
+  <!-- CodeMirror Core -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+  <!-- Modes -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/markdown/markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/php/php.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/clike/clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/sql/sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/shell/shell.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/yaml/yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/json.min.js"></script>
+  
+  <!-- Editor Initialization -->
+  <script>
+    let editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+      lineNumbers: true,
+      mode: 'javascript',
+      theme: 'dracula',
+      matchBrackets: true,
+      autoCloseBrackets: true,
+      lineWrapping: true,
+    });
+
+    function newFile() {
+      if (confirm("Clear current content?")) {
+        editor.setValue("");
+      }
+    }
+
+    function openFile() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '*';
+      input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = e => {
+          editor.setValue(e.target.result);
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    function saveFile() {
+      const blob = new Blob([editor.getValue()], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'untitled.txt';
+      a.click();
+    }
+
+    function exportFile() {
+      const language = document.getElementById('languageSelect').value;
+      const blob = new Blob([editor.getValue()], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `exported_code.${language}`;
+      a.click();
+    }
+
+    function changeLanguage(mode) {
+      editor.setOption('mode', mode);
+    }
+  </script>
+</body>
+</html>

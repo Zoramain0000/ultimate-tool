@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Domain Health Checker</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      background-color: #f5f7fa;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 3rem auto;
+      padding: 2rem;
+      background: #000000;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0, 255, 34, 0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #00ff00;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 0.75rem;
+      background-color: #ff0000;
+      color: #20ff03;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .summary-box {
+      margin-top: 1rem;
+      padding: 1rem;
+      background-color: #e2f0d9;
+      border: 2px solid #c3e6cb;
+      border-radius: 8px;
+      font-weight: bold;
+      color: #2e7d32;
+    }
+    .results {
+      margin-top: 2rem;
+    }
+    .result-box {
+      padding: 1rem;
+      background-color: #eef1f7;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+    }
+    .status {
+      font-weight: bold;
+    }
+    .status.pass { color: green; }
+    .status.warn { color: orange; }
+    .status.fail { color: red; }
+    footer {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1rem;
+      font-size: 0.9rem;
+      text-align: center;
+      color: #00ff00;
+    }
+    footer a {
+      color: #09ff00;
+      text-decoration: none;
+      margin: 0 5px;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AI Domain Health Checker</h1>
+    <input type="text" id="domainInput" placeholder="Enter a domain (e.g. example.com)" />
+    <button onclick="checkDomainHealth()">Check Health</button>
+    <div id="summary" class="summary-box" style="display:none;"></div>
+    <div class="results" id="results"></div>
+  </div>
+
+  <footer>
+    <p>Helpful APIs and Resources:</p>
+    <a href="https://whoisxmlapi.com/" target="_blank">WHOIS Lookup</a> |
+    <a href="https://api.ssllabs.com/" target="_blank">SSL Checker</a> |
+    <a href="https://dns.google/resolve" target="_blank">Google DNS API</a> |
+    <a href="https://www.cloudflare.com/dns/" target="_blank">Cloudflare DNS</a>
+  </footer>
+
+  <script>
+    async function checkDomainHealth() {
+      const domain = document.getElementById('domainInput').value.trim();
+      const resultsContainer = document.getElementById('results');
+      const summaryBox = document.getElementById('summary');
+      resultsContainer.innerHTML = '';
+      summaryBox.style.display = 'none';
+
+      if (!domain) return alert('Please enter a domain.');
+
+      const checks = [];
+
+      try {
+        // WHOIS check (replace with your API key)
+        const whoisRes = await fetch(`https://www.whoisxmlapi.com/whoisserver/WhoisService?apiKey=at_OffwFPCV1KBcNU20xSxi6RjDXU&domainName=${domain}&outputFormat=JSON`);
+        const whoisData = await whoisRes.json();
+        const registered = whoisData.WhoisRecord?.domainName;
+        checks.push({
+          name: 'WHOIS Status',
+          status: registered ? 'pass' : 'fail',
+          info: registered ? 'Domain is registered.' : 'Domain is not registered.'
+        });
+      } catch (e) {
+        checks.push({
+          name: 'WHOIS Status',
+          status: 'warn',
+          info: 'WHOIS check failed.'
+        });
+      }
+
+      try {
+        // SSL Labs check
+        const sslRes = await fetch(`https://api.ssllabs.com/api/v3/analyze?host=${domain}`);
+        const sslData = await sslRes.json();
+        const grade = sslData?.endpoints?.[0]?.grade;
+        checks.push({
+          name: 'SSL Certificate',
+          status: grade ? 'pass' : 'fail',
+          info: grade ? `SSL Grade: ${grade}` : 'No SSL grade available.'
+        });
+      } catch (e) {
+        checks.push({
+          name: 'SSL Certificate',
+          status: 'warn',
+          info: 'SSL check failed or pending.'
+        });
+      }
+
+      try {
+        // DNS A record
+        const dnsRes = await fetch(`https://dns.google/resolve?name=${domain}&type=A`);
+        const dnsData = await dnsRes.json();
+        const aRecord = dnsData?.Answer?.[0]?.data;
+        checks.push({
+          name: 'DNS A Record',
+          status: aRecord ? 'pass' : 'fail',
+          info: aRecord ? `IP Address: ${aRecord}` : 'No A record found.'
+        });
+      } catch (e) {
+        checks.push({
+          name: 'DNS A Record',
+          status: 'warn',
+          info: 'DNS check failed.'
+        });
+      }
+
+      try {
+        // MX record
+        const mxRes = await fetch(`https://dns.google/resolve?name=${domain}&type=MX`);
+        const mxData = await mxRes.json();
+        const mxRecord = mxData?.Answer?.[0]?.data;
+        checks.push({
+          name: 'MX Records',
+          status: mxRecord ? 'pass' : 'fail',
+          info: mxRecord ? `MX: ${mxRecord}` : 'No MX records found.'
+        });
+      } catch (e) {
+        checks.push({
+          name: 'MX Records',
+          status: 'warn',
+          info: 'MX check failed.'
+        });
+      }
+
+      // Basic SPF Record Check
+      try {
+        const txtRes = await fetch(`https://dns.google/resolve?name=${domain}&type=TXT`);
+        const txtData = await txtRes.json();
+        const spfRecord = txtData?.Answer?.find(r => r.data.includes('v=spf1'));
+        checks.push({
+          name: 'SPF Record',
+          status: spfRecord ? 'pass' : 'fail',
+          info: spfRecord ? `SPF Record: ${spfRecord.data}` : 'No SPF record found.'
+        });
+      } catch (e) {
+        checks.push({
+          name: 'SPF Record',
+          status: 'warn',
+          info: 'SPF check failed.'
+        });
+      }
+
+      // Simulated DKIM and DMARC (can be replaced by API later)
+      checks.push({ name: 'DKIM', status: 'warn', info: 'DKIM record simulation: not verified.' });
+      checks.push({ name: 'DMARC', status: 'fail', info: 'DMARC record simulation: not found.' });
+
+      // Final scoring
+      const score = calculateHealthScore(checks);
+      const summaryMsg = `Overall Health Score: ${score}% - ${score >= 90 ? 'Excellent' : score >= 70 ? 'Good' : score >= 50 ? 'Fair' : 'Poor'}`;
+      summaryBox.innerText = summaryMsg;
+      summaryBox.style.display = 'block';
+
+      checks.forEach(check => {
+        const div = document.createElement('div');
+        div.classList.add('result-box');
+        div.innerHTML = `
+          <div><strong>${check.name}</strong></div>
+          <div class="status ${check.status}">${check.status.toUpperCase()}</div>
+          <div>${check.info}</div>
+        `;
+        resultsContainer.appendChild(div);
+      });
+    }
+
+    function calculateHealthScore(checks) {
+      let score = 0;
+      checks.forEach(c => {
+        if (c.status === 'pass') score += 10;
+        if (c.status === 'warn') score += 5;
+      });
+      return Math.min(Math.round((score / (checks.length * 10)) * 100), 100);
+    }
+  </script>
+</body>
+</html> 

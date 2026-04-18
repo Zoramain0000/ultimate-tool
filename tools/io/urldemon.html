@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>QR Code Pro – Live API</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+* { box-sizing: border-box; font-family: monospace; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: rgba(0,0,0,0.1);
+  color: #eaffff;
+  overflow: hidden;
+}
+
+/* Background video */
+video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.1);
+  z-index: -1;
+}
+
+/* App */
+.app {
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+h1 {
+  color: #00ffee;
+  text-shadow: 0 0 12px #00ffee;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+input {
+  flex: 1;
+  padding: 12px;
+  background: #000;
+  border: 1px solid #00ffee;
+  color: #00ffee;
+  outline: none;
+}
+
+button {
+  padding: 12px 20px;
+  background: linear-gradient(135deg,#00ffee,#006666);
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button:hover { filter: brightness(1.2); }
+
+.output {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
+  gap: 20px;
+}
+
+.card {
+  background: rgba(0,0,0,0.1);
+  border: 1px solid #00ffee;
+  padding: 15px;
+  text-align: center;
+}
+
+.card h3 {
+  margin-top: 0;
+  color: #00ffee;
+}
+
+img {
+  max-width: 100%;
+  border: 1px solid #00ffee;
+}
+
+a {
+  color: #00ff7f;
+  word-break: break-all;
+}
+
+.download {
+  margin-top: 10px;
+  display: inline-block;
+  color: #000;
+  background: #00ffee;
+  padding: 6px 10px;
+  text-decoration: none;
+  font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<video autoplay muted loop>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<div class="app">
+  <h1>LIVE QR CODE + SHORT URL</h1>
+
+  <div class="controls">
+    <input id="urlInput" placeholder="Enter URL">
+    <button onclick="generate()">GENERATE</button>
+  </div>
+
+  <div class="output">
+    <div class="card">
+      <h3>Original QR</h3>
+      <img id="qrNormal">
+      <a id="dlNormal" class="download" download="qrcode.png">DOWNLOAD</a>
+    </div>
+
+    <div class="card">
+      <h3>Short URL</h3>
+      <a id="shortUrl"></a>
+      <h3>Short URL QR</h3>
+      <img id="qrShort">
+      <a id="dlShort" class="download" download="qrcode_short.png">DOWNLOAD</a>
+    </div>
+  </div>
+</div>
+
+<script>
+async function generate() {
+  const url = document.getElementById("urlInput").value.trim();
+  if (!url) return alert("Enter URL");
+
+  /* REAL QR API */
+  const qrNormal = `https://api.qrserver.com/v1/create-qr-code/?size=450x450&data=${encodeURIComponent(url)}`;
+  document.getElementById("qrNormal").src = qrNormal;
+  document.getElementById("dlNormal").href = qrNormal;
+
+  /* REAL URL SHORTENER API */
+  const shortRes = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(url)}`);
+  const shortUrl = await shortRes.text();
+
+  document.getElementById("shortUrl").textContent = shortUrl;
+  document.getElementById("shortUrl").href = shortUrl;
+
+  /* QR FOR SHORT URL */
+  const qrShort = `https://api.qrserver.com/v1/create-qr-code/?size=450x450&data=${encodeURIComponent(shortUrl)}`;
+  document.getElementById("qrShort").src = qrShort;
+  document.getElementById("dlShort").href = qrShort;
+}
+</script>
+
+</body>
+</html>

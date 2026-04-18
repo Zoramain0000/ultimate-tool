@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Global Radio Worldwide</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      background-color: #121212;
+      color: #f0f0f0;
+      margin: 0;
+      padding: 20px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .light-mode {
+      background-color: #f4f4f4;
+      color: #222;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      transition: background 0.3s;
+    }
+
+    .light-mode .container {
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    }
+
+    h1 {
+      text-align: center;
+      color: red;
+    }
+
+    .search-box {
+      margin: 15px 0;
+    }
+
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      width: 100%;
+    }
+
+    button {
+      background-color: red;
+      color: green;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color:rgba(0, 0, 0, 0.5);
+    }
+
+    .toggle-theme {
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .light-mode .toggle-theme {
+      color: ;
+    }
+
+    .station-list, .favorites-list {
+      margin: 10px 0;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .station-item {
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.5);
+      margin-bottom: 5px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .light-mode .station-item {
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .station-meta {
+      flex: 1;
+      margin-left: 10px;
+    }
+
+    .station-meta small {
+      display: block;
+      font-size: 12px;
+      color: red;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    audio {
+      width: 100%;
+      margin: 10px 0;
+    }
+
+    .volume-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status, .now-playing {
+      margin: 10px 0;
+      font-weight: bold;
+    }
+
+    img.station-logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+    }
+
+    @media (max-width: 600px) {
+      .station-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .controls {
+        flex-direction: column;
+      }
+
+      .volume-control {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    @media (min-width: 601px) and (max-width: 1024px) {
+      .container {
+        padding: 15px;
+      }
+
+      h1 {
+        font-size: 1.5em;
+      }
+    }
+
+    @media (min-width: 1025px) {
+      .container {
+        padding: 25px;
+      }
+
+      h1 {
+        font-size: 2em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Global Radio Center</h1>
+
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Search by station or genre..." />
+    </div>
+
+    <div id="stationList" class="station-list"></div>
+
+    <div class="controls">
+      <button id="playBtn">Play</button>
+      <button id="pauseBtn">Pause</button>
+      <button id="addFavorite">Add to Favorites</button>
+      <button id="themeToggle" class="toggle-theme">Auto Theme</button>
+    </div>
+
+    <div class="volume-control">
+      <label for="volume">Volume:</label>
+      <input type="range" id="volume" min="0" max="1" step="0.01" value="1" />
+    </div>
+
+    <audio id="radioPlayer" controls></audio>
+
+    <div class="status" id="statusText">Select a station</div>
+    <div class="now-playing" id="nowPlaying">Now Playing: —</div>
+
+    <h3>Favorites</h3>
+    <div id="favoritesList" class="favorites-list"></div>
+  </div>
+
+  <script>
+    const stations = [
+      {
+        name: "NPR News",
+        url: "https://npr-ice.streamguys1.com/npr",
+        genre: "News, Talk",
+        logo: "https://media.npr.org/assets/img/2020/01/30/npr-logo-2020-1-300x300.png"
+      },
+      {
+        name: "BBC World Service",
+        url: "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service",
+        genre: "News, Talk",
+        logo: "https://ichef.bbci.co.uk/images/ic/256x256/p0c5g3g0.png"
+      },
+      {
+        name: "KEXP",
+        url: "http://live.kexp.org/stream",
+        genre: "Music, Alternative",
+        logo: "https://kexp.imgix.net/8c1c1c0c-1c3e-4c3e-8c3e-1c3e8c3e8c3e.png"
+      },
+      {
+        name: "StoryCorps",
+        url: "https://storycorps.org/radio/",
+        genre: "Stories, Talk",
+        logo: "https://storycorps.org/wp-content/uploads/2018/09/SC_Logo_White.png"
+      },
+      {
+        name: "Love Radio",
+        url: "http://stream.love947.com:8000/love947",
+        genre: "Love Stories, Variety",
+        logo: "https://www.love947.com/images/love947_logo.png"
+      },
+      {
+        name: "TED Radio Hour",
+        url: "https://www.npr.org/podcasts/510298/ted-radio-hour",
+        genre: "Knowledge, Talk",
+        logo: "https://www.ted.com/images/ted-logo.png"
+      },
+      {
+        name: "Radio Garden",
+        url: "http://radio.garden/",
+        genre: "Global Music, Variety",
+        logo: "https://radio.garden/static/images/radio-garden-logo.png"
+      },
+      {
+        name: "Classic FM",
+        url: "https://www.classicfm.com/radio/",
+        genre: "Classical Music",
+        logo: "https://www.classicfm.com/assets/images/classic-fm-logo.png"
+      },
+      {
+        name: "Jazz FM",
+        url: "https://www.jazzfm.com/",
+        genre: "Jazz, Music",
+        logo: "https://www.jazzfm.com/assets/images/jazz-fm-logo.png"
+      },
+      {
+        name: "BBC Radio 4",
+        url: "https://www.bbc.co.uk/radio4",
+        genre: "Drama, Comedy, Talk",
+        logo: "https://ichef.bbci.co.uk/images/ic/256x256/p0c5g3g0.png"
+      },
+      {
+        name: "The Moth",
+        url: "https://themoth.org/radio",
+        genre: "Storytelling, Talk",
+        logo: "https://themoth.org/assets/images/moth-logo.png"
+      },
+      {
+        name: "WNYC",
+        url: "https://www.wnyc.org/",
+        genre: "News, Talk",
+        logo: "https://www.wnyc.org/assets/images/wnyc-logo.png"
+      },
+      {
+        name: "Radio New Zealand",
+        url: "https://www.rnz.co.nz/",
+        genre: "News, Talk",
+        logo: "https://www.rnz.co.nz/assets/images/rnz-logo.png"
+      },
+      {
+        name: "Folk Alley",
+        url: "https://www.folkalley.com/",
+        genre: "Folk Music",
+        logo: "https://www.folkalley.com/assets/images/folkalley-logo.png"
+      },
+      {
+        name: "NPR Music",
+        url: "https://www.npr.org/music/",
+        genre: "Music, Variety",
+        logo: "https://media.npr.org/assets/img/2020/01/30/npr-logo-2020-1-300x300.png"
+      },
+      {
+        name: "Radio France Internationale",
+        url: "https://www.rfi.fr/en/",
+        genre: "News, Talk",
+        logo: "https://www.rfi.fr/assets/images/rfi-logo.png"
+      },
+      {
+        name: "The Guardian",
+        url: "https://www.theguardian.com/international",
+        genre: "News, Talk",
+        logo: "https://www.theguardian.com/assets/images/guardian-logo.png"
+      },
+      {
+        name: "NPR Politics Podcast",
+        url: "https://www.npr.org/podcasts/510310/npr-politics-podcast",
+        genre: "Politics, Talk",
+        logo: "https://media.npr.org/assets/img/2020/01/30/npr-logo-2020-1-300x300.png"
+      },
+      {
+        name: "BBC Radio 3",
+        url: "https://www.bbc.co.uk/radio3",
+        genre: "Classical Music, Arts",
+        logo: "https://ichef.bbci.co.uk/images/ic/256x256/p0c5g3g0.png"
+      },
+      {
+        name: "The Daily",
+        url: "https://www.nytimes.com/column/the-daily",
+        genre: "News, Talk",
+        logo: "https://static01.nyt.com/images/icons/t_logo_291_black.png"
+      },
+      {
+        name: "This American Life",
+        url: "https://www.thisamericanlife.org/",
+        genre: "Stories, Talk",
+        logo: "https://www.thisamericanlife.org/assets/images/tal-logo.png"
+      },
+      {
+        name: "The History Channel",
+        url: "https://www.history.com/",
+        genre: "History, Talk",
+        logo: "https://www.history.com/assets/images/history-logo.png"
+      },
+      {
+        name: "Science Friday",
+        url: "https://www.sciencefriday.com/",
+        genre: "Science, Talk",
+        logo: "https://www.sciencefriday.com/assets/images/sf-logo.png"
+      }
+    ];
+
+    let currentStation = null;
+    let favorites = [];
+    const audio = document.getElementById("radioPlayer");
+    const stationList = document.getElementById("stationList");
+    const favoritesList = document.getElementById("favoritesList");
+    const searchInput = document.getElementById("searchInput");
+
+    function displayStations(list, container) {
+      container.innerHTML = '';
+      list.forEach(station => {
+        const div = document.createElement("div");
+        div.className = "station-item";
+        div.onclick = () => selectStation(station);
+        div.innerHTML = `
+          <img src="${station.logo}" alt="${station.name}" class="station-logo"/>
+          <div class="station-meta">
+            <strong>${station.name}</strong>
+            <small>${station.genre}</small>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function selectStation(station) {
+      currentStation = station;
+      audio.src = station.url;
+      audio.play().catch(error => {
+        document.getElementById("statusText").textContent = "Station unavailable. Please check back later.";
+        document.getElementById("nowPlaying").textContent = "Now Playing: —";
+      });
+      document.getElementById("statusText").textContent = "Now Playing:";
+      document.getElementById("nowPlaying").textContent = `Now Playing: ${station.name}`;
+    }
+
+    document.getElementById("playBtn").onclick = () => {
+      if (currentStation) audio.play();
+    };
+
+    document.getElementById("pauseBtn").onclick = () => {
+      audio.pause();
+    };
+
+    document.getElementById("addFavorite").onclick = () => {
+      if (currentStation && !favorites.find(fav => fav.url === currentStation.url)) {
+        favorites.push(currentStation);
+        updateFavorites();
+      }
+    };
+
+    function updateFavorites() {
+      displayStations(favorites, favoritesList);
+    }
+
+    document.getElementById("themeToggle").onclick = () => {
+      document.body.classList.toggle("light-mode");
+    };
+
+    document.getElementById("volume").addEventListener("input", (e) => {
+      audio.volume = parseFloat(e.target.value);
+    });
+
+    searchInput.addEventListener("input", () => {
+      const keyword = searchInput.value.toLowerCase();
+      const filtered = stations.filter(station =>
+        station.name.toLowerCase().includes(keyword) ||
+        station.genre.toLowerCase().includes(keyword)
+      );
+      displayStations(filtered, stationList);
+    });
+
+    displayStations(stations, stationList);
+  </script>
+</body>
+</html>

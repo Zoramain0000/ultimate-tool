@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Multi-Tool Penetration Test & RDAP Lookup</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #121212;
+      color: #eee;
+    }
+    header {
+      background: #1f1f1f;
+      padding: 10px 20px;
+      font-size: 1.5em;
+      font-weight: bold;
+      color: #0af;
+      text-align: center;
+    }
+    nav {
+      display: flex;
+      background: #222;
+      border-bottom: 1px solid #444;
+    }
+    nav button {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 12px 0;
+      color: #aaa;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s, color 0.3s;
+    }
+    nav button.active, nav button:hover {
+      background: #0af;
+      color: #121212;
+    }
+    main {
+      padding: 20px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    section {
+      display: none;
+    }
+    section.active {
+      display: block;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+      color: #0af;
+    }
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #222;
+      color: #eee;
+      font-size: 1em;
+    }
+    .protocols {
+      margin-top: 10px;
+    }
+    .protocols label {
+      font-weight: normal;
+      margin-right: 12px;
+      cursor: pointer;
+    }
+    button {
+      margin-top: 20px;
+      background: #0af;
+      border: none;
+      color: #121212;
+      font-weight: bold;
+      padding: 10px 20px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.3s;
+    }
+    button:hover:not(:disabled) {
+      background: #08c;
+    }
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    #output {
+      margin-top: 20px;
+      height: 250px;
+      background: #222;
+      border-radius: 4px;
+      padding: 10px;
+      overflow-y: scroll;
+      font-family: monospace;
+      white-space: pre-wrap;
+      border: 1px solid #444;
+    }
+    #chartContainer {
+      margin-top: 20px;
+    }
+    /* Scrollbar styling */
+    #output::-webkit-scrollbar {
+      width: 8px;
+    }
+    #output::-webkit-scrollbar-thumb {
+      background: #0af;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header>Penetration Test & RDAP Lookup Tool</header>
+  <nav>
+    <button class="tab-btn active" data-tab="pentest">Penetration Test</button>
+    <button class="tab-btn" data-tab="rdap">RDAP Lookup</button>
+    <button class="tab-btn" data-tab="results">Results Visualization</button>
+  </nav>
+  <main>
+    <!-- Penetration Test Tab -->
+    <section id="pentest" class="active">
+      <label for="target">Target IP or Domain</label>
+      <input type="text" id="target" placeholder="e.g. example.com or 8.8.8.8" />
+
+      <label for="ports">Ports (comma separated, leave blank for defaults)</label>
+      <input type="text" id="ports" placeholder="e.g. 80,443,22" />
+
+      <label>Protocols</label>
+      <div class="protocols">
+        <label><input type="checkbox" value="TCP" /> TCP</label>
+        <label><input type="checkbox" value="UDP" /> UDP</label>
+        <label><input type="checkbox" value="HTTP" /> HTTP</label>
+        <label><input type="checkbox" value="HTTPS" /> HTTPS</label>
+      </div>
+
+      <label for="packetSize">Packet Size (bytes)</label>
+      <input type="number" id="packetSize" value="512" min="64" max="1500" />
+
+      <label for="processes">Processes</label>
+      <input type="number" id="processes" value="10" min="1" max="100" />
+
+      <label for="threads">Threads per Process</label>
+      <input type="number" id="threads" value="20" min="1" max="100" />
+
+      <label><input type="checkbox" id="confirmPermission" /> I confirm I have permission to test this target.</label>
+
+      <button id="startBtn" disabled>Start Penetration Test</button>
+      <button id="refreshBtn">Reset</button>
+      <button id="exportBtn">Export Log</button>
+
+      <div id="output" aria-live="polite" aria-atomic="true" role="log"></div>
+    </section>
+
+    <!-- RDAP Lookup Tab -->
+    <section id="rdap">
+      <label for="rdapTarget">Enter IP or Domain for RDAP Lookup</label>
+      <input type="text" id="rdapTarget" placeholder="e.g. 8.8.8.8 or example.com" />
+      <button id="rdapLookupBtn">Lookup RDAP Info</button>
+
+      <pre id="rdapOutput" style="margin-top: 20px; background:#222; color:#eee; padding:10px; border-radius:4px; max-height: 400px; overflow-y: auto;"></pre>
+    </section>
+
+    <!-- Results Visualization Tab -->
+    <section id="results">
+      <h2>Port Scan Results Visualization</h2>
+      <canvas id="portChart" width="800" height="400"></canvas>
+    </section>
+  </main>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    // --- Tab Switching ---
+    const tabButtons = document.querySelectorAll('nav .tab-btn');
+    const sections = document.querySelectorAll('main section');
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabButtons.forEach(b => b.classList.remove('active'));
+        sections.forEach(s => s.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // --- Elements ---
+    const startBtn = document.getElementById('startBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const output = document.getElementById('output');
+
+    const targetInput = document.getElementById('target');
+    const portsInput = document.getElementById('ports');
+    const packetSizeInput = document.getElementById('packetSize');
+    const processesInput = document.getElementById('processes');
+    const threadsInput = document.getElementById('threads');
+    const confirmPermissionCheckbox = document.getElementById('confirmPermission');
+    const protocolCheckboxes = document.querySelectorAll('.protocols input[type="checkbox"]');
+
+    // Enable start button only if permission checked and target filled
+    function validateForm() {
+      const target = targetInput.value.trim();
+      const hasProtocols = Array.from(protocolCheckboxes).some(cb => cb.checked);
+      startBtn.disabled = !(confirmPermissionCheckbox.checked && target.length > 0 && hasProtocols);
+    }
+    targetInput.addEventListener('input', validateForm);
+    confirmPermissionCheckbox.addEventListener('change', validateForm);
+    protocolCheckboxes.forEach(cb => cb.addEventListener('change', validateForm));
+
+    // Logging helper
+    function log(msg) {
+      output.textContent += msg + '\n';
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function clearOutput() {
+      output.textContent = '';
+    }
+
+    // Helper to parse ports input or provide default ports
+    function parsePorts(input) {
+      if (!input) return [80, 443, 22, 53]; // default common ports
+      return input.split(',')
+        .map(p => parseInt(p.trim()))
+        .filter(p => !isNaN(p) && p > 0 && p < 65536);
+    }
+
+    // Simulate TCP/UDP scan - generates random open/closed results with delay
+    async function simulateTcpUdp(protocol, target, ports, packetSize, processes, threads) {
+      log(`\n[+] Starting simulated ${protocol} scan on ${target}...`);
+      for (let port of ports) {
+        await new Promise(r => setTimeout(r, 200)); // simulate delay
+        const open = Math.random() < 0.3; // 30% chance open
+        log(`  Port ${port}: ${open ? 'OPEN' : 'closed'}`);
+        // Store results for chart
+        scanResults.push({protocol, port, status: open ? 'open' : 'closed'});
+      }
+    }
+
+    // Simulate Ping (just fake timings)
+    function simulatePing(target) {
+      log(`\n[+] Pinging ${target}...`);
+      const times = [];
+      for (let i=0; i<4; i++) {
+        const t = (20 + Math.random()*50).toFixed(2);
+        times.push(t);
+        log(`  Reply from ${target}: time=${t}ms`);
+      }
+      const avg = (times.reduce((a,b) => parseFloat(a)+parseFloat(b),0)/times.length).toFixed(2);
+      log(`  Average ping time: ${avg} ms`);
+    }
+
+    // Real RDAP lookup (used in separate tab, but can be reused)
+    async function runRdapLookup(target) {
+      const rdapOutput = document.getElementById('rdapOutput');
+      rdapOutput.textContent = 'Fetching RDAP data...';
+      let url = '';
+      try {
+        if (/^\d{1,3}(\.\d{1,3}){3}$/.test(target)) {
+          // IPv4
+          url = `https://rdap.org/ip/${target}`;
+        } else {
+          // domain
+          url = `https://rdap.org/domain/${target}`;
+        }
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const data = await res.json();
+        rdapOutput.textContent = JSON.stringify(data, null, 2);
+      } catch (e) {
+        rdapOutput.textContent = 'Error fetching RDAP data: ' + e.message;
+      }
+    }
+
+    // Real RDAP lookup called from the RDAP tab
+    document.getElementById('rdapLookupBtn').addEventListener('click', () => {
+      const target = document.getElementById('rdapTarget').value.trim();
+      if (!target) {
+        alert('Please enter an IP or domain for RDAP lookup.');
+        return;
+      }
+      runRdapLookup(target);
+    });
+
+    // Test HTTP/HTTPS (simulate with fake request)
+    async function testHttpProtocol(proto, target, ports) {
+      log(`\n[+] Testing ${proto} on ${target}...`);
+      for (let port of ports) {
+        await new Promise(r => setTimeout(r, 300)); // delay
+        const success = Math.random() < 0.5;
+        log(`  ${proto} on port ${port}: ${success ? 'Success (200 OK)' : 'Failed'}`);
+        scanResults.push({protocol: proto, port, status: success ? 'open' : 'closed'});
+      }
+    }
+
+    // Store scan results for visualization
+    let scanResults = [];
+
+    // Run full penetration test simulation
+    async function runPenetrationTest() {
+      clearOutput();
+      scanResults = [];
+
+      const target = targetInput.value.trim();
+      const ports = parsePorts(portsInput.value.trim());
+      const packetSize = parseInt(packetSizeInput.value);
+      const processes = parseInt(processesInput.value);
+      const threads = parseInt(threadsInput.value);
+      const selectedProtocols = Array.from(protocolCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+
+      log(`[ Starting penetration test on ${target} ]`);
+      log(`Ports: ${ports.length ? ports.join(', ') : 'Default ports'}`);
+      log(`Packet Size: ${packetSize} bytes`);
+      log(`Processes: ${processes}`);
+      log(`Threads per Process: ${threads}\n`);
+
+      simulatePing(target);
+      await runRdapLookup(target);
+
+      for (const proto of selectedProtocols) {
+        if (proto === 'HTTP' || proto === 'HTTPS') {
+          await testHttpProtocol(proto, target, ports);
+        } else if (proto === 'TCP' || proto === 'UDP') {
+          await simulateTcpUdp(proto, target, ports, packetSize, processes, threads);
+        }
+      }
+
+      log('\n[✓] Penetration test simulation complete.');
+      updateChart();
+      // Switch to results tab automatically
+      document.querySelector('nav button[data-tab="results"]').click();
+    }
+
+    startBtn.addEventListener('click', runPenetrationTest);
+
+    refreshBtn.addEventListener('click', () => {
+      targetInput.value = '';
+      portsInput.value = '';
+      packetSizeInput.value = 512;
+      processesInput.value = 10;
+      threadsInput.value = 20;
+      confirmPermissionCheckbox.checked = false;
+      protocolCheckboxes.forEach(cb => cb.checked = false);
+      clearOutput();
+      scanResults = [];
+      updateChart();
+      startBtn.disabled = true;
+      log('[ Ready to perform authorized penetration test... ]');
+    });
+
+    exportBtn.addEventListener('click', () => {
+      const blob = new Blob([output.textContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'penetration_test_log.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // Initialize log
+    log('[ Ready to perform authorized penetration test... ]');
+
+    // --- Chart.js Setup ---
+    const ctx = document.getElementById('portChart').getContext('2d');
+    let portChart = null;
+
+    function updateChart() {
+      if (!portChart) {
+        portChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: [], // ports
+            datasets: [
+              {
+                label: 'Open Ports',
+                data: [],
+                backgroundColor: 'rgba(0, 200, 83, 0.7)',
+              },
+              {
+                label: 'Closed Ports',
+                data: [],
+                backgroundColor: 'rgba(244, 67, 54, 0.7)',
+              }
+            ],
+          },
+          options: {
+            responsive: true,
+            scales: {
+              x: {
+                stacked: true,
+                title: {
+                  display: true,
+                  text: 'Port Number',
+                },
+              },
+              y: {
+                stacked: true,
+                title: {
+                  display: true,
+                  text: 'Count',
+                },
+                beginAtZero: true,
+                ticks: { precision:0 },
+              }
+            },
+            plugins: {
+              legend: { position: 'top' },
+              title: {
+                display: true,
+                text: 'Port Scan Status'
+              }
+            }
+          }
+        });
+      }
+
+      // Aggregate data by port
+      const portsSet = new Set(scanResults.map(r => r.port));
+      const ports = Array.from(portsSet).sort((a,b) => a-b);
+
+      const openCounts = [];
+      const closedCounts = [];
+
+      ports.forEach(port => {
+        const openCount = scanResults.filter(r => r.port === port && r.status === 'open').length;
+        const closedCount = scanResults.filter(r => r.port === port && r.status === 'closed').length;
+        openCounts.push(openCount);
+        closedCounts.push(closedCount);
+      });
+
+      portChart.data.labels = ports.map(p => p.toString());
+      portChart.data.datasets[0].data = openCounts;
+      portChart.data.datasets[1].data = closedCounts;
+      portChart.update();
+    }
+
+  </script>
+</body>
+</html>

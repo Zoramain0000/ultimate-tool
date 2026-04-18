@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🛰️ IP Geolocation Checker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: #0f172a;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .terminal-box {
+      background-color: #000;
+      color: #00ff73;
+      font-family: 'Courier New', Courier, monospace;
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #00ff73;
+      overflow-y: auto;
+      max-height: 300px;
+      transition: all 0.3s ease-in-out;
+    }
+    .terminal-box p {
+      margin: 0 0 6px 0;
+    }
+    hr {
+      border-color: #00ff73;
+      opacity: 0.2;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+  <div class="w-full max-w-xl bg-gray-900 rounded-lg shadow-xl p-6 text-white">
+    <h1 class="text-2xl font-bold text-green-400 mb-4 text-center">🛰️ IP Geolocation Checker</h1>
+    
+    <input type="text" id="ipInput" placeholder="Enter IP or comma-separated list..." class="w-full p-3 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none mb-4"/>
+    
+    <div class="flex gap-2 mb-4">
+      <button onclick="checkGeolocation()" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded transition duration-200">
+        🌍 Check Geolocation
+      </button>
+      <button onclick="exportResults('json')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 rounded">📄 JSON</button>
+      <button onclick="exportResults('csv')" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-4 rounded">📊 CSV</button>
+    </div>
+
+    <div id="results" class="terminal-box mt-6 hidden">
+      <p>🔍 Awaiting input...</p>
+    </div>
+  </div>
+
+  <script>
+    const resultsBox = document.getElementById('results');
+    const geoDataList = [];
+
+    function countryFlagEmoji(code) {
+      return code.replace(/./g, char =>
+        String.fromCodePoint(char.charCodeAt(0) + 127397)
+      );
+    }
+
+    function checkGeolocation() {
+      const input = document.getElementById('ipInput').value.trim();
+      resultsBox.classList.remove('hidden');
+      resultsBox.innerHTML = '⏳ Scanning...<br>';
+      geoDataList.length = 0;
+
+      if (!input) {
+        resultsBox.innerHTML = '<p>⚠️ Please enter one or more IPs.</p>';
+        return;
+      }
+
+      const ipList = input.split(',').map(ip => ip.trim());
+      const fetchPromises = ipList.map(ip => fetch(`http://ip-api.com/json/${ip}`));
+
+      Promise.all(fetchPromises)
+        .then(responses => Promise.all(responses.map(res => res.json())))
+        .then(data => {
+          resultsBox.innerHTML = '';
+          data.forEach((info, i) => {
+            if (info.status === "fail") {
+              resultsBox.innerHTML += `<p>❌ ${ipList[i]} - Not Found</p><hr>`;
+            } else {
+              const flag = countryFlagEmoji((info.countryCode || '').toUpperCase());
+              geoDataList.push(info);
+              resultsBox.innerHTML += `
+                <p>✅ IP: <strong>${info.query}</strong></p>
+                <p>🌍 Country: ${flag} ${info.country} | ${info.regionName}, ${info.city}</p>
+                <p>🏢 ISP: ${info.isp}</p>
+                <p>📍 Lat: ${info.lat}, Lon: ${info.lon}</p>
+                <p>📬 ZIP: ${info.zip}</p>
+                <hr>
+              `;
+            }
+          });
+        })
+        .catch(error => {
+          resultsBox.innerHTML = `<p>❗ Error: ${error.message}</p>`;
+        });
+    }
+
+    function exportResults(format) {
+      if (!geoDataList.length) {
+        alert('No data to export!');
+        return;
+      }
+
+      if (format === 'json') {
+        const blob = new Blob([JSON.stringify(geoDataList, null, 2)], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'geolocation-results.json';
+        link.click();
+      }
+
+      if (format === 'csv') {
+        const header = ['IP', 'Country', 'Region', 'City', 'ZIP', 'Latitude', 'Longitude', 'ISP'];
+        const rows = geoDataList.map(info =>
+          [info.query, info.country, info.regionName, info.city, info.zip, info.lat, info.lon, info.isp]
+        );
+        const csvContent = [header, ...rows].map(e => e.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'geolocation-results.csv';
+        link.click();
+      }
+    }
+
+    // Auto-detect user IP on load
+    window.onload = () => {
+      fetch('https://api.ipify.org?format=json')
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('ipInput').value = data.ip;
+          checkGeolocation();
+        })
+        .catch(err => {
+          resultsBox.classList.remove('hidden');
+          resultsBox.innerHTML = `<p>⚠️ Could not auto-detect IP: ${err.message}</p>`;
+        });
+    };
+  </script>
+
+</body>
+</html>

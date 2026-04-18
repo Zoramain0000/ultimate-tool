@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dictionary Lab - AI Word Explorer</title>
+
+  <style>
+    /* Reset */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Navigation */
+    .topnav {
+      background-color: #333;
+      overflow: hidden;
+    }
+    .topnav a {
+      float: left;
+      display: block;
+      color: #f2f2f2;
+      text-align: center;
+      padding: 14px 20px;
+      text-decoration: none;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .topnav a.active, .topnav a:hover {
+      background-color: #ff4c4c;
+      color: white;
+    }
+
+    /* Header Typing */
+    header {
+      padding: 25px;
+      background: #f9f9f9;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+    }
+    .typing-text {
+      overflow: hidden;
+      white-space: nowrap;
+      border-right: 3px solid orange;
+      animation: typing 3s steps(40, end), blink-caret .8s step-end infinite;
+      display: inline-block;
+    }
+    @keyframes typing { from { width: 0 } to { width: 100% } }
+    @keyframes blink-caret { 50% { border-color: transparent } }
+
+    /* Main Container */
+    .container {
+      flex: 1;
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .chat-box {
+      background: #ffffff;
+      height: 400px;
+      overflow-y: auto;
+      border: 2px solid #333;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .message {
+      margin: 10px 0;
+      padding: 10px 15px;
+      border-radius: 10px;
+      max-width: 80%;
+      word-wrap: break-word;
+      font-size: 15px;
+    }
+    .user-message {
+      background: #e0e0e0;
+      align-self: flex-end;
+      margin-left: auto;
+      text-align: right;
+    }
+    .ai-message {
+      background: #d0f0fd;
+      align-self: flex-start;
+    }
+
+    .input-area {
+      display: flex;
+      margin-top: 10px;
+    }
+    .input-area input {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    .input-area button {
+      background: #333;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+    .input-area button:hover {
+      background: #555;
+    }
+
+    .options-container {
+      margin: 20px 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+    .option-btn {
+      padding: 8px 15px;
+      background-color: #ff4c4c;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .option-btn:hover {
+      background-color: #e04343;
+    }
+
+    select {
+      padding: 8px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    footer {
+      text-align: center;
+      padding: 15px;
+      font-size: 14px;
+      color: #666;
+      background: #f2f2f2;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Navigation Bar -->
+  <div class="topnav">
+    <a class="active" href="#">Dictionary Lab</a>
+  </div>
+
+  <!-- Typing Header -->
+  <header>
+    <span class="typing-text">Welcome to Dictionary Lab - Explore it </span>
+  </header>
+
+  <!-- Main Container -->
+  <div class="container">
+
+    <!-- Smart Options -->
+    <div class="options-container" id="options-container"></div>
+
+    <!-- Chat Messages -->
+    <div class="chat-box" id="chat-box">
+      <!-- Dynamic messages appear here -->
+    </div>
+
+    <!-- Input Section -->
+    <div class="input-area">
+      <input type="text" id="message-input" placeholder="Enter a word...">
+      <button onclick="sendMessage()">Send</button>
+      <button onclick="clearChat()">Clear</button>
+    </div>
+
+    <!-- Model Selection -->
+    <div style="text-align: center; margin-top: 15px;">
+      <label for="model-select">Model:</label>
+      <select id="model-select" onchange="changeModel()">
+        <option value="gpt4_turbo">GPT-4 Turbo</option>
+        <option value="gpt35_turbo" selected>GPT-3.5 Turbo</option>
+        <option value="gpt4">GPT-4</option>
+        <option value="dalle">DALL·E</option>
+        <option value="whisper">Whisper</option>
+      </select>
+      <br><br>
+      <button onclick="toggleSmartFeatures()" id="toggle-features-btn">Enable Smart Features</button>
+    </div>
+
+  </div>
+
+  <footer>
+    &copy; 2025 Dictionary Lab. All rights reserved.
+  </footer>
+
+<script>
+  let smartFeatures = false;
+  let selectedModel = "gpt35_turbo";
+
+  function sendMessage() {
+    const input = document.getElementById("message-input");
+    const word = input.value.trim();
+    if (!word) return;
+    displayUserMessage(word);
+    input.value = "";
+
+    if (smartFeatures) {
+      fetchDictionaryData(word);
+    } else {
+      fakeBotResponse();
+    }
+  }
+
+  function displayUserMessage(text) {
+    const box = document.getElementById("chat-box");
+    const msg = document.createElement("div");
+    msg.className = "message user-message";
+    msg.innerHTML = text;
+    box.appendChild(msg);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function displayBotMessage(text) {
+    const box = document.getElementById("chat-box");
+    const msg = document.createElement("div");
+    msg.className = "message ai-message";
+    msg.innerHTML = text;
+    box.appendChild(msg);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function clearChat() {
+    document.getElementById("chat-box").innerHTML = "";
+  }
+
+  function fakeBotResponse() {
+    const replies = [
+      "Can you be more specific?",
+      "That's fascinating!",
+      "Could you rephrase that?",
+      "I'm thinking...",
+      "Let's explore that more!",
+      "Welcome to zerodays site",
+      "can i help you ",
+      "what do you need?",
+      "i'am your chat bot!",
+      "do you need help",
+      "So gald to see you",
+      "i was missing you lately",
+      "try the smart Features",
+      "i hope your doing fine",
+    ];
+    const randomReply = replies[Math.floor(Math.random() * replies.length)];
+    setTimeout(() => {
+      displayBotMessage(randomReply);
+    }, 500);
+  }
+
+  async function fetchDictionaryData(word) {
+    displayBotMessage("Searching for '" + word + "'...");
+
+    try {
+      const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+      const data = await res.json();
+
+      if (data.title) {
+        displayBotMessage(`❌ No definition found for <b>${word}</b>.`);
+      } else {
+        const entry = data[0];
+        const phonetic = entry.phonetic || "Not Available";
+        const meanings = entry.meanings.map(m => `
+          <b>${m.partOfSpeech}</b>:<br>
+          <ul>
+            ${m.definitions.map(d => `<li>${d.definition}${d.example ? `<br><i>Example:</i> ${d.example}` : ''}</li>`).join('')}
+          </ul>
+          <b>Synonyms:</b> ${m.synonyms.join(', ') || "None"}<br>
+          <b>Antonyms:</b> ${m.antonyms.join(', ') || "None"}
+        `).join('<br><br>');
+
+        displayBotMessage(`
+          <b>Word:</b> ${entry.word}<br>
+          <b>Phonetic:</b> ${phonetic}<br><br>
+          ${meanings}
+        `);
+      }
+    } catch (err) {
+      displayBotMessage("⚠️ Error fetching the word. Please try again.");
+    }
+  }
+
+  function toggleSmartFeatures() {
+    smartFeatures = !smartFeatures;
+    const btn = document.getElementById("toggle-features-btn");
+    btn.innerText = smartFeatures ? "Disable Smart Features" : "Enable Smart Features";
+
+    if (smartFeatures) {
+      showOptions();
+    } else {
+      document.getElementById("options-container").innerHTML = "";
+    }
+  }
+
+  function showOptions() {
+    const options = ["Synonyms", "Antonyms", "Pronunciation", "Part of Speech", "Example Usage"];
+    const container = document.getElementById("options-container");
+    container.innerHTML = "";
+    options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "option-btn";
+      btn.innerText = opt;
+      btn.onclick = () => displayBotMessage(`🔎 Selected: <b>${opt}</b>`);
+      container.appendChild(btn);
+    });
+  }
+
+  function changeModel() {
+    selectedModel = document.getElementById("model-select").value;
+    console.log(`Model changed to ${selectedModel}`);
+  }
+</script>
+
+</body>
+</html>

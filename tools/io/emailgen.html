@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays • Email Generator Pro</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:Segoe UI,Arial,sans-serif;color:#e5e7eb;overflow:hidden}
+
+/* Background video */
+.bg-video{
+  position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;filter:brightness(.45);
+}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:-1}
+
+/* Header */
+header{
+  padding:14px;text-align:center;background:rgba(15,23,42,.3);backdrop-filter:blur(12px)
+}
+header h1{color:#7dd3fc;letter-spacing:2px;margin-bottom:10px}
+header button{
+  padding:10px 14px;border-radius:8px;border:none;background:#38bdf8;color:white;cursor:pointer;
+}
+
+/* Container */
+.container{
+  max-width:900px;margin:30px auto;padding:20px;background:rgba(2,6,23,.35);
+  backdrop-filter:blur(10px);border-radius:12px;box-shadow:0 0 30px rgba(0,0,0,.9);
+}
+.section{margin-bottom:20px}
+.section button{
+  width:100%;padding:12px;background:#38bdf8;border:none;border-radius:8px;color:white;font-size:14px;cursor:pointer
+}
+.section button:hover{background:#0ea5e9}
+
+/* Email Display */
+#emails{background:rgba(2,6,23,.45);padding:14px;border-radius:10px;font-family:monospace;overflow:auto;max-height:400px}
+.entry{margin-bottom:8px}
+.value{color:#facc15}
+.controls{display:flex;gap:10px;margin-top:10px}
+.controls button{flex:1;padding:10px;border-radius:8px;border:none;background:#38bdf8;color:white;cursor:pointer}
+.controls button:hover{background:#0ea5e9}
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+<h1>ZERO DAYS • EMAIL GENERATOR PRO</h1>
+</header>
+
+<div class="container">
+  <div class="section">
+    <button onclick="generateEmail()">Generate New Email</button>
+  </div>
+  <div class="section">
+    <div id="emails">Generated emails will appear here...</div>
+    <div class="controls">
+      <button onclick="copyEmails()">📋 Copy All</button>
+      <button onclick="downloadEmails()">💾 Download TXT</button>
+      <button onclick="clearEmails()">🗑 Clear</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ----------------- DATA -----------------
+const firstNames = [
+    "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Jamie", "Blake", "Skyler", "Riley", "Dakota", 
+    "Abby", "Abigail", "Ada", "Addie", "Addison", "Adelaide", "Adele", "Adora", "Adriana", "Ælfgifu", 
+    "Æthelburh", "Agnes", "Aileen", "Alaina", "Alanna", "Alberta", "Albina", "Aleana", "Alexa", 
+    "Alexandra", "Alexandria", "Alexis", "Alice", "Alicia", "Alisha", "Alison", "Allyson", "Alma", 
+    "Althea", "Alvina", "Alyson", "Amanda", "Amber", "Amberley", "Amelia", "Amy", "Ana", "Andrea", 
+    "Andrée", "Andy", "Angel", "Angela", "Angelica", "Angelina", "Angella", "Angie", "Anna", 
+    "Annabelle", "Annabeth", "Anne", "Annette", "Annie", "Antonia", "April", "Arabella", "Arda", 
+    "Ariana", "Ariel", "Arya", "Ash", "Ashley", "Astrid", "Aubrey", "Audra", "Audrey", "Aurora", 
+    "Autumn", "Averil", "Avis", "Azalea", "Babette", "Barb", "Barbara", "Beatrice", "Beatrix", 
+    "Beau", "Becca", "Becki", "Becky", "Belinda", "Bella", "Berenice", "Bertha", "Betsy", 
+    "Bettina", "Betty", "Beverly", "Bianca", "Blair", "Blake", "Blanche", "Blossom", "Bobbi", 
+    "Bobby", "Bonnie", "Braden", "Brandy", "Brenda", "Brianna", "Bridget", "Brielle", "Brilliana", 
+    "Brooklyn", "Brynlee", "Bryony", "Caden", "Calla", "Candy", "Cara", "Cari", "Carina", 
+    "Carissa", "Carlena", "Carlene", "Carlie", "Carly", "Carmelita", "Carol", "Carol Ann", 
+    "Carol Anne", "Carole", "Carolina", "Caroline", "Carolyn", "Carrie Ann", "Carrie Anne", 
+    "Carroll", "Carry", "Carson", "Cary", "Casey", "Cassandra", "Cassidy", "Cathleen", "Cathy", 
+    "Cecilia", "Cecily", "Celestia", "Celia", "Celinda", "Chara", "Charis", "Charisse", 
+    "Charity", "Charla", "Charle", "Charlee", "Charlene", "Charley", "Charli", "Charlie", 
+    "Charlotte", "Charly", "Charlyne", "Charmaine", "Chas", "Chelsea", "Cherry", "Cheryl", 
+    "Chloe", "Chris", "Christabel", "Christi", "Christina", "Christine", "Christy", "Cindy", 
+    "Claire", "Clara", "Clare", "Claribel", "Clarice", "Clarissa", "Claudia", "Clementine", 
+    "Clover", "Cody", "Colette", "Colleen", "Constance", "Cora", "Coral", "Coraline", 
+    "Cordelia", "Courtney", "Crystal", "Cynthia",
+    "Daenerys", "Daisy", "Dana", "Dani", "Danielle", "Danna", "Daphne", "Darla", "Darlene", 
+    "Davina", "Dawn", "Deanna", "D", "Deanne", "Deb", "Debbie", "Deborah", "Dede", "Deja", 
+    "Delaney", "Delia", "Demetria", "Demi", "Denise", "Destiny", "Devon", "Diamond", "Diana", 
+    "Diane", "Dimity", "Donna", "Dora", "Doreen", "Doris", "Dorothy", "Dottie", "Drew", 
+    "Dulcie", "E", "Eadgifu", "Ealdgyth", "Ebony", "Edburga", "Eden", "Edith", "Edna", 
+    "Edris", "Edwina", "Effie", "Eileen", "Elaine", "Eleanor", "Elektra", "Elisha", "Eliza", 
+    "Elizabeth", "Ella", "Elle", "Ellen", "Ellie", "Ellis", "Elora", "Ember", "Emerald", 
+    "Emily", "Emma", "Enid", "Erika", "Erin", "Estelle", "Esther", "Esty", "Ethel", 
+    "Etheldreda", "Etty", "Eudora", "Eva", "Evan", "Evangelina", "Eve", "Evelyn", "F", 
+    "Fabienne", "Faith", "Fancy", "Faye", "Felicity", "Fern", "Finn", "Fiona", "Fleur", 
+    "Florence", "Frances", "Francie", "Francine", "Frankie", "Frederica", "Frida", "G", 
+    "Gage", "Gail", "Gale", "Gemma", "Gene", "Genevieve", "Georgene", "Georgette", "Georgia", 
+    "Georgiana", "Georgina", "Gertie", "Gertrude", "Gia", "Gina", "Ginny", "Giselle", 
+    "Gladys", "Glenda", "Glenna", "Gloria", "Glynis", "Goldie", "Grace", "Gussie", "Gwen", 
+    "Gwenda", "Gwendolen", "Gwendoline", "Gwendolyn", "Gwyneth",
+    "Haisley", "Haley", "Hannah", "Harmony", "Harriet", "Hayden", "Hayley", "Hazel", 
+    "Heather", "Heidi", "Helen", "Helena", "Helene", "Henrietta", "Hero", "Hester", 
+    "Hilary", "Hilda", "Hodierna", "Holly", "Honor", "Hope", "Hunter", 
+    "Ida", "Ila", "Imelda", "Imogen", "Ingrid", "Iona", "Irene", "Iris", 
+    "Irma", "Isa", "Isabel", "Isabella", "Isla", "Ivy", 
+    "Jacinta", "Jack", "Jackie", "Jacqueline", "Jacqui", "Jade", "Jaime", "Jamie", 
+    "Jan", "Jana", "Jane", "Janee", "Janelle", "Janet", "Janey", "Janie", 
+    "January", "Jasmine", "Jay", "Jayda", "Jayden", "Jayne", "Jaynie", 
+    "Jean", "Jeanie", "Jeannie", "Jemima", "Jemma", "Jenna", "Jennifer", "Jenny", 
+    "Jensen", "Jerri", "Jerry", "Jess", "Jessica", "Jessie", "Jill", 
+    "Joan", "Joanna", "Joanne", "Jodi", "Jodie", "Jody", "Joelle", 
+    "Joey", "Johnny", "Jolie", "Jordan", 
+    "Josephine", "Josie", "Joy", "Joyce", "Judith", "Julia", "Julianne", 
+    "Julie", "Juliet", "June", "Juniper", "Juno", "Justine", 
+    "Kailey", "Kalla", "Kara", "Karen", "Karin", "Karlee", "Karlene", 
+    "Karli", "Karlie", "Karly", "Karolyn", "Karrie", "Karyn", "Karyne", 
+    "Kasey", "Kate", "Katey", "Kathleen", "Kathryn", "Kathy", "Katie", 
+    "Katina", "Katrina", "Katy", "Kay", "Kayla", "Kaylee", "Kelly", 
+    "Kelsey", "Kierra", "Kim", "Kimberly", "Kira", "Kirsteen", 
+    "Kirstin", "Kitty", "Krista", "Kristen", "Kristi", "Kristin", 
+    "Kristy", "Kylie", "Kyra",
+    "Lacey", "Lana", "Lanna", "Lara", "Larissa", "Laura", "Laurel", "Lauren", 
+    "Laurence", "Lauretta", "Laurie", "Lauryn", "Lavender", "Leah", "Leanne", 
+    "Lee", "Leila", "Leisha", "Lena", "Lenna", "Leona", "Leonora", "Leslie", 
+    "Lettice", "Lexi", "Lila", "Liliana", "Lilibet", "Lilibeth", "Lilla", 
+    "Lillian", "Lillie", "Lilly", "Lily", "Lina", "Linda", "Lindsay", 
+    "Lindy", "Lisa", "Liza", "Lizzie", "Lois", "Loraine", "Lorelei", 
+    "Lorena", "Loretta", "Lori", "Lorinda", "Lorna", "Lorraine", "Lottie", 
+    "Lotty", "Louella", "Louisa", "Louise", "Lucia", "Lucinda", "Lucy", 
+    "Lydia", "Lyndsay", "Lynnette", "Lysette", "Mabel", "Mable", "Macy", 
+    "Madelaine", "Madeleine", "Madelyn", "Madge", "Madison", "Madonna", 
+    "Mae", "Maggie", "Magnolia", "Mallory", "Mandy", "Mara", "Marcia", 
+    "Marcie", "Margaret", "Margie", "Margo", "Maria", "Mariah", "Marian", 
+    "Marianne", "Marie", "Marigold", "Marilyn", "Marina", "Marissa", 
+    "Marjorie", "Marlene", "Marsha", "Marta", "Martha", "Martina", 
+    "Mary", "Mary Belle", "Maryanne", "Mason", "Matilda", "Maud", 
+    "Maude", "Maura", "Maureen", "Mavis", "Maxine", "May", "Maya", 
+    "Mayola", "McKenna", "Meara", "Medea", "Megan", "Mehitable", 
+    "Mel", "Melanie", "Melina", "Melinda", "Melissa", "Melody", 
+    "Mercedes", "Meredith", "Merilyn", "Merle", "Merrilyn", "Mia", 
+    "Micah", "Michele", "Michelle", "Mila", "Mildred", "Miley", 
+    "Millicent", "Millie", "Mina", "Mindi", "Mindy", "Minerva", 
+    "Minnie", "Miranda", "Miriam", "Misty", "Moira", "Molly", 
+    "Morgan", "Muriel", "Myra", "Myrna", "Myrtle",
+    "Nadia", "Nadine", "Naila", "Nancy", "Naomi", "Narcissa", "Nathalie", 
+    "Nena", "Nettie", "Netty", "Nevaeh", "Nia", "Nicki", "Nicola", 
+    "Nicole", "Nina", "Noel", "Noella", "Noelle",
+    "Napoleon", "Nate", "Nathan", "Nathanael", "Nathaniel", "Ned", "Nehemiah", 
+    "Neil", "Nelson", "Nestor", "Newt", "Newton", "Niall", "Nicholas", 
+    "Nick", "Nicodemus", "Nicolas", "Nigel", "Niles", "Noah", "Noam", 
+    "Norm", "Norman", "Nowell",
+    "Obadiah", "Odin", "Oliver", "Ollie", "Orion", "Orlando", "Orville", 
+    "Osbert", "Osborne", "Oscar", "Osric", "Oswald", "Otis", "Otto", 
+    "Owen", "Ozzie",
+    "Paddy", "Palmer", "Paris", "Patrick", "Patsy", "Patty", "Paul", 
+    "Peleg", "Percival", "Percy", "Perry", "Pete", "Peter", "Philip", 
+    "Phillipps", "Phineas", "Pierse", "Poe", "Porter", "Posy", "Preston",
+    "Quentin", "Quincy", "Quinn",
+    "Race", "Rafe", "Raife", "Raleigh", "Ralph", "Ralphie", "Ramsey", 
+    "Randall", "Randi", "Randolph", "Randy", "Raphael", "Rathbone", 
+    "Ray", "Raymond", "Reese", "Reggie", "Reginald", "Rembrandt", 
+    "Rendell", "Renssalaer", "Reuben", "Rex", "Reynold", "Rhett", 
+    "Rich", "Richard", "Richie", "Rick", "Ricky", "Riley", "Ritchie", 
+    "Rob", "Robbie", "Robert", "Robin", "Roderick", "Rodger", 
+    "Rodney", "Roger", "Rogers", "Roland", "Roman", "Ron", "Ronald", 
+    "Ronnie", "Rory", "Roscoe", "Ross", "Roualeyn", "Rowland", 
+    "Roy", "Rudolph", "Rudy", "Rufus", "Rupert", "Russ", "Russell", 
+    "Ryan", "Ryder",
+    "Sam", "Sammy", "Samson", "Samuel", "Sandy", "Sanford", "Saul", 
+    "Sawyer", "Scott", "Sean", "Sebastian", "Seth", "Seymour", 
+    "Shane", "Shaun", "Shawn", "Shayne", "Sheldon", "Shepherd", 
+    "Sid", "Sidney", "Sigmund", "Simon", "Sky", "Skyler", 
+    "Sloane", "Smith", "Sol", "Solomon", "Spencer", "Stan", 
+    "Stanford", "Stanley", "Stefan", "Stephen", "Stetson", 
+    "Steve", "Stevie", "Stevland", "Stewart", "Storm", "Stuart", 
+    "Swaine", "Syd", "Sydney", "Sylvester",
+    "Tanner", "Taran", "Taylor", "Tazewell", "Ted", "Tedd", "Teddy", 
+    "Terence", "Terry", "Thaddeus", "Theo", "Theodore", "Thomas", 
+    "Thor", "Tim", "Timmy", "Timothy", "Tobias", "Toby", "Tod", 
+    "Todd", "Toddy", "Tom", "Tommie", "Tommy", "Tony", "Tracy", 
+    "Travis", "Tregonwell", "Trent", "Trevor", "Trey", "Tristan", 
+    "Troy", "Truman", "Tucker", "Tyler", "Tyson",
+    "Ultan", "Ulysses", "Uriah",
+    "Val", "Valentine", "Vernon", "Vic", "Vicary", "Victor", "Vince", 
+    "Vincent", "Vinny", "Vivian",
+    "Wade", "Wadsworth", "Walden", "Waldo", "Walker", "Wallace", 
+    "Wally", "Walt", "Walter", "Warren", "Waverly", "Waylon", 
+    "Wayne", "Wells", "Wes", "Wesley", "Whitney", "Wilber", 
+    "Wilbert", "Wilbur", "Wilf", "Wilfred", "Wilfried", "Wilhelm", 
+    "Will", "Willard", "William", "Willis", "Willy", "Wilmon", 
+    "Wilson", "Winnie", "Winston", "Wolfgang", "Woodrow", 
+    "Woodruff", "Woody", "Wyatt", "Wyndham",
+    "Xander", "Xavier",
+    "Yancy",
+    "Zabdiel", "Zach", "Zachary", "Zack", "Zadoc", "Zak", "Zane", 
+    "Zayden", "Zeb", "Zechariah", "Zedekiah", "Zeke", "Zeph", 
+    "Zephaniah", "Zion"
+];
+
+const lastNames = [
+  "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez",
+  "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin",
+  "Lee", "Perez", "Thompson", "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson",
+  "Walker", "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores",
+  "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell", "Carter", "Roberts",
+  "Gomez", "Phillips", "Evans", "Turner", "Diaz", "Parker", "Cruz", "Edwards", "Collins", "Reyes",
+  "Stewart", "Morris", "Morales", "Murphy", "Cook", "Rogers", "Gutierrez", "Ortiz", "Morgan", "Cooper",
+  "Peterson", "Bailey", "Reed", "Kelly", "Howard", "Ramos", "Kim", "Cox", "Ward", "Richardson",
+  "Watson", "Brooks", "Chavez", "Wood", "James", "Bennett", "Gray", "Mendoza", "Ruiz", "Hughes",
+  "Price", "Alvarez", "Castillo", "Sanders", "Patel", "Myers", "Long", "Ross", "Foster", "Jimenez",
+  "Powell", "Jenkins", "Perry", "Russell", "Sullivan", "Bell", "Coleman", "Butler", "Henderson", "Barnes",
+  "Gonzales", "Fisher", "Vasquez", "Simmons", "Romero", "Jordan", "Patterson", "Alexander", "Hamilton", "Graham",
+  "Reynolds", "Griffin", "Wallace", "Moreno", "West", "Cole", "Hayes", "Bryant", "Herrera", "Gibson",
+  "Ellis", "Tran", "Medina", "Aguilar", "Stevens", "Murray", "Ford", "Castro", "Marshall", "Owens",
+  "Harrison", "Fernandez", "Mcdonald", "Woods", "Washington", "Kennedy", "Wells", "Vargas", "Henry", "Chen",
+  "Freeman", "Webb", "Tucker", "Guzman", "Burns", "Crawford", "Olson", "Simpson", "Porter", "Hunter",
+  "Gordon", "Mendez", "Silva", "Shaw", "Snyder", "Mason", "Dixon", "Munoz", "Hunt", "Hicks",
+  "Holmes", "Palmer", "Wagner", "Black", "Robertson", "Boyd", "Rose", "Stone", "Salazar", "Fox",
+  "Warren", "Mills", "Meyer", "Rice", "Schmidt", "Garza", "Daniels", "Ferguson", "Nichols", "Stephens",
+  "Soto", "Weaver", "Ryan", "Gardner", "Payne", "Grant", "Dunn", "Kelley", "Spencer", "Hawkins",
+  "Arnold", "Pierce", "Vazquez", "Hansen", "Peters", "Santos", "Hart", "Bradley", "Knight", "Elliott",
+  "Cunningham", "Duncan", "Armstrong", "Hudson", "Carroll", "Lane", "Riley", "Andrews", "Alvarado", "Ray",
+  "Delgado", "Berry", "Perkins", "Hoffman", "Johnston", "Matthews", "Pena", "Richards", "Contreras", "Willis",
+  "Carpenter", "Lawrence", "Sandoval", "Guerrero", "George", "Chapman", "Rios", "Estrada", "Ortega", "Watkins",
+  "Greene", "Nunez", "Wheeler", "Valdez", "Harper", "Burke", "Larson", "Santiago", "Maldonado", "Morrison",
+  "Franklin", "Carlson", "Austin", "Dominguez", "Carr", "Lawson", "Jacobs", "Obrien", "Lynch", "Singh",
+  "Vega", "Bishop", "Montgomery", "Oliver", "Jensen", "Harvey", "Williamson", "Gilbert", "Dean", "Sims",
+  "Espinoza", "Howell", "Li", "Wong", "Reid", "Hanson", "Le", "Mccoy", "Garrett", "Burton",
+  "Fuller", "Wang", "Weber", "Welch", "Rojas", "Lucas", "Marquez", "Fields", "Park", "Yang",
+  "Little", "Banks", "Padilla", "Day", "Walsh", "Bowman", "Schultz", "Luna", "Fowler", "Mejia",
+  "Davidson", "Acosta", "Brewer", "May", "Holland", "Juarez", "Newman", "Pearson", "Curtis", "Cortez",
+  "Douglas", "Schneider", "Joseph", "Barrett", "Navarro", "Figueroa", "Keller", "Avila", "Wade", "Molina",
+  "Stanley", "Hopkins", "Campos", "Barnett", "Bates", "Chambers", "Caldwell", "Beck", "Lambert", "Miranda",
+  "Byrd", "Craig", "Ayala", "Lowe", "Frazier", "Powers", "Neal", "Leonard", "Gregory", "Carrillo",
+  "Sutton", "Fleming", "Rhodes", "Shelton", "Schwartz", "Norris", "Jennings", "Watts", "Duran", "Walters",
+  "Cohen", "Mcdaniel", "Moran", "Parks", "Steele", "Vaughn", "Becker", "Holt", "Deleon", "Barker",
+  "Terry", "Hale", "Leon", "Hail", "Baldwin", "Kirk", "Underwood", "Wilkins", "Gaines", "Madden"
+];
+const domains = [
+"example.com","mail.com","email.net","mydomain.org","webmail.com","fastmail.com","inbox.com","protonmail.com",
+"yahoo.com","gmail.com","hotmail.com","outlook.com","icloud.com","zoho.com","aol.com","gmx.com","mail.ru","yandex.com",
+"live.com","msn.com","mailinator.com","tutanota.com","hushmail.com","mailfence.com","runbox.com","posteo.de","mail.com",
+"email.com","myemail.com","dayrep.com","supermail.com","mailbox.org","mailbox.com","inbox.lv","inbox.ru","mail2world.com",
+"mail2u.com","email4u.com","email.org","quickmail.com","rapidmail.com","simplemail.com","webmail.co","onemail.com","mymail.com",
+"bestmail.com","newmail.com","coolmail.com","funmail.com","smartmail.com","freemail.com","globalmail.com","netmail.com","openmail.com",
+"securemail.com","techmail.com","mailplus.com","mailservice.com","emailservice.com","myinbox.com","emailbox.com","mailhub.com",
+"mailzone.com","mailcenter.com","mailstation.com","mailplanet.com","mailnetwork.com","mailplanet.net","maildomain.com","emailplanet.com",
+"mailglobal.com","mailworld.com","mailuniverse.com","mailspace.com","mailcentral.com","mailpoint.com","mailstream.com","mailtower.com",
+"mailcloud.com","mailboxplus.com","mymailbox.com","mailplanet.org","emailhub.com","maillink.com","mailbridge.com","mailwave.com",
+"mailboxonline.com","mailhq.com","mailcity.com","mailservice.net","mailgenius.com","mailbox.net","mailcenter.net","emailcenter.com",
+"emailzone.com","mailzone.net","emailtower.com","mailconnect.com","mailportal.com","mailstation.net","mailspace.net","mailplanet.co",
+"mailuniverse.net","mailnetwork.net","mailworld.net","mailnetwork.org","emailhub.net","mailplanet.info","mailnetwork.co","mailglobal.net",
+"mailplus.net","mailhub.net","mymail.org","mailstation.org","mailbox.co","mailcity.net","mailzone.org","mailplanet.biz","mailcentral.net",
+"mailcloud.net","mailbridge.net","mailwave.net","mailtower.net","mailcentral.org","mailstream.net","mailcloud.org","mailpoint.net",
+"mailgenius.net","mailhq.net","mailconnect.net","mailportal.net","mailboxplus.net","mailservice.org","mailplus.org","mailnetwork.biz",
+"mailuniverse.org","mailworld.org","mailnetwork.info","mailcentral.biz","mailzone.biz","mailhub.org","mailglobal.org","mailservice.biz",
+"emailservice.net","emailhub.org","emailplanet.net","emailworld.com","emailnetwork.net","emailplanet.org","emailzone.org","emailtower.net",
+"emailspace.com","emailspace.net","emailcloud.com","emailcloud.net","emailbridge.com","emailbridge.net","emailwave.com","emailwave.net",
+"emailpoint.com","emailpoint.net","emailconnect.com","emailconnect.net","emailportal.com","emailportal.net","emailplus.com","emailplus.net",
+"emailcentral.com","emailcentral.net","emailcentral.org","emailcity.com","emailcity.net","emailstation.com","emailstation.net","emailplanet.biz",
+"emailnetwork.org","emailworld.net","emailnetwork.biz","emailuniverse.com","emailuniverse.net","emailhub.biz","emailglobal.com","emailglobal.net",
+"emailcloud.biz","emailgenius.com","emailgenius.net","emailhq.com","emailhq.net","emailwave.biz","emailbridge.biz","emailconnect.org",
+"emailportal.org","emailpoint.org","emailplus.org","emailspace.org","emailstation.org","emailcity.org","emailtower.org","emailzone.biz",
+"emailplanet.info","emailnetwork.info","emailuniverse.org","emailworld.org","emailnetwork.info","emailcentral.info","emailhub.info","emailglobal.org",
+"emailgenius.org","emailhq.org","emailcloud.org","emailbridge.org","emailwave.org","emailconnect.biz","emailportal.biz","emailpoint.biz",
+"emailplus.biz","emailspace.biz","emailstation.biz","emailcity.biz","emailtower.biz","emailzone.info","emailplanet.biz","emailnetwork.co",
+"emailuniverse.co","emailworld.co","emailnetwork.co","emailcentral.co","emailhub.co","emailglobal.co","emailgenius.co","emailhq.co","emailcloud.co",
+"emailbridge.co","emailwave.co","emailconnect.co","emailportal.co","emailpoint.co","emailplus.co","emailspace.co","emailstation.co","emailcity.co",
+"emailtower.co","emailzone.co","emailplanet.co","emailnetwork.io","emailuniverse.io","emailworld.io","emailnetwork.io","emailcentral.io","emailhub.io",
+"emailglobal.io","emailgenius.io","emailhq.io","emailcloud.io","emailbridge.io","emailwave.io","emailconnect.io","emailportal.io","emailpoint.io",
+"emailplus.io","emailspace.io","emailstation.io","emailcity.io","emailtower.io","emailzone.io"
+,];
+
+// ----------------- UTILITY -----------------
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
+
+// ----------------- GENERATED EMAILS STORAGE -----------------
+let emailHistory = [];
+
+// ----------------- GENERATE EMAIL -----------------
+function generateEmail(){
+  const first = rand(firstNames).toLowerCase();
+  const last = rand(lastNames).toLowerCase();
+  const domain = rand(domains);
+  
+  // Random email format
+  const formats = [
+    `${first}.${last}@${domain}`,
+    `${first}${last}@${domain}`,
+    `${first[0]}${last}@${domain}`,
+    `${first}${last[0]}@${domain}`,
+    `${last}.${first}@${domain}`
+  ];
+  
+  const email = rand(formats);
+  emailHistory.push(email);
+  displayEmails();
+}
+
+// ----------------- DISPLAY -----------------
+function displayEmails(){
+  const container = document.getElementById('emails');
+  container.innerHTML = "";
+  emailHistory.forEach(email=>{
+    const div = document.createElement('div');
+    div.className = "entry";
+    div.innerHTML = `<span class="value">${email}</span>`;
+    container.appendChild(div);
+  });
+}
+
+// ----------------- COPY TO CLIPBOARD -----------------
+function copyEmails(){
+  if(emailHistory.length===0) return alert("No emails to copy");
+  navigator.clipboard.writeText(emailHistory.join("\n")).then(()=>alert("Copied to clipboard!"));
+}
+
+// ----------------- DOWNLOAD AS TXT -----------------
+function downloadEmails(){
+  if(emailHistory.length===0) return alert("No emails to download");
+  const blob = new Blob([emailHistory.join("\n")], {type:"text/plain"});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = "emails.txt";
+  a.click();
+}
+
+// ----------------- CLEAR EMAILS -----------------
+function clearEmails(){
+  emailHistory = [];
+  displayEmails();
+}
+</script>
+
+</body>
+</html>

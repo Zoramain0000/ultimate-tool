@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Phone Number Intelligence Lookup</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+body, html {
+    height: 100%;
+    overflow: hidden;
+    color: #00ffff;
+}
+
+/* Background Video */
+video#bgvid {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+    z-index: -1;
+    filter: brightness(0.35);
+}
+
+/* Overlay */
+.overlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(0,255,255,0.15), rgba(0,0,0,0.9));
+}
+
+/* Terminal Box */
+.container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 600px;
+    background: rgba(0,0,0,0.75);
+    border: 2px solid #00ffff;
+    box-shadow: 0 0 25px #00ffff;
+    padding: 25px;
+    border-radius: 10px;
+}
+
+h1 {
+    text-align: center;
+    color: #00ffff;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+}
+
+/* Input */
+input {
+    width: 100%;
+    padding: 12px;
+    background: black;
+    border: 1px solid #00ff99;
+    color: #00ff99;
+    font-size: 16px;
+    outline: none;
+    margin-bottom: 15px;
+}
+
+/* Button */
+button {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(90deg, #00ffff, #00ff99);
+    border: none;
+    color: black;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    filter: brightness(1.2);
+}
+
+/* Output */
+.output {
+    margin-top: 20px;
+    line-height: 1.6;
+}
+
+.cyan { color: #00ffff; }
+.green { color: #00ff99; }
+.yellow { color: #ffff66; }
+.red { color: #ff4444; }
+
+.footer {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 12px;
+    opacity: 0.7;
+}
+</style>
+</head>
+
+<body>
+
+<!-- Background Video -->
+<video autoplay muted loop id="bgvid">
+    <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+
+<div class="overlay"></div>
+
+<div class="container">
+    <h1>📡 Phone Number Lookup</h1>
+
+    <input type="text" id="phone" placeholder="Enter mobile number with country code">
+
+    <button onclick="lookup()">SCAN NUMBER</button>
+
+    <div class="output" id="result"></div>
+
+    <div class="footer">Powered by NumVerify API</div>
+</div>
+
+<script>
+const API_KEY = "cd3af5f7d1897dc1707c47d05c3759fd";
+
+function lookup() {
+    const phone = document.getElementById("phone").value.trim();
+    const result = document.getElementById("result");
+
+    if (!phone) {
+        result.innerHTML = '<span class="red">[!] Please enter a phone number</span>';
+        return;
+    }
+
+    result.innerHTML = '<span class="yellow">[~] Querying API...</span>';
+
+    const url = `http://apilayer.net/api/validate?access_key=${API_KEY}&number=${encodeURIComponent(phone)}`;
+
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            if (!data.valid) {
+                result.innerHTML = '<span class="red">[X] Invalid phone number</span>';
+                return;
+            }
+
+            result.innerHTML = `
+<span class="cyan">Country :</span> <span class="green">${data.country_name || "N/A"}</span><br>
+<span class="cyan">Location :</span> <span class="green">${data.location || "N/A"}</span><br>
+<span class="cyan">Carrier :</span> <span class="green">${data.carrier || "N/A"}</span>
+            `;
+        })
+        .catch(err => {
+            result.innerHTML = '<span class="red">[!] API Error or CORS blocked</span>';
+            console.error(err);
+        });
+}
+</script>
+
+</body>
+</html>

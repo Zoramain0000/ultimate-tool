@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ZeroDay Terminal AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
+  <style>
+    /* Reset and Base Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: #0a0a1a;
+      color: #ff5555;
+      overflow: hidden;
+      height: 100vh;
+      position: relative;
+    }
+
+    #video-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -1;
+      opacity: 0.2;
+    }
+
+    /* Sidebar Styles */
+    #sidebar {
+      background: rgba(10, 10, 26, 0.95);
+      backdrop-filter: blur(10px);
+      border-right: 1px solid rgba(255, 85, 85, 0.3);
+      width: 250px;
+      height: 100vh;
+      position: fixed;
+      transition: all 0.3s;
+      padding: 20px 0;
+      z-index: 100;
+    }
+
+    #sidebar.collapsed {
+      width: 60px;
+    }
+
+    #toggle-btn {
+      background: none;
+      border: none;
+      color: #ff5555;
+      font-size: 20px;
+      padding: 10px 15px;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      display: flex;
+      align-items: center;
+    }
+
+    .menu-item {
+      color: #ff5555;
+      display: block;
+      padding: 12px 15px;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border-left: 2px solid transparent;
+    }
+
+    .menu-item:hover {
+      background: rgba(255, 85, 85, 0.1);
+      border-left: 2px solid #ff5555;
+    }
+
+    #sidebar h2 {
+      padding: 0 15px;
+      margin: 20px 0 10px;
+      color: #ff5555;
+      font-size: 16px;
+    }
+
+    .history-item {
+      padding: 8px 15px;
+      color: #cccccc;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .history-item:hover {
+      background: rgba(255, 85, 85, 0.1);
+    }
+
+    /* Main Content Styles */
+    main {
+      margin-left: 250px;
+      transition: all 0.3s;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    main.full-width {
+      margin-left: 60px;
+    }
+
+    header {
+      background: rgba(20, 20, 40, 0.8);
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 85, 85, 0.3);
+    }
+
+    #header-title {
+      color: #ff5555;
+      font-size: 18px;
+      font-family: 'Courier New', monospace;
+    }
+
+    #ai-toggle-btn {
+      background: #ff5555;
+      color: #000;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+    }
+
+    #ai-toggle-btn:hover {
+      background: #ff8888;
+    }
+
+    /* Terminal-like Chat Window */
+    #chat-window {
+      background: rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 85, 85, 0.3);
+      padding: 20px;
+      margin: 20px;
+      flex: 1;
+      overflow-y: auto;
+      max-height: calc(100vh - 180px);
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+    }
+
+    .message {
+      margin: 10px 0;
+      padding: 10px 15px;
+      border-radius: 5px;
+      max-width: 90%;
+      word-wrap: break-word;
+      font-family: 'Courier New', monospace;
+    }
+
+    .message.user {
+      background: rgba(255, 85, 85, 0.1);
+      margin-left: auto;
+      color: #ffaaaa;
+      border: 1px solid rgba(255, 85, 85, 0.3);
+    }
+
+    .message.bot {
+      background: rgba(0, 0, 0, 0.1);
+      margin-right: auto;
+      color: #ff5555;
+      border: 1px solid rgba(255, 85, 85, 0.3);
+    }
+
+    .message strong {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .prompt {
+      display: flex;
+      align-items: center;
+      color: #ff5555;
+      margin-bottom: 5px;
+    }
+
+    .blinking-cursor {
+      margin-left: 5px;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* Input Area Styles */
+    #input-area {
+      display: flex;
+      background: rgba(30, 30, 50, 0.8);
+      padding: 10px;
+      margin: 0 20px 20px;
+      border: 1px solid rgba(255, 85, 85, 0.3);
+      border-radius: 5px;
+    }
+
+    #input {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: transparent;
+      color: #ff5555;
+      border: 1px solid rgba(255, 85, 85, 0.3);
+      border-radius: 5px;
+      font-family: 'Courier New', monospace;
+    }
+
+    #send {
+      background: #ff5555;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      margin-left: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+    }
+
+    #send:hover {
+      background: #ff8888;
+    }
+
+    /* Footer Styles */
+    footer {
+      text-align: center;
+      padding: 10px;
+      color: #888;
+      font-size: 12px;
+      background: rgba(20, 20, 40, 0.8);
+      margin: 0 20px 20px;
+      border: 1px solid rgba(255, 85, 85, 0.3);
+      border-radius: 5px;
+    }
+
+    /* Code Block Styles */
+    code {
+      display: block;
+      background: rgba(0, 0, 0, 0.1);
+      padding: 10px;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      font-family: 'Courier New', monospace;
+      border: 1px solid rgba(255, 85, 85, 0.3);
+      color: #ffaaaa;
+    }
+  </style>
+</head>
+<body>
+  <video id="video-background" autoplay loop muted>
+    <source src="io/ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+  </video>
+
+  <div id="sidebar">
+    <button id="toggle-btn" title="Toggle Sidebar">☰</button>
+    <a class="menu-item" onclick="startNewSession()">+ New Session</a>
+    <a class="menu-item" href="https://zerodays-mu.vercel.app/">ZeroDays-Patch-1
+    (zerodays-cyber-tools full version )</a>
+    <a class="menu-item" href="https://zerodays-mu.vercel.app/intro/main/introduction/mainsource/main/cyber-tools/main/mainapp.html">ZeroDays-Patch-1
+    (zerodays-cyber-tools)</a>
+    <a class="menu-item" href="https://zerodays-prime-version.vercel.app/">ZeroDays-Patch-2
+    (zerodays-prime-version)</a>
+    <a class="menu-item" href="http://www.zdays.work.gd/">ZeroDays-Patch-2
+    (ZDays Premier)</a>
+    
+    <h2>History</h2>
+    <div id="history"></div>
+  </div>
+
+  <main>
+    <header>
+      <span id="header-title">ZeroDayTerminal.ai v10 (Mistral)</span>
+      <button id="ai-toggle-btn" title="Switch AI Model">Switch Model</button>
+    </header>
+    <div id="chat-window"></div>
+    <div id="input-area">
+      <span class="prompt">zeroday@terminal:~$</span>
+      <input id="input" type="text" placeholder="Enter command..." autocomplete="off" />
+      <button id="send">Execute</button>
+    </div>
+    <footer>
+      For educational and ethical use only. © 2026 ZeroDayAI
+    </footer>
+  </main>
+
+  <script>
+    // DOM Elements
+    const chatWindow = document.getElementById("chat-window");
+    const input = document.getElementById("input");
+    const sendButton = document.getElementById("send");
+    const historyDiv = document.getElementById("history");
+    const sidebar = document.getElementById("sidebar");
+    const toggleBtn = document.getElementById("toggle-btn");
+    const headerTitle = document.getElementById("header-title");
+    const mainContent = document.querySelector("main");
+
+    // State
+    let historyLog = [];
+    let chatLog = [];
+    const MISTRAL_API_KEY = "bKSHmPR34GrfHbHXs2AlluiIdjaymtLu";
+
+    // Custom command redirects
+const redirects = {
+      
+   "#" : "#",
+    };
+
+    // --- Event Listeners ---
+    sendButton.onclick = () => {
+      const userText = input.value.trim();
+      if (!userText) return;
+
+      appendMessage("user@terminal", userText, "user");
+      addToHistory(userText);
+      chatLog.push({ role: "user", content: userText });
+      input.value = "";
+
+      const lower = userText.toLowerCase();
+
+      if (lower === "help") {
+        showHelp();
+        return;
+      }
+
+      if (redirects.hasOwnProperty(lower)) {
+        window.location.href = redirects[lower];
+        return;
+      }
+
+      callMistral(chatLog);
+    };
+
+    input.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") sendButton.click();
+    });
+
+    toggleBtn.onclick = () => {
+      sidebar.classList.toggle("collapsed");
+      mainContent.classList.toggle("full-width");
+    };
+
+    window.onload = () => {
+      appendMessage("system", "ZeroDayTerminal.ai v10\nType 'help' for commands or start chatting.", "bot");
+    };
+
+    // --- Core Functions ---
+    function appendMessage(sender, message, type, isCodeBlock = false) {
+      const div = document.createElement("div");
+      div.classList.add("message", type);
+      const sanitizedMessage = message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      if (isCodeBlock) {
+        div.innerHTML = `<strong>${sender}:</strong><br><code>${sanitizedMessage}</code>`;
+      } else {
+        div.innerHTML = `<strong>${sender}:</strong> ${sanitizedMessage}`;
+      }
+      chatWindow.appendChild(div);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function removeLoadingMessage() {
+      const msgs = chatWindow.querySelectorAll(".message.bot");
+      for (let i = msgs.length - 1; i >= 0; i--) {
+        if (msgs[i].textContent.includes("Loading ...")) {
+          msgs[i].remove();
+          break;
+        }
+      }
+    }
+
+    // --- API Call Functions ---
+    async function callMistral(chatHistory) {
+      appendMessage("system", "Loading ...", "bot");
+
+      try {
+        const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${MISTRAL_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: "mistral-large-latest",
+            messages: chatHistory,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const botReply = data.choices[0].message.content.trim();
+        removeLoadingMessage();
+        appendMessage("zeroday@terminal", botReply, "bot");
+        chatLog.push({ role: "assistant", content: botReply });
+      } catch (error) {
+        removeLoadingMessage();
+        appendMessage("system", "Error: " + error.message, "bot");
+        console.error(error);
+      }
+    }
+
+    // --- UI & History Functions ---
+    function addToHistory(text) {
+      if (!historyLog.includes(text)) {
+        historyLog.unshift(text);
+        if (historyLog.length > 50) historyLog.pop();
+        renderHistory();
+      }
+    }
+
+    function renderHistory() {
+      historyDiv.innerHTML = "";
+      historyLog.forEach((item) => {
+        const div = document.createElement("div");
+        div.textContent = item.length > 25 ? item.substring(0, 22) + '...' : item;
+        div.title = item;
+        div.classList.add("history-item");
+        div.onclick = () => {
+          input.value = item;
+          input.focus();
+        };
+        historyDiv.appendChild(div);
+      });
+    }
+
+    function showHelp() {
+      const keys = Object.keys(redirects);
+      let helpText = "Available commands:\n\n" + keys.map(k => `${k.padEnd(15)} → ${redirects[k]}`).join("\n");
+      appendMessage("system", helpText, "bot", true);
+    }
+
+    function startNewSession() {
+      chatWindow.innerHTML = "";
+      chatLog = [];
+      appendMessage("system", "New session started.", "bot");
+    }
+  </script>
+</body>
+</html>
+ 

@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrackerAI • Background Activity Monitor</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  height:100%;
+  font-family:Segoe UI,Arial,sans-serif;
+  color:#d6d6d6;
+  overflow:hidden;
+}
+
+.bg-video{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:-2;
+}
+
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  z-index:-1;
+}
+
+header{
+  padding:20px;
+  text-align:center;
+  background:rgba(255,255,255,0.05);
+  border-bottom:1px solid rgba(0,255,136,0.3);
+  text-shadow:0 0 6px #000;
+  backdrop-filter:blur(10px);
+}
+header h1{
+  letter-spacing:3px;
+  font-size:28px;
+}
+header span{
+  color:#00ff88;
+  font-size:12px;
+  text-shadow:0 0 6px #000;
+}
+
+.container{
+  max-width:1400px;
+  margin:20px auto;
+  padding:20px;
+  height:calc(100vh - 120px);
+  overflow-y:auto;
+  background:rgba(255,255,255,0.02);
+  backdrop-filter:blur(15px);
+  border-radius:16px;
+  border:1px solid rgba(0,255,136,0.2);
+}
+
+.tracker-section{
+  margin-bottom:25px;
+  padding:20px;
+  background:rgba(0,0,0,0.2);
+  border-radius:12px;
+  border:1px solid rgba(0,255,136,0.3);
+}
+
+input{
+  width:100%;
+  padding:15px;
+  background:rgba(0,0,0,0.4);
+  border:1px solid rgba(0,255,136,0.4);
+  border-radius:8px;
+  color:#fff;
+  margin-bottom:15px;
+  font-size:15px;
+  font-family:monospace;
+}
+
+select, button{
+  padding:12px 20px;
+  background:rgba(0,0,0,0.3);
+  border:1px solid #00ff88;
+  color:#00ff88;
+  border-radius:8px;
+  cursor:pointer;
+  transition:.3s;
+  font-size:14px;
+  margin-right:10px;
+  margin-bottom:10px;
+}
+select:hover, button:hover{
+  background:#00ff88;
+  color:black;
+  transform:scale(1.02);
+}
+
+.dashboard-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+  gap:20px;
+  margin-bottom:25px;
+}
+
+.tracker-card{
+  background:rgba(0,0,0,0.25);
+  padding:25px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,0.1);
+  text-shadow:0 0 6px #000;
+  position:relative;
+  overflow:hidden;
+  transition:.3s;
+  backdrop-filter:blur(10px);
+}
+.tracker-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 15px 40px rgba(0,255,136,0.25);
+  border-color:#00ff88;
+}
+.tracker-card.active{
+  border-color:#00ff88;
+  box-shadow:0 0 25px rgba(0,255,136,0.5);
+  animation:pulse 2s infinite;
+}
+
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 25px rgba(0,255,136,0.5);}
+  50%{box-shadow:0 0 35px rgba(0,255,136,0.8);}
+}
+
+.tracker-icon{
+  font-size:28px;
+  margin-bottom:15px;
+  display:block;
+}
+
+.tracker-title{
+  font-size:18px;
+  font-weight:bold;
+  margin-bottom:12px;
+  color:#00ff88;
+}
+
+.activity-log{
+  font-family:monospace;
+  font-size:12px;
+  line-height:1.5;
+  max-height:200px;
+  overflow:auto;
+  background:rgba(0,0,0,0.3);
+  padding:12px;
+  border-radius:8px;
+  border:1px solid rgba(0,255,136,0.2);
+}
+
+.activity-item{
+  padding:6px 8px;
+  margin:4px 0;
+  border-radius:6px;
+  font-size:11px;
+  border-left:3px solid #00ff88;
+  background:rgba(0,255,136,0.1);
+}
+
+.location-item{
+  border-left-color:#ffaa00;
+  background:rgba(255,170,0,0.15);
+  color:#ffaa00;
+}
+
+.network-item{
+  border-left-color:#4d79ff;
+  background:rgba(77,121,255,0.15);
+  color:#4d79ff;
+}
+
+.app-item{
+  border-left-color:#ff4d4d;
+  background:rgba(255,77,77,0.15);
+  color:#ff4d4d;
+}
+
+.status-badge{
+  position:absolute;
+  top:12px;
+  right:12px;
+  background:rgba(0,255,136,0.9);
+  color:black;
+  padding:6px 10px;
+  border-radius:20px;
+  font-size:11px;
+  font-weight:bold;
+  animation:blink 1.5s infinite;
+}
+
+@keyframes blink{
+  0%,50%{opacity:1;}
+  51%,100%{opacity:0.3;}
+}
+
+.live-stats{
+  display:flex;
+  gap:20px;
+  margin-top:15px;
+  font-family:monospace;
+}
+
+.stat-item{
+  background:rgba(0,0,0,0.4);
+  padding:10px 15px;
+  border-radius:8px;
+  border:1px solid rgba(0,255,136,0.3);
+  font-size:13px;
+  flex:1;
+  text-align:center;
+}
+
+.system-log{
+  background:rgba(0,0,0,0.3);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:12px;
+  padding:20px;
+  font-family:monospace;
+  font-size:13px;
+  max-height:250px;
+  overflow:auto;
+  color:#00ff88;
+  text-shadow:0 0 4px #000;
+}
+
+.timestamp{
+  color:#888;
+  font-size:11px;
+}
+
+@media (max-width:768px){
+  .dashboard-grid{grid-template-columns:1fr;}
+  .live-stats{flex-direction:column;}
+}
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>📱 TRACKERAI • BACKGROUND ACTIVITY MONITOR</h1>
+  <span>Real-time device tracking • Network monitoring • App behavior analysis</span>
+</header>
+
+<div class="container">
+
+  <div class="tracker-section">
+    <h2 style="margin-bottom:15px;color:#00ff88;border-left:4px solid #00ff88;padding-left:12px;">Device Configuration</h2>
+    <input id="deviceId" placeholder="Device ID / User Identifier (auto-generated)">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <select id="monitorMode">
+        <option value="full">Full System Monitoring</option>
+        <option value="network">Network Activity Only</option>
+        <option value="apps">App Usage Tracking</option>
+        <option value="location">Location Services</option>
+      </select>
+      <button onclick="startTracking()">🚀 START TRACKING</button>
+      <button onclick="stopTracking()">⏹️ STOP TRACKING</button>
+      <button onclick="exportData()">💾 EXPORT DATA</button>
+    </div>
+  </div>
+
+  <div class="dashboard-grid" id="trackerGrid"></div>
+
+  <div class="system-log-section">
+    <h2 style="margin-bottom:12px;color:#bfbfbf;">Live System Activity Feed</h2>
+    <div class="system-log" id="systemLog"></div>
+  </div>
+
+</div>
+
+<script>
+class ActivityTracker {
+  constructor() {
+    this.isTracking = false;
+    this.deviceId = '';
+    this.activities = [];
+    this.trackers = {};
+    this.init();
+  }
+
+  init() {
+    this.deviceId = this.generateDeviceId();
+    document.getElementById('deviceId').value = this.deviceId;
+    this.createTrackers();
+    this.startPassiveMonitoring();
+    this.log('🔥 TrackerAI initialized - Background monitoring active');
+  }
+
+  generateDeviceId() {
+    return 'DEVICE_' + Math.random().toString(36).substr(2, 9).toUpperCase() + 
+           '_' + Date.now().toString(36).toUpperCase();
+  }
+
+  createTrackers() {
+    this.trackers = {
+      network: { name: 'Network Activity Monitor', icon: '🌐', active: true, count: 0 },
+      apps: { name: 'Application Usage Tracker', icon: '📱', active: true, count: 0 },
+      location: { name: 'Geolocation Service', icon: '📍', active: true, count: 0 },
+      battery: { name: 'Battery & Power Monitor', icon: '🔋', active: true, count: 0 },
+      storage: { name: 'Storage Access Monitor', icon: '💾', active: true, count: 0 },
+      sensors: { name: 'Sensor Data Collector', icon: '📡', active: true, count: 0 },
+      clipboard: { name: 'Clipboard Monitor', icon: '📋', active: true, count: 0 }
+    };
+  }
+
+  startPassiveMonitoring() {
+    // Continuous background monitoring
+    setInterval(() => {
+      if (this.isTracking) {
+        this.collectNetworkData();
+        this.collectAppData();
+        this.collectLocationData();
+        this.collectSystemData();
+      }
+    }, 3000);
+
+    // Real-time events
+    this.monitorClipboard();
+    this.monitorVisibility();
+    this.monitorOnlineStatus();
+  }
+
+  async startTracking() {
+    this.isTracking = true;
+    document.querySelectorAll('button')[2].textContent = '✅ TRACKING ACTIVE';
+    this.log('🚀 Full background tracking started for ' + this.deviceId);
+    
+    // Update all tracker cards as active
+    document.querySelectorAll('.tracker-card').forEach(card => {
+      card.classList.add('active');
+    });
+
+    // Simulate continuous tracking
+    this.trackingLoop();
+  }
+
+  stopTracking() {
+    this.isTracking = false;
+    document.querySelectorAll('button')[2].textContent = '🚀 START TRACKING';
+    this.log('⏹️ Tracking paused');
+  }
+
+  trackingLoop() {
+    if (!this.isTracking) return;
+    
+    Object.keys(this.trackers).forEach(key => {
+      this.updateTracker(key);
+    });
+
+    setTimeout(() => this.trackingLoop(), 5000);
+  }
+
+  collectNetworkData() {
+    const connections = [
+      `8.8.8.8:443 (google.com) - 2.4KB`,
+      `142.250.190.78:443 (youtube.com) - 15.2KB`,
+      `192.168.1.1:80 (router) - 128B`,
+      `api.trackerai.net:443 - 892B`
+    ];
+    const randomConn = connections[Math.floor(Math.random() * connections.length)];
+    this.addActivity('network', `📡 ${randomConn} - TCP connection established`, 'network-item');
+    this.trackers.network.count++;
+  }
+
+  collectAppData() {
+    const apps = ['chrome.exe', 'discord.exe', 'spotify.exe', 'notepad.exe'];
+    const app = apps[Math.floor(Math.random() * apps.length)];
+    this.addActivity('apps', `📱 ${app} foreground active - CPU: ${Math.floor(Math.random()*25)+5}%`, 'app-item');
+    this.trackers.apps.count++;
+  }
+
+  collectLocationData() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        this.addActivity('location', 
+          `📍 ${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)} - Accuracy: ${pos.coords.accuracy}m`, 
+          'location-item');
+        this.trackers.location.count++;
+      });
+    }
+  }
+
+  collectSystemData() {
+    const battery = navigator.getBattery ? navigator.getBattery() : null;
+    if (battery) {
+      battery.then(b => {
+        this.addActivity('battery', 
+          `🔋 Battery: ${Math.round(b.level * 100)}% - Charging: ${b.charging}`, 
+          'activity-item');
+        this.trackers.battery.count++;
+      });
+    }
+  }
+
+  monitorClipboard() {
+    let lastText = '';
+    setInterval(() => {
+      navigator.clipboard.readText().then(text => {
+        if (text !== lastText && text.length > 0) {
+          this.addActivity('clipboard', `📋 Copied: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`, 'activity-item');
+          this.trackers.clipboard.count++;
+          lastText = text;
+        }
+      }).catch(() => {});
+    }, 2000);
+  }
+
+  monitorVisibility() {
+    document.addEventListener('visibilitychange', () => {
+      const state = document.hidden ? 'background' : 'foreground';
+      this.addActivity('system', `👁️ Page ${state} - Timestamp: ${new Date().toLocaleTimeString()}`, 'activity-item');
+    });
+  }
+
+  monitorOnlineStatus() {
+    window.addEventListener('online', () => {
+      this.addActivity('network', '🌐 Connection restored - Network online', 'network-item');
+    });
+    window.addEventListener('offline', () => {
+      this.addActivity('network', '🚫 Connection lost - Network offline', 'network-item');
+    });
+  }
+
+  updateTracker(type) {
+    const tracker = this.trackers[type];
+    const card = document.getElementById(`${type}-card`);
+    if (card) {
+      const badge = card.querySelector('.status-badge');
+      badge.textContent = `${tracker.count} activities`;
+      const logDiv = card.querySelector('.activity-log');
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+  }
+
+  addActivity(type, message, className) {
+    const timestamp = new Date().toLocaleTimeString();
+    const activity = {
+      id: Date.now(),
+      type,
+      message: `${timestamp} ${message}`,
+      className
+    };
+    this.activities.unshift(activity);
+
+    // Update tracker log
+    const card = document.getElementById(`${type}-card`);
+    if (card) {
+      const logDiv = card.querySelector('.activity-log');
+      const div = document.createElement('div');
+      div.className = `activity-item ${className}`;
+      div.textContent = activity.message;
+      logDiv.insertBefore(div, logDiv.firstChild);
+      
+      // Keep only last 10 activities
+      while (logDiv.children.length > 10) {
+        logDiv.removeChild(logDiv.lastChild);
+      }
+    }
+
+    this.log(message);
+  }
+
+  log(message) {
+    const log = document.getElementById('systemLog');
+    const entry = document.createElement('div');
+    entry.innerHTML = `<span class="timestamp">[${new Date().toLocaleTimeString()}]</span> ${message}`;
+    log.insertBefore(entry, log.firstChild);
+    
+    while (log.children.length > 50) {
+      log.removeChild(log.lastChild);
+    }
+    log.scrollTop = 0;
+  }
+
+  displayTrackers() {
+    const grid = document.getElementById('trackerGrid');
+    grid.innerHTML = '';
+
+    Object.entries(this.trackers).forEach(([key, tracker]) => {
+      const card = document.createElement('div');
+      card.id = `${key}-card`;
+      card.className = 'tracker-card active';
+      card.innerHTML = `
+        <div class="tracker-icon">${tracker.icon}</div>
+        <div class="tracker-title">${tracker.name}</div>
+        <div class="status-badge">0 activities</div>
+        <div class="activity-log"></div>
+        <div class="live-stats">
+          <div class="stat-item">Uptime: ${Math.floor(Math.random()*60)}m</div>
+          <div class="stat-item">Data: ${Math.floor(Math.random()*1024)}KB</div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+}
+
+const tracker = new ActivityTracker();
+tracker.displayTrackers();
+
+function startTracking() { tracker.startTracking(); }
+function stopTracking() { tracker.stopTracking(); }
+function exportData() {
+  const data = {
+    deviceId: tracker.deviceId,
+    activities: tracker.activities.slice(0, 100),
+    timestamp: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `tracker_${tracker.deviceId}_${Date.now()}.json`;
+  a.click();
+  tracker.log('💾 Activity data exported successfully');
+}
+
+// Auto-start demo after 2 seconds
+setTimeout(() => {
+  if (!tracker.isTracking) {
+    tracker.startTracking();
+  }
+}, 2000);
+
+tracker.log('📱 Background Activity Tracker fully operational - All sensors active');
+</script>
+
+</body>
+</html>

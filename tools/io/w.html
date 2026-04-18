@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ZeroDays • Website Tech Stack Fingerprint</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:Arial,Helvetica,sans-serif;color:#d1d1d1}
+
+.bg-video{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  object-fit:cover;z-index:-2;filter:brightness(0.25)
+}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:-1}
+
+header{
+  background:rgba(0,0,0,0.75);
+  padding:16px;text-align:center;
+  border-bottom:1px solid #1f1f1f
+}
+header h1{font-size:18px;letter-spacing:2px}
+
+.container{
+  max-width:1000px;margin:30px auto;padding:20px;
+  background:rgba(0,0,0,0.65);
+  backdrop-filter:blur(10px);
+  border-radius:14px;
+  box-shadow:0 0 35px rgba(0,0,0,0.9)
+}
+
+.section{
+  border-left:4px solid #2a2a2a;
+  padding-left:15px;margin-bottom:20px
+}
+.section h2{font-size:15px;color:#9f9f9f;margin-bottom:10px}
+
+input,button{
+  width:100%;padding:10px;
+  background:black;color:white;
+  border:1px solid #333;border-radius:6px;
+  margin-bottom:10px
+}
+button:hover{background:#111;cursor:pointer}
+
+.result{
+  background:black;
+  border:1px solid #222;
+  padding:12px;
+  border-radius:6px;
+  font-family:monospace;
+  font-size:13px;
+  white-space:pre-wrap;
+  color:#8aff8a
+}
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • WEBSITE TECH STACK FINGERPRINT</h1>
+</header>
+
+<div class="container">
+
+<div class="section">
+  <h2>Target Website</h2>
+  <input type="url" id="url" placeholder="https://example.com">
+  <button onclick="fingerprint()">Fingerprint Website</button>
+</div>
+
+<div class="section">
+  <h2>Detection Output</h2>
+  <div id="output" class="result">Waiting for input…</div>
+</div>
+
+</div>
+
+<script>
+async function fingerprint(){
+  const url=document.getElementById("url").value.trim();
+  const out=document.getElementById("output");
+  if(!url){alert("Enter a URL");return;}
+
+  out.textContent="Scanning...\n\n";
+
+  let detected=[];
+  let warnings=[];
+
+  try{
+    const res=await fetch(url,{mode:"cors"});
+    const html=await res.text();
+    const headers=[...res.headers.entries()].map(h=>h.join(": ")).join("\n");
+
+    /* Header hints */
+    if(headers.match(/cloudflare/i)) detected.push("CDN: Cloudflare");
+    if(headers.match(/akamai/i)) detected.push("CDN: Akamai");
+    if(headers.match(/fastly/i)) detected.push("CDN: Fastly");
+
+    /* HTML fingerprinting */
+    if(html.match(/wp-content|wp-includes/i)) detected.push("CMS: WordPress");
+    if(html.match(/joomla/i)) detected.push("CMS: Joomla");
+    if(html.match(/drupal/i)) detected.push("CMS: Drupal");
+
+    if(html.match(/react/i)) detected.push("Framework: React");
+    if(html.match(/vue/i)) detected.push("Framework: Vue.js");
+    if(html.match(/angular/i)) detected.push("Framework: Angular");
+    if(html.match(/svelte/i)) detected.push("Framework: Svelte");
+
+    if(html.match(/jquery/i)) detected.push("Library: jQuery");
+    if(html.match(/bootstrap/i)) detected.push("UI: Bootstrap");
+    if(html.match(/tailwind/i)) detected.push("UI: Tailwind CSS");
+    if(html.match(/fontawesome/i)) detected.push("Icons: Font Awesome");
+
+    if(html.match(/googletagmanager|gtag/i)) detected.push("Analytics: Google Analytics / GTM");
+
+    if(html.match(/recaptcha/i)) detected.push("Security: Google reCAPTCHA");
+    if(html.match(/hcaptcha/i)) detected.push("Security: hCaptcha");
+
+    /* Meta generator */
+    const gen=html.match(/<meta name="generator" content="([^"]+)"/i);
+    if(gen) detected.push("Generator: "+gen[1]);
+
+  }catch(e){
+    warnings.push("CORS or network restriction — partial scan only");
+  }
+
+  /* Output */
+  let report="Detected Technologies:\n";
+  if(detected.length===0) report+="✖ No fingerprints found\n";
+  else detected.forEach(t=>report+="✔ "+t+"\n");
+
+  report+="\nWarnings:\n";
+  if(warnings.length===0) report+="✔ None\n";
+  else warnings.forEach(w=>report+="⚠ "+w+"\n");
+
+  report+="\nScan Mode: Client-side passive fingerprinting\n";
+
+  out.textContent=report;
+}
+</script>
+
+</body>
+</html>

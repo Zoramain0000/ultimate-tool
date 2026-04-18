@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>JWT Token Log Generator v195</title>
+<style>
+  body {
+    margin: 0; padding: 0;
+    background-color: #000; 
+    color: #00ff41;
+    font-family: 'Consolas', monospace;
+    display: flex; flex-direction: column; height: 100vh;
+  }
+
+  #bgVideo {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+    z-index: -1;
+    object-fit: cover;
+    filter: brightness(0.3) contrast(1.3);
+  }
+
+  header {
+    padding: 15px 25px;
+    background: rgba(0,20,0,0.9);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    border-bottom: 2px solid #00ff41;
+    box-shadow: 0 0 30px rgba(0,255,65,0.4);
+  }
+  
+  .title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00ffff;
+    text-shadow: 0 0 5px #00ffff;
+  }
+  
+  label {
+    font-weight: bold;
+    font-size: 14px;
+    color: #ffaa00;
+    text-shadow: 0 0 3px #ffaa00;
+  }
+  
+  select, input[type=button] {
+    font-family: monospace;
+    font-size: 14px;
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: 1px solid #00ff41;
+    outline: none;
+    cursor: pointer;
+    background: rgba(0,0,0,0.8);
+    color: #00ff41;
+    transition: all 0.3s;
+  }
+  
+  select {
+    min-width: 160px;
+  }
+  
+  input[type=button] {
+    background: #00ff41;
+    color: #000;
+    font-weight: bold;
+  }
+  
+  input[type=button]:hover {
+    background: #ff1493;
+    color: #fff;
+    box-shadow: 0 0 15px #ff1493;
+    transform: scale(1.05);
+  }
+  
+  input[type=text] {
+    flex-grow: 1;
+    min-width: 200px;
+    font-family: monospace;
+    font-size: 14px;
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: 1px solid #00ff41;
+    outline: none;
+    background: rgba(0,0,0,0.8);
+    color: #00ff41;
+  }
+  
+  input[type=text]:focus {
+    border-color: #ff1493;
+    box-shadow: 0 0 10px #ff1493;
+  }
+  
+  #totalCount {
+    background: rgba(0,0,0,0.9);
+    color: #00ff41;
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: 2px solid #00ff41;
+    font-weight: bold;
+    min-width: 140px;
+    text-align: center;
+    font-size: 14px;
+    box-shadow: 0 0 15px rgba(0,255,65,0.5);
+  }
+  
+  #logContainer {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.85);
+    position: relative;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  
+  thead tr {
+    background: rgba(0,50,0,0.95);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    border-bottom: 2px solid #00ff41;
+  }
+  
+  th, td {
+    padding: 10px 15px;
+    border-bottom: 1px solid rgba(0,255,65,0.3);
+    white-space: nowrap;
+    text-align: left;
+    font-family: monospace;
+  }
+  
+  th {
+    color: #00ffff;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  
+  tbody tr {
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  tbody tr:hover {
+    background: rgba(255,20,147,0.2);
+    transform: scale(1.01);
+  }
+  
+  .jwt-token {
+    font-family: monospace;
+    font-size: 11px;
+    color: #ff1493;
+    max-width: 280px;
+    word-break: break-all;
+  }
+  
+  .country-flag {
+    font-size: 16px;
+    margin-right: 5px;
+  }
+  
+  .highlight {
+    background: rgba(0,255,65,0.2);
+    padding: 2px 5px;
+    border-radius: 3px;
+  }
+  
+  #loadingIndicator {
+    padding: 15px 0;
+    text-align: center;
+    color: #00ff41;
+    font-size: 15px;
+    font-weight: bold;
+  }
+
+  #logContainer::-webkit-scrollbar {
+    width: 10px;
+  }
+  #logContainer::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.5);
+  }
+  #logContainer::-webkit-scrollbar-thumb {
+    background: #00ff41;
+    border-radius: 5px;
+  }
+  #logContainer::-webkit-scrollbar-thumb:hover {
+    background: #ff1493;
+  }
+
+  @media (max-width: 600px) {
+    th, td { padding: 8px 10px; font-size: 11px; }
+    .jwt-token { max-width: 200px; font-size: 10px; }
+    input[type=text] { font-size: 13px; min-width: auto; }
+  }
+</style>
+</head>
+<body>
+
+<video autoplay muted loop id="bgVideo">
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+
+<header>
+  <div class="title">🌍 JWT Token Generator v195</div>
+  <label for="countryMode">Country Mode:</label>
+  <select id="countryMode" aria-label="Country selection mode">
+    <option value="random">🔀 Random (195)</option>
+    <option value="mixed">🎲 Mixed Global</option>
+    <option value="manual">✏️ Manual Input</option>
+    <option value="usa">🇺🇸 USA</option>
+    <option value="eu">🇪🇺 EU</option>
+    <option value="asia">🇯🇵 Asia</option>
+  </select>
+  
+  <input type="button" id="generateBtn" value="🚀 GENERATE TOKENS" />
+  <input type="text" id="searchInput" placeholder="🔍 Filter JWT/Country/UPN..." />
+  <span id="totalCount">Total: 0</span>
+  <input type="button" id="downloadBtn" value="💾 DOWNLOAD" />
+</header>
+
+<div id="logContainer" tabindex="0" aria-live="polite">
+  <table role="grid" aria-rowcount="0" aria-colcount="7">
+    <thead>
+      <tr>
+        <th>JWT Token</th>
+        <th>Type</th>
+        <th>Country</th>
+        <th>UPN</th>
+        <th>OID</th>
+        <th>Expires</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+  <div id="loadingIndicator" hidden>🔄 Generating global JWT tokens...</div>
+</div>
+
+<script>
+(() => {
+  const countryModeEl = document.getElementById('countryMode');
+  const generateBtn = document.getElementById('generateBtn');
+  const searchInput = document.getElementById('searchInput');
+  const logBody = document.getElementById('logBody');
+  const logContainer = document.getElementById('logContainer');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const totalCount = document.getElementById('totalCount');
+
+  const BATCH_SIZE = 400;
+  const MAX_LOGS = 20000;
+
+  // 195 Countries with TLDs & Flags (ISO 3166-1 alpha-2)
+const COUNTRIES = {
+  'AF': {name: 'Afghanistan', tld: 'af', flag: '🇦🇫'},
+  'AL': {name: 'Albania', tld: 'al', flag: '🇦🇱'},
+  'DZ': {name: 'Algeria', tld: 'dz', flag: '🇩🇿'},
+  'AS': {name: 'American Samoa', tld: 'as', flag: '🇦🇸'}, // US Territory
+  'AD': {name: 'Andorra', tld: 'ad', flag: '🇦🇩'},
+  'AO': {name: 'Angola', tld: 'ao', flag: '🇦🇴'},
+  'AI': {name: 'Anguilla', tld: 'ai', flag: '🇦🇮'}, // British Territory
+  'AQ': {name: 'Antarctica', tld: 'aq', flag: '🇦🇶'},
+  'AG': {name: 'Antigua and Barbuda', tld: 'ag', flag: '🇦🇬'},
+  'AR': {name: 'Argentina', tld: 'com.ar', flag: '🇦🇷'},
+  'AM': {name: 'Armenia', tld: 'am', flag: '🇦🇲'},
+  'AW': {name: 'Aruba', tld: 'aw', flag: '🇦🇼'},
+  'AU': {name: 'Australia', tld: 'com.au', flag: '🇦🇺'},
+  'AT': {name: 'Austria', tld: 'at', flag: '🇦🇹'},
+  'AZ': {name: 'Azerbaijan', tld: 'az', flag: '🇦🇿'},
+  'BS': {name: 'Bahamas', tld: 'bs', flag: '🇧🇸'},
+  'BH': {name: 'Bahrain', tld: 'bh', flag: '🇧🇭'},
+  'BD': {name: 'Bangladesh', tld: 'bd', flag: '🇧🇩'},
+  'BB': {name: 'Barbados', tld: 'bb', flag: '🇧🇧'},
+  'BY': {name: 'Belarus', tld: 'by', flag: '🇧🇾'},
+  'BE': {name: 'Belgium', tld: 'be', flag: '🇧🇪'},
+  'BZ': {name: 'Belize', tld: 'bz', flag: '🇧🇿'},
+  'BJ': {name: 'Benin', tld: 'bj', flag: '🇧🇯'},
+  'BM': {name: 'Bermuda', tld: 'bm', flag: '🇧🇲'}, // British Territory
+  'BT': {name: 'Bhutan', tld: 'bt', flag: '🇧🇹'},
+  'BO': {name: 'Bolivia', tld: 'bo', flag: '🇧🇴'},
+  'BA': {name: 'Bosnia and Herzegovina', tld: 'ba', flag: '🇧🇦'},
+  'BW': {name: 'Botswana', tld: 'bw', flag: '🇧🇼'},
+  'BR': {name: 'Brazil', tld: 'com.br', flag: '🇧🇷'},
+  'IO': {name: 'British Indian Ocean Territory', tld: 'io', flag: '🇮🇴'}, // British Territory
+  'BN': {name: 'Brunei Darussalam', tld: 'bn', flag: '🇧🇳'},
+  'BG': {name: 'Bulgaria', tld: 'bg', flag: '🇧🇬'},
+  'BF': {name: 'Burkina Faso', tld: 'bf', flag: '🇧🇫'},
+  'BI': {name: 'Burundi', tld: 'bi', flag: '🇧🇮'},
+  'CV': {name: 'Cabo Verde', tld: 'cv', flag: '🇨🇻'},
+  'KH': {name: 'Cambodia', tld: 'kh', flag: '🇰🇭'},
+  'CM': {name: 'Cameroon', tld: 'cm', flag: '🇨🇲'},
+  'CA': {name: 'Canada', tld: 'ca', flag: '🇨🇦'},
+  'KY': {name: 'Cayman Islands', tld: 'ky', flag: '🇰🇾'}, // British Territory
+  'CF': {name: 'Central African Republic', tld: 'cf', flag: '🇨🇫'},
+  'TD': {name: 'Chad', tld: 'td', flag: '🇹🇩'},
+  'CL': {name: 'Chile', tld: 'cl', flag: '🇨🇱'},
+  'CN': {name: 'China', tld: 'cn', flag: '🇨🇳'},
+  'CX': {name: 'Christmas Island', tld: 'cx', flag: '🇨🇽'}, // Australian Territory
+  'CC': {name: 'Cocos (Keeling) Islands', tld: 'cc', flag: '🇨🇨'}, // Australian Territory
+  'CO': {name: 'Colombia', tld: 'com.co', flag: '🇨🇴'},
+  'KM': {name: 'Comoros', tld: 'km', flag: '🇰🇲'},
+  'CG': {name: 'Congo', tld: 'cg', flag: '🇨🇬'},
+  'CD': {name: 'Congo, Democratic Republic of the', tld: 'cd', flag: '🇨🇩'},
+  'CK': {name: 'Cook Islands', tld: 'ck', flag: '🇨🇰'}, // NZ Territory
+  'CR': {name: 'Costa Rica', tld: 'cr', flag: '🇨🇷'},
+  'CI': {name: 'Côte d\'Ivoire', tld: 'ci', flag: '🇨🇮'},
+  'HR': {name: 'Croatia', tld: 'hr', flag: '🇭🇷'},
+  'CU': {name: 'Cuba', tld: 'cu', flag: '🇨🇺'},
+  'CW': {name: 'Curaçao', tld: 'cw', flag: '🇨🇼'},
+  'CY': {name: 'Cyprus', tld: 'cy', flag: '🇨🇾'},
+  'CZ': {name: 'Czechia', tld: 'cz', flag: '🇨🇿'},
+  'DK': {name: 'Denmark', tld: 'dk', flag: '🇩🇰'},
+  'DJ': {name: 'Djibouti', tld: 'dj', flag: '🇩🇯'},
+  'DM': {name: 'Dominica', tld: 'dm', flag: '🇩🇲'},
+  'DO': {name: 'Dominican Republic', tld: 'do', flag: '🇩🇴'},
+  'EC': {name: 'Ecuador', tld: 'ec', flag: '🇪🇨'},
+  'EG': {name: 'Egypt', tld: 'eg', flag: '🇪🇬'},
+  'SV': {name: 'El Salvador', tld: 'sv', flag: '🇸🇻'},
+  'GQ': {name: 'Equatorial Guinea', tld: 'gq', flag: '🇬🇶'},
+  'ER': {name: 'Eritrea', tld: 'er', flag: '🇪🇷'},
+  'EE': {name: 'Estonia', tld: 'ee', flag: '🇪🇪'},
+  'SZ': {name: 'Eswatini', tld: 'sz', flag: '🇸🇿'},
+  'ET': {name: 'Ethiopia', tld: 'et', flag: '🇪🇹'},
+  'FK': {name: 'Falkland Islands (Malvinas)', tld: 'fk', flag: '🇫🇰'}, // British Territory
+  'FO': {name: 'Faroe Islands', tld: 'fo', flag: '🇫🇴'}, // Danish Territory
+  'FJ': {name: 'Fiji', tld: 'fj', flag: '🇫🇯'},
+  'FI': {name: 'Finland', tld: 'fi', flag: '🇫🇮'},
+  'FR': {name: 'France', tld: 'fr', flag: '🇫🇷'},
+  'GF': {name: 'French Guiana', tld: 'gf', flag: '🇬🇫'}, // French Territory
+  'PF': {name: 'French Polynesia', tld: 'pf', flag: '🇵🇫'}, // French Territory
+  'TF': {name: 'French Southern Territories', tld: 'tf', flag: '🇹🇫'}, // French Territory
+  'GA': {name: 'Gabon', tld: 'ga', flag: '🇬🇦'},
+  'GM': {name: 'Gambia', tld: 'gm', flag: '🇬🇲'},
+  'GE': {name: 'Georgia', tld: 'ge', flag: '🇬🇪'},
+  'DE': {name: 'Germany', tld: 'de', flag: '🇩🇪'},
+  'GH': {name: 'Ghana', tld: 'gh', flag: '🇬🇭'},
+  'GI': {name: 'Gibraltar', tld: 'gi', flag: '🇬🇮'}, // British Territory
+  'GR': {name: 'Greece', tld: 'gr', flag: '🇬🇷'},
+  'GL': {name: 'Greenland', tld: 'gl', flag: '🇬🇱'}, // Danish Territory
+  'GD': {name: 'Grenada', tld: 'gd', flag: '🇬🇩'},
+  'GP': {name: 'Guadeloupe', tld: 'gp', flag: '🇬🇵'}, // French Territory
+  'GU': {name: 'Guam', tld: 'gu', flag: '🇬🇺'}, // US Territory
+  'GT': {name: 'Guatemala', tld: 'gt', flag: '🇬🇹'},
+  'GG': {name: 'Guernsey', tld: 'gg', flag: '🇬🇬'}, // British Crown Dependency
+  'GN': {name: 'Guinea', tld: 'gn', flag: '🇬🇳'},
+  'GW': {name: 'Guinea-Bissau', tld: 'gw', flag: '🇬🇼'},
+  'GY': {name: 'Guyana', tld: 'gy', flag: '🇬🇾'},
+  'HT': {name: 'Haiti', tld: 'ht', flag: '🇭🇹'},
+  'HM': {name: 'Heard Island and McDonald Islands', tld: 'hm', flag: '🇭🇲'}, // Australian Territory
+  'VA': {name: 'Holy See', tld: 'va', flag: '🇻🇦'},
+  'HN': {name: 'Honduras', tld: 'hn', flag: '🇭🇳'},
+  'HK': {name: 'Hong Kong', tld: 'hk', flag: '🇭🇰'}, // Chinese SAR
+  'HU': {name: 'Hungary', tld: 'hu', flag: '🇭🇺'},
+  'IS': {name: 'Iceland', tld: 'is', flag: '🇮🇸'},
+  'IN': {name: 'India', tld: 'in', flag: '🇮🇳'},
+  'ID': {name: 'Indonesia', tld: 'id', flag: '🇮🇩'},
+  'IR': {name: 'Iran', tld: 'ir', flag: '🇮🇷'},
+  'IQ': {name: 'Iraq', tld: 'iq', flag: '🇮🇶'},
+  'IE': {name: 'Ireland', tld: 'ie', flag: '🇮🇪'},
+  'IM': {name: 'Isle of Man', tld: 'im', flag: '🇮🇲'}, // British Crown Dependency
+  'IL': {name: 'Israel', tld: 'il', flag: '🇮🇱'},
+  'IT': {name: 'Italy', tld: 'it', flag: '🇮🇹'},
+  'JM': {name: 'Jamaica', tld: 'jm', flag: '🇯🇲'},
+  'JP': {name: 'Japan', tld: 'co.jp', flag: '🇯🇵'},
+  'JE': {name: 'Jersey', tld: 'je', flag: '🇯🇪'}, // British Crown Dependency
+  'JO': {name: 'Jordan', tld: 'jo', flag: '🇯🇴'},
+  'KZ': {name: 'Kazakhstan', tld: 'kz', flag: '🇰🇿'},
+  'KE': {name: 'Kenya', tld: 'ke', flag: '🇰🇪'},
+  'KI': {name: 'Kiribati', tld: 'ki', flag: '🇰🇮'},
+  'KP': {name: 'North Korea', tld: 'kp', flag: '🇰🇵'},
+  'KR': {name: 'South Korea', tld: 'co.kr', flag: '🇰🇷'},
+  'KW': {name: 'Kuwait', tld: 'kw', flag: '🇰🇼'},
+  'KG': {name: 'Kyrgyzstan', tld: 'kg', flag: '🇰🇬'},
+  'LA': {name: 'Lao People\'s Democratic Republic', tld: 'la', flag: '🇱🇦'},
+  'LV': {name: 'Latvia', tld: 'lv', flag: '🇱🇻'},
+  'LB': {name: 'Lebanon', tld: 'lb', flag: '🇱🇧'},
+  'LS': {name: 'Lesotho', tld: 'ls', flag: '🇱🇸'},
+  'LR': {name: 'Liberia', tld: 'lr', flag: '🇱🇷'},
+  'LY': {name: 'Libya', tld: 'ly', flag: '🇱🇾'},
+  'LI': {name: 'Liechtenstein', tld: 'li', flag: '🇱🇮'},
+  'LT': {name: 'Lithuania', tld: 'lt', flag: '🇱🇹'},
+  'LU': {name: 'Luxembourg', tld: 'lu', flag: '🇱🇺'},
+  'MO': {name: 'Macao', tld: 'mo', flag: '🇲🇴'}, // Chinese SAR
+  'MG': {name: 'Madagascar', tld: 'mg', flag: '🇲🇬'},
+  'MW': {name: 'Malawi', tld: 'mw', flag: '🇲🇼'},
+  'MY': {name: 'Malaysia', tld: 'my', flag: '🇲🇾'},
+  'MV': {name: 'Maldives', tld: 'mv', flag: '🇲🇻'},
+  'ML': {name: 'Mali', tld: 'ml', flag: '🇲🇱'},
+  'MT': {name: 'Malta', tld: 'mt', flag: '🇲🇹'},
+  'MH': {name: 'Marshall Islands', tld: 'mh', flag: '🇲🇭'},
+  'MQ': {name: 'Martinique', tld: 'mq', flag: '🇲🇶'}, // French Territory
+  'MR': {name: 'Mauritania', tld: 'mr', flag: '🇲🇷'},
+  'MU': {name: 'Mauritius', tld: 'mu', flag: '🇲🇺'},
+  'YT': {name: 'Mayotte', tld: 'yt', flag: '🇾🇹'}, // French Territory
+  'MX': {name: 'Mexico', tld: 'com.mx', flag: '🇲🇽'},
+  'FM': {name: 'Micronesia, Federated States of', tld: 'fm', flag: '🇫🇲'},
+  'MD': {name: 'Moldova, Republic of', tld: 'md', flag: '🇲🇩'},
+  'MC': {name: 'Monaco', tld: 'mc', flag: '🇲🇨'},
+  'MN': {name: 'Mongolia', tld: 'mn', flag: '🇲🇳'},
+  'ME': {name: 'Montenegro', tld: 'me', flag: '🇲🇪'},
+  'MS': {name: 'Montserrat', tld: 'ms', flag: '🇲🇸'}, // British Territory
+  'MA': {name: 'Morocco', tld: 'ma', flag: '🇲🇦'},
+  'MZ': {name: 'Mozambique', tld: 'mz', flag: '🇲🇿'},
+  'MM': {name: 'Myanmar', tld: 'mm', flag: '🇲🇲'},
+  'NA': {name: 'Namibia', tld: 'na', flag: '🇳🇦'},
+  'NR': {name: 'Nauru', tld: 'nr', flag: '🇳🇷'},
+  'NP': {name: 'Nepal', tld: 'np', flag: '🇳🇵'},
+  'NL': {name: 'Netherlands', tld: 'nl', flag: '🇳🇱'},
+  'NC': {name: 'New Caledonia', tld: 'nc', flag: '🇳🇨'}, // French Territory
+  'NZ': {name: 'New Zealand', tld: 'co.nz', flag: '🇳🇿'},
+  'NI': {name: 'Nicaragua', tld: 'ni', flag: '🇳🇮'},
+  'NE': {name: 'Niger', tld: 'ne', flag: '🇳🇪'},
+  'NG': {name: 'Nigeria', tld: 'ng', flag: '🇳🇬'},
+  'NU': {name: 'Niue', tld: 'nu', flag: '🇳🇺'}, // NZ Territory
+  'NF': {name: 'Norfolk Island', tld: 'nf', flag: '🇳🇫'}, // Australian Territory
+  'MK': {name: 'North Macedonia', tld: 'mk', flag: '🇲🇰'},
+  'MP': {name: 'Northern Mariana Islands', tld: 'mp', flag: '🇲🇵'}, // US Territory
+  'NO': {name: 'Norway', tld: 'no', flag: '🇳🇴'},
+  'OM': {name: 'Oman', tld: 'om', flag: '🇴🇲'},
+  'PK': {name: 'Pakistan', tld: 'pk', flag: '🇵🇰'},
+  'PW': {name: 'Palau', tld: 'pw', flag: '🇵🇼'},
+  'PS': {name: 'Palestine, State of', tld: 'ps', flag: '🇵🇸'},
+  'PA': {name: 'Panama', tld: 'pa', flag: '🇵🇦'},
+  'PG': {name: 'Papua New Guinea', tld: 'pg', flag: '🇵🇬'},
+  'PY': {name: 'Paraguay', tld: 'py', flag: '🇵🇾'},
+  'PE': {name: 'Peru', tld: 'pe', flag: '🇵🇪'},
+  'PH': {name: 'Philippines', tld: 'com.ph', flag: '🇵🇭'},
+  'PN': {name: 'Pitcairn', tld: 'pn', flag: '🇵🇳'}, // British Territory
+  'PL': {name: 'Poland', tld: 'pl', flag: '🇵🇱'},
+  'PT': {name: 'Portugal', tld: 'pt', flag: '🇵🇹'},
+  'PR': {name: 'Puerto Rico', tld: 'pr', flag: '🇵🇷'}, // US Territory
+  'QA': {name: 'Qatar', tld: 'qa', flag: '🇶🇦'},
+  'RE': {name: 'Réunion', tld: 're', flag: '🇷🇪'}, // French Territory
+  'RO': {name: 'Romania', tld: 'ro', flag: '🇷🇴'},
+  'RU': {name: 'Russia', tld: 'ru', flag: '🇷🇺'},
+  'RW': {name: 'Rwanda', tld: 'rw', flag: '🇷🇼'},
+  'BL': {name: 'Saint Barthélemy', tld: 'bl', flag: '🇧🇱'}, // French Territory
+  'SH': {name: 'Saint Helena, Ascension and Tristan da Cunha', tld: 'sh', flag: '🇸🇭'}, // British Territory
+  'KN': {name: 'Saint Kitts and Nevis', tld: 'kn', flag: '🇰🇳'},
+  'LC': {name: 'Saint Lucia', tld: 'lc', flag: '🇱🇨'},
+  'MF': {name: 'Saint Martin (French part)', tld: 'mf', flag: '🇲🇫'}, // French Territory
+  'PM': {name: 'Saint Pierre and Miquelon', tld: 'pm', flag: '🇵🇲'}, // French Territory
+  'VC': {name: 'Saint Vincent and the Grenadines', tld: 'vc', flag: '🇻🇨'},
+  'WS': {name: 'Samoa', tld: 'ws', flag: '🇼🇸'},
+  'SM': {name: 'San Marino', tld: 'sm', flag: '🇸🇲'},
+  'ST': {name: 'Sao Tome and Principe', tld: 'st', flag: '🇸🇹'},
+  'SA': {name: 'Saudi Arabia', tld: 'sa', flag: '🇸🇦'},
+  'SN': {name: 'Senegal', tld: 'sn', flag: '🇸🇳'},
+  'RS': {name: 'Serbia', tld: 'rs', flag: '🇷🇸'},
+  'SC': {name: 'Seychelles', tld: 'sc', flag: '🇸🇨'},
+  'SL': {name: 'Sierra Leone', tld: 'sl', flag: '🇸🇱'},
+  'SG': {name: 'Singapore', tld: 'sg', flag: '🇸🇬'},
+  'SX': {name: 'Sint Maarten (Dutch part)', tld: 'sx', flag: '🇸🇽'}, // Dutch Constituent Country
+  'SK': {name: 'Slovakia', tld: 'sk', flag: '🇸🇰'},
+  'SI': {name: 'Slovenia', tld: 'si', flag: '🇸🇮'},
+  'SB': {name: 'Solomon Islands', tld: 'sb', flag: '🇸🇧'},
+  'SO': {name: 'Somalia', tld: 'so', flag: '🇸🇴'},
+  'ZA': {name: 'South Africa', tld: 'co.za', flag: '🇿🇦'},
+  'GS': {name: 'South Georgia and the South Sandwich Islands', tld: 'gs', flag: '🇬🇸'}, // British Territory
+  'SS': {name: 'South Sudan', tld: 'ss', flag: '🇸🇸'},
+  'ES': {name: 'Spain', tld: 'es', flag: '🇪🇸'},
+  'LK': {name: 'Sri Lanka', tld: 'lk', flag: '🇱🇰'},
+  'SD': {name: 'Sudan', tld: 'sd', flag: '🇸🇩'},
+  'SR': {name: 'Suriname', tld: 'sr', flag: '🇸🇷'},
+  'SJ': {name: 'Svalbard and Jan Mayen', tld: 'sj', flag: '🇸🇯'}, // Norwegian Territory
+  'SE': {name: 'Sweden', tld: 'se', flag: '🇸🇪'},
+  'CH': {name: 'Switzerland', tld: 'ch', flag: '🇨🇭'},
+  'SY': {name: 'Syrian Arab Republic', tld: 'sy', flag: '🇸🇾'},
+  'TW': {name: 'Taiwan', tld: 'tw', flag: '🇹🇼'},
+  'TJ': {name: 'Tajikistan', tld: 'tj', flag: '🇹🇯'},
+  'TZ': {name: 'Tanzania, United Republic of', tld: 'tz', flag: '🇹🇿'},
+  'TH': {name: 'Thailand', tld: 'th', flag: '🇹🇭'},
+  'TL': {name: 'Timor-Leste', tld: 'tl', flag: '🇹🇱'},
+  'TG': {name: 'Togo', tld: 'tg', flag: '🇹🇬'},
+  'TK': {name: 'Tokelau', tld: 'tk', flag: '🇹🇰'}, // NZ Territory
+  'TO': {name: 'Tonga', tld: 'to', flag: '🇹🇴'},
+  'TT': {name: 'Trinidad and Tobago', tld: 'tt', flag: '🇹🇹'},
+  'TN': {name: 'Tunisia', tld: 'tn', flag: '🇹🇳'},
+  'TR': {name: 'Turkey', tld: 'com.tr', flag: '🇹🇷'},
+  'TM': {name: 'Turkmenistan', tld: 'tm', flag: '🇹🇲'},
+  'TC': {name: 'Turks and Caicos Islands', tld: 'tc', flag: '🇹🇨'}, // British Territory
+  'TV': {name: 'Tuvalu', tld: 'tv', flag: '🇹🇻'},
+  'UG': {name: 'Uganda', tld: 'ug', flag: '🇺🇬'},
+  'UA': {name: 'Ukraine', tld: 'ua', flag: '🇺🇦'},
+  'AE': {name: 'United Arab Emirates', tld: 'ae', flag: '🇦🇪'},
+  'GB': {name: 'United Kingdom', tld: 'co.uk', flag: '🇬🇧'},
+  'US': {name: 'United States', tld: 'com', flag: '🇺🇸'},
+  'UM': {name: 'United States Minor Outlying Islands', tld: 'um', flag: '🇺🇲'}, // US Territory
+  'UY': {name: 'Uruguay', tld: 'uy', flag: '🇺🇾'},
+  'UZ': {name: 'Uzbekistan', tld: 'uz', flag: '🇺🇿'},
+  'VU': {name: 'Vanuatu', tld: 'vu', flag: '🇻🇺'},
+  'VE': {name: 'Venezuela', tld: 've', flag: '🇻🇪'},
+  'VN': {name: 'Viet Nam', tld: 'vn', flag: '🇻🇳'},
+  'VG': {name: 'Virgin Islands (British)', tld: 'vg', flag: '🇻🇬'}, // British Territory
+  'VI': {name: 'Virgin Islands (U.S.)', tld: 'vi', flag: '🇻🇮'}, // US Territory
+  'WF': {name: 'Wallis and Futuna', tld: 'wf', flag: '🇼🇫'}, // French Territory
+  'EH': {name: 'Western Sahara', tld: 'eh', flag: '🇪🇭'},
+  'YE': {name: 'Yemen', tld: 'ye', flag: '🇾🇪'},
+  'ZM': {name: 'Zambia', tld: 'zm', flag: '🇿🇲'},
+  'ZW': {name: 'Zimbabwe', tld: 'zw', flag: '🇿🇼'}
+};
+
+  let totalLogsGenerated = 0;
+  let currentCountryMode = 'random';
+  let allEntries = [];
+  let countryList = Object.keys(COUNTRIES);
+
+  function shuffleArray(array) {
+    return array.sort(() => Math.random() - 0.5);
+  }
+
+  function getCountryCode() {
+    switch(currentCountryMode) {
+      case 'manual':
+        const manualInput = searchInput.value.toUpperCase().slice(0,2);
+        return COUNTRIES[manualInput] ? manualInput : 'US';
+      case 'usa': return 'US';
+      case 'eu': 
+        const euCountries = ['DE','FR','IT','ES','NL','BE','SE','DK','FI','NO','PL','CZ'];
+        return euCountries[Math.floor(Math.random() * euCountries.length)];
+      case 'asia':
+        const asiaCountries = ['JP','CN','IN','KR','SG','HK','MY','TH','VN','ID','PH'];
+        return asiaCountries[Math.floor(Math.random() * asiaCountries.length)];
+      case 'mixed':
+        return countryList[Math.floor(Math.random() * countryList.length)];
+      default: // random
+        return countryList[Math.floor(Math.random() * countryList.length)];
+    }
+  }
+
+  function generateUPN(countryCode) {
+    const country = COUNTRIES[countryCode];
+const names = [
+  // Original Seeds & Variations
+  'admin', 'user', 'svc', 'api', 'john', 'maria', 'test', 'dev', 'prod',
+  'administrator', 'system', 'root', 'guest', 'api_user', 'dev_user', 'prod_user',
+  
+  // Functional / Role Based
+  'manager', 'editor', 'viewer', 'moderator', 'author', 'subscriber', 'contributor',
+  'operator', 'supervisor', 'controller', 'analyst', 'auditor', 'developer', 'tester',
+  'designer', 'support', 'sales', 'marketing', 'finance', 'hr', 'legal', 'logistics',
+  'security', 'network', 'database', 'server', 'client', 'service', 'bot', 'daemon',
+  'scheduler', 'worker', 'agent', 'proxy', 'gateway', 'load_balancer', 'monitor',
+  
+  // Service Account Patterns (svc, api, sys)
+  'svc_auth', 'svc_billing', 'svc_email', 'svc_notification', 'svc_payment', 'svc_search',
+  'svc_storage', 'svc_logging', 'svc_backup', 'svc_deploy', 'svc_integration', 'svc_webhook',
+  'svc_import', 'svc_export', 'svc_cron', 'svc_batch', 'svc_queue', 'svc_cache', 'svc_cdn',
+  'api_gateway', 'api_internal', 'api_public', 'api_partner', 'api_admin', 'api_v1', 'api_v2',
+  'api_readonly', 'api_readwrite', 'api_web', 'api_mobile', 'api_third_party', 'api_legacy',
+  'sys_admin', 'sys_monitor', 'sys_health', 'sys_update', 'sys_config', 'sys_log', 'sys_backup',
+  'sys_task', 'sys_job', 'sys_worker', 'sys_agent', 'sys_scanner', 'sys_crawler', 'sys_indexer',
+
+  // Environment Specific (dev, test, prod, stage)
+  'dev_admin', 'dev_api', 'dev_db', 'dev_redis', 'dev_mongo', 'dev_elastic', 'dev_worker',
+  'test_admin', 'test_api', 'test_user', 'test_client', 'test_integration', 'test_e2e', 'test_perf',
+  'stage_admin', 'stage_api', 'stage_db', 'stage_redis', 'stage_queue', 'stage_scheduler',
+  'prod_admin', 'prod_api', 'prod_db', 'prod_cache', 'prod_search', 'prod_worker', 'prod_backup',
+  'prod_monitor', 'prod_log', 'prod_alert', 'qa_admin', 'qa_user', 'qa_tester', 'qa_automation',
+  'local_admin', 'local_user', 'local_dev', 'sandbox', 'lab', 'experiment', 'demo',
+
+  // Expanded Personas (First Names)
+  'alice', 'bob', 'charlie', 'david', 'eva', 'frank', 'grace', 'henry', 'ivy', 'jack',
+  'karen', 'leo', 'mike', 'nancy', 'oscar', 'paul', 'quinn', 'rachel', 'steve', 'tom',
+  'ursula', 'victor', 'wendy', 'xavier', 'yvonne', 'zack', 'liam', 'olivia', 'noah', 'emma',
+  'oliver', 'ava', 'elijah', 'charlotte', 'william', 'sophia', 'james', 'amelia', 'benjamin', 'isabella',
+  'lucas', 'mia', 'henry', 'evelyn', 'alexander', 'harper', 'michael', 'camila', 'ethan', 'gianna',
+  'daniel', 'abigail', 'jacob', 'luna', 'logan', 'ella', 'jackson', 'elizabeth', 'levi', 'sofia',
+  'sebastian', 'emily', 'mateo', 'avery', 'jack', 'ella', 'owen', 'scarlett', 'theo', 'grace',
+  'aiden', 'chloe', 'samuel', 'penelope', 'ryan', 'layla', 'john', 'mia', 'nathan', 'chloe',
+  'dylan', 'nova', 'isaac', 'hazel', 'luke', 'zoey', 'caleb', 'nora', 'jaxon', 'leah',
+  'jaxon', 'hannah', 'miles', 'lily', 'isaiah', 'addison', 'gabriel', 'willow', 'julian', 'lucy',
+
+  // Surnames / Full Name Styles
+  'smith', 'johnson', 'williams', 'brown', 'jones', 'garcia', 'miller', 'davis', 'rodriguez', 'martinez',
+  'john_smith', 'jane_doe', 'bob_jones', 'alice_wonder', 'charlie_brown', 'mary_jane', 'james_bond',
+  'bruce_wayne', 'clark_kent', 'peter_parker', 'tony_stark', 'steve_rogers', 'natasha_romanoff',
+  'admin_john', 'dev_maria', 'test_user_1', 'test_user_2', 'test_user_3', 'test_user_4', 'test_user_5',
+
+  // Departmental / Team Accounts
+  'team_leadership', 'team_engineering', 'team_product', 'team_design', 'team_marketing',
+  'team_sales', 'team_success', 'team_finance', 'team_legal', 'team_hr', 'team_ops',
+  'eng_frontend', 'eng_backend', 'eng_fullstack', 'eng_devops', 'eng_qa', 'eng_sre',
+  'data_scientist', 'data_analyst', 'data_engineer', 'ml_engineer', 'ai_researcher',
+
+  // Tech / Server Specific
+  'web_server', 'app_server', 'db_master', 'db_slave', 'db_replica', 'cache_server', 'search_node',
+  'queue_manager', 'msg_broker', 'auth_service', 'identity_provider', 'ldap_connector', 'sso_user',
+  'docker_host', 'k8s_master', 'k8s_node', 'vm_host', 'container', 'microservice', 'lambda_function',
+  'cron_job_daily', 'cron_job_hourly', 'batch_processor', 'stream_processor', 'etl_worker',
+
+  // Random / Abstract IDs
+  'user_101', 'user_102', 'user_103', 'user_104', 'user_105', 'user_106', 'user_107', 'user_108', 'user_109', 'user_110',
+  'client_001', 'client_002', 'client_003', 'client_004', 'client_005',
+  'account_a', 'account_b', 'account_c', 'account_d', 'account_e',
+  'node_alpha', 'node_beta', 'node_gamma', 'node_delta', 'node_epsilon',
+  'cluster_01', 'cluster_02', 'cluster_03', 'shard_01', 'shard_02',
+  'zone_1', 'zone_2', 'region_east', 'region_west', 'region_central',
+
+  // Common Defaults / Placeholders
+  'superuser', 'superadmin', 'poweruser', 'readonly', 'writeonly', 'noc', 'helpdesk',
+  'contact', 'info', 'sales', 'billing', 'support', 'jobs', 'careers', 'news', 'media',
+  'ftp', 'mail', 'webmail', 'email', 'smtp', 'pop', 'imap', 'ns1', 'ns2', 'dns',
+
+  // Filler to reach 500 (Repeating patterns with slight variations)
+  'service_account_a', 'service_account_b', 'service_account_c', 'service_account_d', 'service_account_e',
+  'backup_user', 'restore_user', 'migration_user', 'sync_user', 'replication_user',
+  'reporting', 'analytics', 'dashboard', 'metrics', 'alerts', 'notifications',
+  'alpha_user', 'beta_user', 'gamma_user', 'delta_user', 'epsilon_user',
+  'north_user', 'south_user', 'east_user', 'west_user', 'central_user',
+  'red_team', 'blue_team', 'green_team', 'yellow_team', 'purple_team',
+  'admin_clone', 'user_clone', 'dev_clone', 'test_clone', 'prod_clone',
+  'temp_user', 'guest_user', 'public_user', 'private_user', 'internal_user',
+  'mobile_api', 'desktop_app', 'web_app', 'cli_tool', 'script_runner',
+  'logger', 'scanner', 'cleaner', 'archiver', 'compressor', 'encryptor', 'decryptor',
+  'validator', 'parser', 'formatter', 'generator', 'builder', 'compiler',
+  'uploader', 'downloader', 'streamer', 'broadcaster', 'publisher', 'subscriber',
+  'follower', 'leader', 'candidate', 'voter', 'observer', 'witness',
+  'signer', 'verifier', 'issuer', 'holder', 'claimer', 'prover',
+  'requester', 'provider', 'consumer', 'producer', 'creator', 'destroyer',
+  'runner', 'jogger', 'sprinter', 'walker', 'hiker', 'climber', 'diver',
+  'driver', 'pilot', 'captain', 'crew', 'passenger', 'steward',
+  'buyer', 'seller', 'trader', 'merchant', 'vendor', 'supplier', 'customer',
+  'investor', 'donor', 'sponsor', 'partner', 'affiliate', 'associate',
+  'friend', 'enemy', 'rival', 'ally', 'neutral', 'bystander',
+  'parent', 'child', 'sibling', 'spouse', 'relative', 'family',
+  'student', 'teacher', 'professor', 'mentor', 'intern', 'apprentice',
+  'doctor', 'nurse', 'patient', 'clinic', 'hospital', 'pharmacy',
+  'police', 'firefighter', 'judge', 'lawyer', 'court', 'prison',
+  'artist', 'musician', 'writer', 'poet', 'actor', 'director',
+  'gamer', 'player', 'score', 'level', 'rank', 'badge',
+  'winner', 'loser', 'draw', 'tie', 'match', 'game',
+  'sun', 'moon', 'star', 'planet', 'galaxy', 'universe',
+  'earth', 'mars', 'venus', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto',
+  'cat', 'dog', 'bird', 'fish', 'lion', 'tiger', 'bear', 'wolf',
+  'apple', 'banana', 'cherry', 'grape', 'orange', 'pear', 'peach',
+  'red', 'blue', 'green', 'yellow', 'black', 'white', 'purple', 'orange',
+  'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+  'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth',
+  'primary', 'secondary', 'tertiary', 'quaternary', 'quinary', 'senary',
+  'active', 'inactive', 'pending', 'suspended', 'banned', 'deleted',
+  'open', 'closed', 'locked', 'unlocked', 'hidden', 'visible',
+  'true', 'false', 'null', 'undefined', 'nan', 'infinity',
+  'start', 'stop', 'pause', 'resume', 'restart', 'shutdown',
+  'login', 'logout', 'signup', 'signin', 'register', 'subscribe',
+  'forgot_password', 'reset_password', 'change_password', 'update_profile',
+  'upload_file', 'download_file', 'delete_file', 'share_file',
+  'create_post', 'edit_post', 'delete_post', 'publish_post',
+  'add_comment', 'reply_comment', 'like_post', 'share_post',
+  'send_message', 'receive_message', 'read_message', 'archive_message',
+  'create_event', 'join_event', 'leave_event', 'rsvp_event',
+  'book_ticket', 'cancel_booking', 'refund_ticket', 'check_status',
+  'add_to_cart', 'checkout', 'apply_coupon', 'make_payment',
+  'order_history', 'track_order', 'return_item', 'exchange_item'
+];
+    const tld = country.tld || 'com';
+    return `${names[Math.floor(Math.random()*names.length)]}@${generateRandomString(4)}.${tld}`;
+  }
+
+  function generateRandomString(len) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < len; i++) result += chars.charAt(Math.random() * chars.length);
+    return result;
+  }
+
+  function generateOID() {
+    return generateRandomString(32).match(/.{1,8}/g).join('-').slice(0,36);
+  }
+
+  function base64Encode(str) {
+    try {
+      return btoa(str).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+    } catch(e) {
+      return generateRandomString(172);
+    }
+  }
+
+  function generateJWT(countryCode) {
+    const header = base64Encode(JSON.stringify({
+      "alg": "RS256",
+      "typ": "JWT",
+      "kid": generateRandomString(12)
+    }));
+    
+    const country = COUNTRIES[countryCode];
+    const payloadObj = {
+      "aud": "https://graph.microsoft.com",
+      "iss": `https://sts.windows.net/${generateRandomString(32)}/`,
+      "sub": generateOID(),
+      "upn": generateUPN(countryCode),
+      "tid": generateRandomString(32),
+      "unique_name": generateUPN(countryCode),
+      "exp": Math.floor(Date.now()/1000) + (3600 * (Math.random()*24+1)),
+      "iat": Math.floor(Date.now()/1000) - 3600,
+      "country": country.name,
+      "loc": countryCode
+    };
+    
+    const payload = base64Encode(JSON.stringify(payloadObj));
+    const signature = generateRandomString(172);
+    return `${header}.${payload}.${signature}`;
+  }
+
+  function getTimestamp() {
+    return new Date().toISOString().slice(0,19).replace('T',' ');
+  }
+
+  function createRow(entry) {
+    const tr = document.createElement('tr');
+    const oidShort = entry.oid.slice(0,8) + '...';
+    const expDate = new Date(entry.exp*1000).toLocaleString();
+    
+    tr.innerHTML = `
+      <td class="jwt-token" title="Click to copy full JWT">${entry.token.slice(0,45)}...</td>
+      <td>${entry.type}</td>
+      <td><span class="country-flag">${entry.flag}</span>${entry.country}</td>
+      <td class="highlight">${entry.upn}</td>
+      <td>${oidShort}</td>
+      <td>${expDate}</td>
+      <td style="color: #00ff41; font-weight: bold;">${entry.status}</td>
+    `;
+    
+    tr.onclick = (e) => {
+      if (e.target.closest('td')) {
+        navigator.clipboard.writeText(entry.token);
+        e.target.style.background = '#ff1493';
+        setTimeout(() => e.target.style.background = '', 500);
+      }
+    };
+    
+    return tr;
+  }
+
+  function generateEntry() {
+    const countryCode = getCountryCode();
+    const country = COUNTRIES[countryCode];
+    const token = generateJWT(countryCode);
+    
+    // Parse payload for display
+    try {
+      const payload = atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'));
+      const payloadObj = JSON.parse(payload);
+      return {
+        token,
+        type: 'Bearer',
+        country: country.name,
+        flag: country.flag,
+        upn: payloadObj.upn || 'N/A',
+        oid: payloadObj.sub || payloadObj.oid || generateOID(),
+        exp: payloadObj.exp || Math.floor(Date.now()/1000)+7200,
+        status: payloadObj.exp - Math.floor(Date.now()/1000) < 1800 ? 'EXP SOON' : 'VALID'
+      };
+    } catch(e) {
+      return {
+        token,
+        type: 'Bearer',
+        country: country.name,
+        flag: country.flag,
+        upn: generateUPN(countryCode),
+        oid: generateOID(),
+        exp: Math.floor(Date.now()/1000)+7200,
+        status: 'VALID'
+      };
+    }
+  }
+
+  function updateTotalCount() {
+    totalCount.textContent = `Total: ${totalLogsGenerated.toLocaleString()}`;
+  }
+
+  function loadMoreLogs() {
+    if (totalLogsGenerated >= MAX_LOGS) {
+      loadingIndicator.textContent = `⚠️ Max ${MAX_LOGS.toLocaleString()} tokens reached`;
+      loadingIndicator.hidden = false;
+      return;
+    }
+    loadingIndicator.hidden = false;
+    
+    requestAnimationFrame(() => {
+      const fragment = document.createDocumentFragment();
+      for (let i = 0; i < BATCH_SIZE && totalLogsGenerated < MAX_LOGS; i++, totalLogsGenerated++) {
+        const entry = generateEntry();
+        allEntries.push(entry);
+        fragment.appendChild(createRow(entry));
+      }
+      logBody.appendChild(fragment);
+      loadingIndicator.hidden = true;
+      updateTotalCount();
+      updateAriaRowCount();
+    });
+  }
+
+  function resetLogs() {
+    totalLogsGenerated = 0;
+    allEntries = [];
+    logBody.innerHTML = '';
+    loadingIndicator.hidden = true;
+    updateTotalCount();
+    updateAriaRowCount();
+  }
+
+  function filterLogs() {
+    const filter = searchInput.value.toLowerCase();
+    if (!filter) {
+      [...logBody.children].forEach(tr => tr.style.display = "");
+      return;
+    }
+    [...logBody.children].forEach(tr => {
+      const haystack = tr.textContent.toLowerCase();
+      tr.style.display = haystack.includes(filter) ? "" : "none";
+    });
+  }
+
+  function updateAriaRowCount() {
+    logBody.parentElement.setAttribute('aria-rowcount', logBody.children.length);
+  }
+
+  // Event Listeners
+  logContainer.addEventListener('scroll', () => {
+    if (loadingIndicator.hidden &&
+        logContainer.scrollTop + logContainer.clientHeight >= logContainer.scrollHeight - 100 &&
+        !searchInput.value.trim()) {
+      loadMoreLogs();
+    }
+  });
+
+  generateBtn.addEventListener('click', () => {
+    currentCountryMode = countryModeEl.value;
+    if (currentCountryMode === 'manual' && !searchInput.value.trim()) {
+      currentCountryMode = 'random';
+    }
+    resetLogs();
+    loadMoreLogs();
+    searchInput.value = '';
+  });
+
+  searchInput.addEventListener('input', () => {
+    filterLogs();
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const csvData = allEntries.map(e => 
+      `"${e.token.replace(/"/g,'""')}","${e.type}","${e.country}","${e.upn}","${e.oid}","${e.exp}","${e.status}"`
+    ).join('\n');
+    
+    const csvBlob = new Blob([`JWT,Country,Type,UPN,OID,Expires,Status\n${csvData}`], 
+      {type: 'text/csv;charset=utf-8;'});
+    
+    const csvLink = document.createElement('a');
+    csvLink.href = URL.createObjectURL(csvBlob);
+    csvLink.download = `jwt_global_${currentCountryMode}_${Date.now()}.csv`;
+    csvLink.style.display = 'none';
+    document.body.appendChild(csvLink);
+    csvLink.click();
+    document.body.removeChild(csvLink);
+  });
+
+  // Initialize
+  updateTotalCount();
+  loadMoreLogs();
+  
+  // Update country list for mixed mode
+  setInterval(() => {
+    if (currentCountryMode === 'mixed') {
+      countryList = shuffleArray(Object.keys(COUNTRIES));
+    }
+  }, 5000);
+
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ZeroDays Advanced Tool Suite</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 30px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: red;
+    }
+
+    h2 {
+      color: red;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 15px;
+    }
+
+    select, input[type="number"], input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border-radius: 6px;
+      border: none;
+      font-size: 1rem;
+    }
+
+    button {
+      background-color: #ff1900;
+      color: #00ff3c;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 15px;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .output-box {
+      margin-top: 20px;
+      background: #1c1c1c;
+      padding: 15px;
+      border-radius: 6px;
+      word-break: break-word;
+      font-family: monospace;
+      font-size: 1rem;
+      position: relative;
+    }
+
+    .section {
+      margin-top: 40px;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    .editor {
+      height: 200px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 10px;
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>ZeroDays Advanced Tool Suite</h1>
+
+    <!-- Token Generator -->
+    <div class="section">
+      <h2>🔐 Token Generator</h2>
+      <label for="tokenType">Select Token Type:</label>
+      <select id="tokenType">
+        <option value="api">API Token</option>
+        <option value="auth">Auth Token</option>
+        <option value="jwt">JWT Token</option>
+        <option value="discord">Discord-like Token</option>
+      </select>
+      <label for="tokenLength">Token Length:</label>
+      <input type="number" id="tokenLength" value="32" min="8" max="512" />
+      <button onclick="generateToken()">Generate Token</button>
+      <div class="output-box" id="tokenOutput">Your token will appear here...</div>
+    </div>
+
+    <!-- Hashes -->
+    <div class="section">
+      <h2>🔒 Hash Generator</h2>
+      <input type="text" id="hashInput" placeholder="Enter text..." />
+      <button onclick="generateHashes()">Generate Hashes</button>
+      <div class="output-box" id="hashOutput"></div>
+    </div>
+
+    <!-- UUID/ULID -->
+    <div class="section">
+      <h2>🆔 UUID & ULID</h2>
+      <button onclick="generateIDs()">Generate UUID & ULID</button>
+      <div class="output-box" id="idOutput"></div>
+    </div>
+
+    <!-- Encrypt / Decrypt -->
+    <div class="section">
+      <h2>🔐 AES Encrypt / Decrypt</h2>
+      <input type ="text" id="aesKey" placeholder="Key" />
+      <input type="text" id="aesText" placeholder="Text to encrypt/decrypt" />
+      <button onclick="encryptAES()">Encrypt</button>
+      <button onclick="decryptAES()">Decrypt</button>
+      <div class="output-box" id="aesOutput"></div>
+    </div>
+
+    <!-- BIP39 -->
+    <div class="section">
+      <h2>🧠 BIP39 Passphrase Generator</h2>
+      <button onclick="generateBIP39()">Generate BIP39 Phrase</button>
+      <div class="output-box" id="bip39Output"></div>
+    </div>
+
+    <!-- HMAC -->
+    <div class="section">
+      <h2>🔑 HMAC Generator (SHA-256)</h2>
+      <input type="text" id="hmacKey" placeholder="Secret key" />
+      <input type="text" id="hmacText" placeholder="Message" />
+      <button onclick="generateHMAC()">Generate HMAC</button>
+      <div class="output-box" id="hmacOutput"></div>
+    </div>
+
+    <!-- RSA -->
+    <div class="section">
+      <h2>🔐 RSA Key Pair (2048-bit)</h2>
+      <button onclick="generateRSA()">Generate Key Pair</button>
+      <div class="output-box" id="rsaOutput"></div>
+    </div>
+
+    <!-- Password Strength -->
+    <div class="section">
+      <h2>🔍 Password Strength Checker</h2>
+      <input type="text" id="passwordCheck" placeholder="Enter password..." />
+      <button onclick="checkPassword()">Analyze</button>
+      <div class="output-box" id="passStrength"></div>
+    </div>
+
+    <!-- PDF Signature (simulated) -->
+    <div class="section">
+      <h2>📄 PDF Signature Checker (Simulated)</h2>
+      <input type="text" id="pdfFile" placeholder="Enter PDF filename or mock name..." />
+      <button onclick="checkPDF()">Check Signature</button>
+      <div class="output-box" id="pdfOutput"></div>
+    </div>
+
+    <!-- Date-Time Converter -->
+    <div class="section">
+      <h2>🕒 Date-Time Converter</h2>
+      <input type="datetime-local" id="dateTimeInput" />
+      <button onclick="convertDateTime()">Convert to Timestamp</button>
+      <div class="output-box" id="dateTimeOutput"></div>
+    </div>
+
+    <!-- Integer Base Converter -->
+    <div class="section">
+      <h2>🔢 Integer Base Converter</h2>
+      <input type="number" id="baseInput" placeholder="Enter number..." />
+      <select id="baseSelect">
+        <option value="2">Binary</option>
+        <option value="8">Octal</option>
+        <option value="10">Decimal</option>
+        <option value="16">Hexadecimal</option>
+      </select>
+      <button onclick="convertBase()">Convert</button>
+      <div class="output-box" id="baseOutput"></div>
+    </div>
+
+    <!-- Base64 Encoder/Decoder -->
+    <div class="section">
+      <h2>📦 Base64 Encoder/Decoder</h2>
+      <textarea id="base64Input" placeholder="Enter text to encode/decode..."></textarea>
+      <button onclick="encodeBase64()">Encode</button>
+      <button onclick="decodeBase64()">Decode</button>
+      <div class="output-box" id="base64Output"></div>
+    </div>
+
+    <!-- Color Converter -->
+    <div class="section">
+      <h2>🎨 Color Converter</h2>
+      <input type="text" id="colorInput" placeholder="Enter color (e.g., #RRGGBB or color name)" />
+      <button onclick="convertColor()">Convert</button>
+      <div class="output-box" id="colorOutput"></div>
+    </div>
+
+    <!-- Case Converter -->
+    <div class="section">
+      <h2>🔤 Case Converter</h2>
+      <input type="text" id="caseInput" placeholder="Enter text..." />
+      <button onclick="convertCase()">Convert Case</button>
+      <div class="output-box" id="caseOutput"></div>
+    </div>
+
+    <!-- Text to NATO Alphabet -->
+    <div class="section">
+      <h2>🔤 Text to NATO Alphabet</h2>
+      <input type="text" id="natoInput" placeholder="Enter text..." />
+      <button onclick="textToNATO()">Convert to NATO</button>
+      <div class="output-box" id="natoOutput"></div>
+</div>
+
+    <!-- Text to ASCII Binary -->
+    <div class="section">
+      <h2>🔤 Text to ASCII Binary</h2>
+      <input type="text" id="asciiInput" placeholder="Enter text..." />
+      <button onclick="textToASCII()">Convert to ASCII Binary</button>
+      <div class="output-box" id="asciiOutput"></div>
+    </div>
+
+    <!-- Text to Unicode -->
+    <div class="section">
+      <h2>🔤 Text to Unicode</h2>
+      <input type="text" id="unicodeInput" placeholder="Enter text..." />
+      <button onclick="textToUnicode()">Convert to Unicode</button>
+      <div class="output-box" id="unicodeOutput"></div>
+    </div>
+
+    <!-- YAML to JSON Converter -->
+    <div class="section">
+      <h2>📄 YAML to JSON Converter</h2>
+      <textarea id="yamlInput" placeholder="Enter YAML..."></textarea>
+      <button onclick="convertYAMLtoJSON()">Convert to JSON</button>
+      <div class="output-box" id="yamlToJsonOutput"></div>
+    </div>
+
+    <!-- TOML to YAML Converter -->
+    <div class="section">
+      <h2>📄 TOML to YAML Converter</h2>
+      <textarea id="tomlInput" placeholder="Enter TOML..."></textarea>
+      <button onclick="convertTOMLtoYAML()">Convert to YAML</button>
+      <div class="output-box" id="tomlToYamlOutput"></div>
+    </div>
+
+    <!-- XML to JSON Converter -->
+    <div class="section">
+      <h2>📄 XML to JSON Converter</h2>
+      <textarea id="xmlInput" placeholder="Enter XML..."></textarea>
+      <button onclick="convertXMLtoJSON()">Convert to JSON</button>
+      <div class="output-box" id="xmlToJsonOutput"></div>
+    </div>
+
+    <!-- JSON to XML Converter -->
+    <div class="section">
+      <h2>📄 JSON to XML Converter</h2>
+      <textarea id="jsonInput" placeholder="Enter JSON..."></textarea>
+      <button onclick="convertJSONtoXML()">Convert to XML</button>
+      <div class="output-box" id="jsonToXmlOutput"></div>
+    </div>
+
+    <!-- Markdown to HTML Converter -->
+    <div class="section">
+      <h2>📄 Markdown to HTML Converter</h2>
+      <textarea id="markdownInput" placeholder="Enter Markdown..."></textarea>
+      <button onclick="convertMarkdownToHTML()">Convert to HTML</button>
+      <div class="output-box" id="markdownToHtmlOutput"></div>
+    </div>
+
+    <!-- URL Encoder/Decoder -->
+    <div class="section">
+      <h2>🌐 URL Encoder/Decoder</h2>
+      <input type="text" id="urlInput" placeholder="Enter URL..." />
+      <button onclick="encodeURL()">Encode URL</button>
+      <button onclick="decodeURL()">Decode URL</button>
+      <div class="output-box" id="urlOutput"></div>
+    </div>
+
+    <!-- HTML Entity Escaper -->
+    <div class="section">
+      <h2>🔤 HTML Entity Escaper</h2>
+      <textarea id="htmlInput" placeholder="Enter HTML..."></textarea>
+      <button onclick="escapeHTML()">Escape HTML</button>
+      <div class="output-box" id="htmlOutput"></div>
+    </div>
+
+    <!-- URL Parser -->
+    <div class="section">
+      <h2>🔍 URL Parser</h2>
+      <input type="text" id="urlParseInput" placeholder="Enter URL..." />
+      <button onclick="parseURL()">Parse URL</button>
+      <div class="output-box" id="urlParseOutput"></div>
+    </div>
+
+    <!-- Device Information -->
+    <div class="section">
+      <h2>📱 Device Information</h2>
+      <button onclick="getDeviceInfo()">Get Device Info</button>
+      <div class="output-box" id="deviceInfoOutput"></div>
+    </div>
+
+    <!-- Basic Auth Generator -->
+    <div class="section">
+      <h2>🔑 Basic Auth Generator</h2>
+      <input type="text" id="authUser" placeholder="Username" />
+      <input type="text" id="authPass" placeholder="Password" />
+      <button onclick="generateBasicAuth()">Generate Basic Auth</button>
+      <div class="output-box" id="authOutput"></div>
+    </div>
+
+    <!-- Open Graph Meta Tag Generator -->
+    <div class="section">
+      <h2>🌐 Open Graph Meta Tag Generator</h2>
+      <input type="text" id ="ogTitle" placeholder="Title" />
+      <input type="text" id="ogDescription" placeholder="Description" />
+      <input type="text" id="ogImage" placeholder="Image URL" />
+      <input type="text" id="ogUrl" placeholder="Page URL" />
+      <button onclick="generateOpenGraph()">Generate Open Graph Tags</button>
+      <div class="output-box" id="ogOutput"></div>
+    </div>
+
+    <!-- OTP Code Generator -->
+    <div class="section">
+      <h2>🔑 OTP Code Generator</h2>
+      <input type="number" id="otpLength" value="6" min="1" max="10" />
+      <button onclick="generateOTP()">Generate OTP</button>
+      <div class="output-box" id="otpOutput"></div>
+    </div>
+
+    <!-- MIME Type Detector -->
+    <div class="section">
+      <h2>📄 MIME Type Detector</h2>
+      <input type="text" id="mimeInput" placeholder="Enter file extension..." />
+      <button onclick="detectMIME()">Detect MIME Type</button>
+      <div class="output-box" id="mimeOutput"></div>
+    </div>
+
+    <!-- JWT Parser -->
+    <div class="section">
+      <h2>🔐 JWT Parser</h2>
+      <input type="text" id="jwtInput" placeholder="Enter JWT..." />
+      <button onclick="parseJWT()">Parse JWT</button>
+      <div class="output-box" id="jwtOutput"></div>
+    </div>
+
+    <!-- Keycode Information -->
+    <div class="section">
+      <h2>🔑 Keycode Information</h2>
+      <input type="text" id="keycodeInput" placeholder="Enter keycode..." />
+      <button onclick="getKeycodeInfo()">Get Keycode Info</button>
+      <div class="output-box" id="keycodeOutput"></div>
+    </div>
+
+    <!-- Slugify -->
+    <div class="section">
+      <h2>✏️ Slugify</h2>
+      <input type="text" id="slugInput" placeholder="Enter text..." />
+      <button onclick="slugify()">Generate Slug</button>
+      <div class="output-box" id="slugOutput"></div>
+    </div>
+
+    <!-- WYSIWYG HTML Editor -->
+    <div class="section">
+      <h2>📝 WYSIWYG HTML Editor</h2>
+      <div class="editor" contenteditable="true" id="wysiwygEditor"></div>
+      <button onclick="getEditorContent()">Get HTML Content</button>
+      <div class="output-box" id="editorOutput"></div>
+    </div>
+
+    <!-- User Agent Parser -->
+    <div class="section">
+      <h2>🖥️ User Agent Parser</h2>
+      <button onclick="parseUser Agent()">Get User Agent Info</button>
+      <div class="output-box" id="userAgentOutput"></div>
+    </div>
+
+    <!-- HTTP Status Code Lookup -->
+    <div class="section">
+      <h2>🔍 HTTP Status Code Lookup</h2>
+      <input type="number" id="statusCodeInput" placeholder="Enter status code..." />
+      <button onclick="lookupStatusCode()">Lookup Status Code</button>
+      <div class="output-box" id="statusCodeOutput"></div>
+    </div>
+
+    <!-- JSON Diff Tool -->
+    <div class="section">
+      <h2>📄 JSON Diff Tool</h2>
+      <textarea id="jsonInput1" placeholder="Enter first JSON..."></textarea>
+      <textarea id="jsonInput2" placeholder="Enter second JSON..."></textarea>
+      <button onclick="jsonDiff()">Compare JSON</button>
+      <div class="output-box" id="jsonDiffOutput"></div>
+    </div>
+
+    <!-- Outlook SafeLink Decoder -->
+    <div class="section">
+      <h2>🔗 Outlook SafeLink Decoder</h2>
+      <input type="text" id="safelinkInput" placeholder="Enter SafeLink URL..." />
+      <button onclick="decodeSafeLink()">Decode SafeLink</button>
+      <div class="output-box" id="safelinkOutput"></div>
+    </div>
+  </div>
+
+  <script>
+    // URL Encoder
+    function encodeURL() {
+      const url = document.getElementById('urlInput').value;
+      document.getElementById('urlOutput').innerText = encodeURIComponent(url);
+    }
+
+    // URL Decoder
+    function decodeURL() {
+      const url = document.getElementById('urlInput').value;
+      document.getElementById('urlOutput').innerText = decodeURIComponent(url);
+    }
+
+    // HTML Entity Escaper
+
+    function escapeHTML() {
+      const html = document.getElementById('htmlInput').value;
+      const escaped = html.replace(/&/g, "&amp;")
+                          .replace(/</g, "&lt;")
+                          .replace(/>/g,"&gt;")
+                          .replace(/"/g, "&quot;")
+                          .replace(/'/g, "&#039;");
+      document.getElementById('htmlOutput').innerText = escaped;
+    }
+
+    // URL Parser
+    function parseURL() {
+      const url = document.getElementById('urlParseInput').value;
+      try {
+        const parser = new URL(url);
+        const output = `Protocol: ${parser.protocol}\nHost: ${parser.host}\nPathname: ${parser.pathname}\nSearch: ${parser.search}\nHash: ${parser.hash}`;
+        document.getElementById('urlParseOutput').innerText = output;
+      } catch (e) {
+        document.getElementById('urlParseOutput').innerText = 'Invalid URL';
+      }
+    }
+
+    // Device Information
+    function getDeviceInfo() {
+      const info = `User Agent: ${navigator.userAgent}\nPlatform: ${navigator.platform}\nLanguage: ${navigator.language}`;
+      document.getElementById('deviceInfoOutput').innerText = info;
+    }
+
+    // Basic Auth Generator
+    function generateBasicAuth() {
+      const username = document.getElementById('authUser').value;
+      const password = document.getElementById('authPass').value;
+      const authString = btoa(`${username}:${password}`);
+      document.getElementById('authOutput').innerText = `Basic ${authString}`;
+    }
+
+    // Open Graph Meta Tag Generator
+    function generateOpenGraph() {
+      const title = document.getElementById('ogTitle').value;
+      const description = document.getElementById('ogDescription').value;
+      const image = document.getElementById('ogImage').value;
+      const url = document.getElementById('ogUrl').value;
+      const output = `<meta property="og:title" content="${title}" />\n<meta property="og:description" content="${description}" />\n<meta property="og:image" content="${image}" />\n<meta property="og:url" content="${url}" />`;
+      document.getElementById('ogOutput').innerText = output;
+    }
+
+    // OTP Code Generator
+    function generateOTP() {
+      const length = parseInt(document.getElementById('otpLength').value);
+      let otp = '';
+      for (let i = 0; i < length; i++) {
+        otp += Math.floor(Math.random() * 10);
+      }
+      document.getElementById('otpOutput').innerText = otp;
+    }
+
+    // MIME Type Detector
+    function detectMIME() {
+      const extension = document.getElementById('mimeInput').value.toLowerCase();
+      const mimeTypes = {
+        'html': 'text/html',
+        'css': 'text/css',
+        'js': 'application/javascript',
+        'json': 'application/json',
+        'png': 'image/png',
+        'jpg': 'image/jpeg',
+        'gif': 'image/gif',
+        'pdf': 'application/pdf',
+        'txt': 'text/plain'
+      };
+      const mime = mimeTypes[extension] || 'application/octet-stream';
+      document.getElementById('mimeOutput').innerText = mime;
+    }
+
+    // JWT Parser
+    function parseJWT() {
+      const jwt = document.getElementById('jwtInput').value;
+      const parts = jwt.split('.');
+      if (parts.length !== 3) {
+        document.getElementById('jwtOutput').innerText = 'Invalid JWT';
+        return;
+      }
+      const payload = JSON.parse(atob(parts[1]));
+      document.getElementById('jwtOutput').innerText = JSON.stringify(payload, null, 2);
+    }
+
+    // Keycode Information
+    function getKeycodeInfo() {
+      const keycode = document.getElementById('keycodeInput').value;
+      const keycodeInfo = {
+        '65': 'A',
+        '66': 'B',
+        '67': 'C',
+        // Add more keycodes as needed
+      };
+      document.getElementById('keycodeOutput').innerText = keycodeInfo[keycode] || 'Unknown Keycode';
+    }
+
+    // Slugify
+    function slugify() {
+      const text = document.getElementById('slugInput').value;
+      const slug = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      document.getElementById('slugOutput').innerText = slug;
+    }
+
+    // Get WYSIWYG Editor Content
+    function getEditorContent() {
+      const content 
+      = document.getElementById('wysiwygEditor').innerHTML;
+      document.getElementById('editorOutput').innerText = content;
+    }
+
+    // User Agent Parser
+    function parseUserAgent() {
+      const userAgent = navigator.userAgent;
+      const output = `User Agent: ${userAgent}`;
+      document.getElementById('userAgentOutput').innerText = output;
+    }
+
+    // HTTP Status Code Lookup
+    function lookupStatusCode() {
+      const statusCode = document.getElementById('statusCodeInput').value;
+      const statusCodes = {
+        '200': 'OK',
+        '404': 'Not Found',
+        '500': 'Internal Server Error',
+        // Add more status codes as needed
+      };
+      document.getElementById('statusCodeOutput').innerText = statusCodes[statusCode] || 'Unknown Status Code';
+    }
+
+    // JSON Diff Tool
+    function jsonDiff() {
+      const json1 = document.getElementById('jsonInput1').value;
+      const json2 = document.getElementById('jsonInput2').value;
+      try {
+        const obj1 = JSON.parse(json1);
+        const obj2 = JSON.parse(json2);
+        const diff = JSON.stringify(obj1) === JSON.stringify(obj2) ? 'No differences found' : 'Differences detected';
+        document.getElementById('jsonDiffOutput').innerText = diff;
+      } catch (e) {
+        document.getElementById('jsonDiffOutput').innerText = 'Invalid JSON';
+      }
+    }
+
+    // Outlook SafeLink Decoder
+    function decodeSafeLink() {
+      const safelink = document.getElementById('safelinkInput').value;
+      const decoded = decodeURIComponent(safelink.split('url=')[1]);
+      document.getElementById('safelinkOutput').innerText = decoded || 'Invalid SafeLink';
+    }
+  </script>
+</body>
+</html>

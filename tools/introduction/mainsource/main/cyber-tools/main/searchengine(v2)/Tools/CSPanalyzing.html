@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced CSP Analyzer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      line-height: 1.6;
+      transition: background-color 0.3s, color 0.3s;
+      background-color: #1e1e1e;
+      color: #dcdcdc;
+    }
+    header {
+      background-color: #282c34;
+      padding: 20px;
+      border-bottom: 1px solid #444;
+    }
+    h1 {
+      color: #61dafb;
+    }
+    button {
+      cursor: pointer;
+      background-color: #444;
+      color: #dcdcdc;
+      border: 1px solid #666;
+      padding: 10px 15px;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #555;
+    }
+    textarea {
+      border: 1px solid #444;
+      border-radius: 0.25rem;
+      padding: 10px;
+      width: 100%;
+      resize: none;
+      background-color: #21252b;
+      color: #abb2bf;
+    }
+    pre {
+      background-color: #21252b;
+      border-radius: 0.25rem;
+      padding: 10px;
+      overflow: auto;
+      color: #abb2bf;
+    }
+    .chart-container {
+      position: relative;
+      margin: auto;
+      height: 40vh;
+      width: 80vw;
+    }
+    .dark-mode {
+      background-color: #1a202c;
+      color: #cbd5e0;
+    }
+    .dark-mode header {
+      background-color: #2d3748;
+      border-bottom: 1px solid #4a5568;
+    }
+    .dark-mode textarea {
+      background-color: #2d3748;
+      border-color: #4a5568;
+      color: #cbd5e0;
+    }
+    .dark-mode pre {
+      background-color: #2d3748;
+    }
+  </style>
+</head>
+<body class="bg-black text-white transition-all duration-300 ease-in-out">
+  <div class="max-w-5xl mx-auto px-4 py-6">
+    <header class="flex items-center justify-between mb-6">
+      <h1 class="text-4xl font-bold">Advanced CSP Analyzer</h1>
+      <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+    </header>
+
+    <section class="grid gap-4 md:grid-cols-2 mb-6">
+      <textarea id="cspInput" rows="5" placeholder="Paste or auto-fetch CSP header here..."></textarea>
+      <div class="space-y-2">
+        <button onclick="fetchHeaders()">Fetch CSP</button>
+        <button onclick="analyzeCSP()">Analyze CSP</button>
+        <button onclick="simulateViolation()">Simulate Violation</button>
+        <button onclick="getSecurityScore()">Get Security Score</button>
+        <div class="flex space-x-2">
+          <button onclick="exportCSP('yaml')">Export YAML</button>
+          <button onclick="exportCSP('xml')">Export XML</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid md:grid-cols-2 gap-4 mb-6">
+      <div>
+        <h2 class="text-xl font-semibold mb-1">CSP Summary</h2>
+        <pre id="summaryContent"></pre>
+      </div>
+      <div>
+        <h2 class="text-xl font-semibold mb-1">Raw CSP JSON</h2>
+        <pre id="rawContent"></pre>
+      </div>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-1">Suggestions</h2>
+      <pre id="suggestionsContent"></pre>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-2">CSP Directives Chart</h2>
+      <div class="chart-container">
+        <canvas id="chart"></canvas>
+      </div>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-2">Simulated CSP Violation Report</h2>
+      <pre id="violationLog">[No CSP Violations Yet]</pre>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold">Security Scoring</h2>
+      <div id="securityScore">Score: N/A</div>
+    </section>
+
+    <section>
+      <h2 class="text-xl font-semibold">CSP History</h2>
+      <ul id="historyList" class="list-disc pl-5 space-y-1 mt-2 text-sm text-blue-600"></ul>
+    </section>
+  </div>
+
+  <script>
+    let currentCSP = {};
+    let darkMode = false;
+
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark");
+      darkMode = !darkMode;
+      renderChart();
+    }
+
+    function fetchHeaders() {
+      const simulatedHeader = "default-src 'self'; script-src 'self' https://apis.google.com; object-src 'none'; style-src 'self' 'unsafe-inline'";
+      document.getElementById("cspInput").value = simulatedHeader;
+      analyzeCSP();
+    }
+
+    function exportCSP(format) {
+      let content = '';
+      if (format === 'yaml') {
+        content = Object.entries(currentCSP).map(([k, v]) => `${k}:\n  - ${v.join('\n  - ')}`).join('\n');
+      } else if (format === 'xml') {
+        content = '<csp>' + Object.entries(currentCSP).map(([k, v]) =>
+          `<${k}>${v.map(x => `<value>${x}</value>`).join('')}</${k}>`).join('') + '</csp>';
+      }
+      const blob = new Blob([content], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `csp.${format}`;
+      link.click();
+    }
+
+    function analyzeCSP() {
+      try {
+        const csp = document.getElementById('cspInput').value;
+        const directives = csp.split(';').map(d => d.trim().split(/\s+/));
+        const parsed = {};
+        directives.forEach(([dir, ...vals]) => {
+          if (dir) parsed[dir] = vals;
+        });
+        currentCSP = parsed;
+
+        document.getElementById('summaryContent').textContent =
+          Object.entries(parsed).map(([k, v]) => `${k}: ${v.join(' ')}`).join('\n');
+
+        document.getElementById('rawContent').textContent = JSON.stringify(parsed, null, 2);
+
+        document.getElementById('suggestionsContent').textContent =
+          Object.entries(parsed).map(([k, v]) => advancedSuggestions(k, v)).join('\n');
+
+        saveToHistory(csp);
+        renderChart();
+      } catch (err) {
+        alert("⚠️ Error analyzing CSP");
+        console.error(err);
+      }
+    }
+
+    function advancedSuggestions(dir, values) {
+      if (dir === "script-src" && !values.includes("'strict-dynamic'"))
+        return `Add 'strict-dynamic' to ${dir} for better security.`;
+      if (dir === "default-src" && !values.includes("'none'"))
+        return `Restrict ${dir} to 'none' and specify only needed directives.`;
+      if (dir === "object-src" && !values.includes("'none'"))
+        return `${dir} should be set to 'none' to avoid plugin risks.`;
+      if (values.includes("*") || values.some(v => v.includes("http:")))
+        return `Avoid using wildcards or http in ${dir}`;
+      return `✔️ ${dir} looks good.`;
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById('chart').getContext('2d');
+      if (window.chartInstance) window.chartInstance.destroy();
+      window.chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(currentCSP),
+          datasets: [{
+            label: 'Number of Sources',
+            data: Object.values(currentCSP).map(v => v.length),
+            backgroundColor: darkMode ? '#03dac6' : '#4f46e5'
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    function simulateViolation() {
+      const simulatedReport = {
+        "csp-report": {
+          "document-uri": "https://example.com",
+          "referrer": "",
+          "violated-directive": "script-src",
+          "effective-directive": "script-src",
+          "blocked-uri": "http://evil.com/script.js",
+          "original-policy": document.getElementById("cspInput").value
+        }
+      };
+      document.getElementById("violationLog").textContent = JSON.stringify(simulatedReport, null, 2);
+    }
+
+    function getSecurityScore() {
+      const score = Math.max(40, 100 - Object.values(currentCSP).flat().length * 5);
+      document.getElementById("securityScore").textContent = `Score: ${score}/100 (Simulated)`;
+    }
+
+    function saveToHistory(csp) {
+      let history = JSON.parse(localStorage.getItem("cspHistory") || "[]");
+      if (!history.includes(csp)) {
+        history.unshift(csp);
+        history = history.slice(0, 10);
+        localStorage.setItem("cspHistory", JSON.stringify(history));
+        renderHistory();
+      }
+    }
+
+    function renderHistory() {
+      const history = JSON.parse(localStorage.getItem("cspHistory") || "[]");
+      const ul = document.getElementById("historyList");
+      ul.innerHTML = '';
+      history.forEach(entry => {
+        const li = document.createElement('li');
+        li.textContent = entry.slice(0, 60) + (entry.length > 60 ? "..." : "");
+        li.classList.add("cursor-pointer", "hover:underline");
+        li.onclick = () => {
+          document.getElementById("cspInput").value = entry;
+          analyzeCSP();
+        };
+        ul.appendChild(li);
+      });
+    }
+
+    // Initialize
+    window.onload = renderHistory;
+  </script>
+</body>
+</html>

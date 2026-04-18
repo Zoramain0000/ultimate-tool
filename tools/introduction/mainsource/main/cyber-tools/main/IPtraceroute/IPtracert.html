@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Traceroute Country Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            background: rgb(10, 8, 8);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: green;
+        }
+
+        input {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid green;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: red;
+            color: green;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #results {
+            margin-top: 20px;
+            text-align: left;
+            border: 1px solid green;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: rgb(0, 255, 42);
+            display: none;
+            transition: all 0.3s ease;
+        }
+
+        .info {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .result {
+            margin: 5px 0;
+            padding: 5px;
+            border-bottom: 1px solid #33ff00;
+        }
+
+        .result:last-child {
+            border-bottom: none;
+        }
+
+        .error-message {
+            color: red;
+            font-weight: bold;
+        }
+
+        .not-available {
+            color: green;
+            font-weight: bold;
+        }
+
+        .suggestion {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .disclaimer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Traceroute Country Tool</h1>
+        <input type="text" id="targetIp" placeholder="Enter IP address or domain" />
+        <button id="traceButton">Trace IP</button>
+        <div id="results"></div>
+        <div class="info" id="info"></div>
+        <p class="disclaimer" style="color:green;">Please use this tool responsibly and in accordance with local laws. Do not use it for illegal activities.</p>
+    </div>
+
+    <script>
+        document.getElementById('traceButton').addEventListener('click', async function () {
+            const targetIp = document.getElementById('targetIp').value.trim();
+            if (!targetIp) {
+                alert("Please enter an IP address or domain to trace.");
+                return;
+            }
+
+            if (!isValidIP(targetIp)) {
+                alert("Invalid IP address or domain.");
+                return;
+            }
+
+            const result = await fetchTracerouteInfo(targetIp);
+            displayResult(result);
+        });
+
+        function isValidIP(ip) {
+            const ipRegex = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+            const domainRegex = /^(?!:\/\/)([a-zA-Z0-9-_]+\.)+[a-zA-Z]{2,11}?$/;
+            return ipRegex.test(ip) || domainRegex.test(ip);
+        }
+
+        async function fetchTracerouteInfo(ip) {
+            try {
+                const cloudflareResponse = await fetch(`https://api.cloudflare.com/client/v4/diagnostics/traceroute?target=${ip}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (!cloudflareResponse.ok) throw new Error('Cloudflare API failed');
+
+                const cloudflareData = await cloudflareResponse.json();
+                return cloudflareData;
+            } catch (error) {
+                console.warn("Falling back to IP-API:", error.message);
+                try {
+                    const ipApiResponse = await fetch (`http://ip-api.com/json/${ip}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    if (!ipApiResponse.ok) throw new Error('IP-API failed');
+                    return await ipApiResponse.json();
+                } catch (ipApiError) {
+                    console.warn("Falling back to ViewDNS API:", ipApiError.message);
+                    try {
+                        const viewDnsResponse = await fetch(`https://api.viewdns.info/traceroute/?domain=${ip}&apikey=fb945f2db3ee6f504413a4e2a608d5c63e6c930b&output=json`, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        if (!viewDnsResponse.ok) throw new Error('ViewDNS API failed');
+                        return await viewDnsResponse.json();
+                    } catch (viewDnsError) {
+                        console.error('Error fetching data from ViewDNS:', viewDnsError);
+                        return { error: 'Failed to retrieve data from all APIs. Please try again later.' };
+                    }
+                }
+            }
+        }
+
+        function displayResult(data) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = ''; // Clear previous results
+            if (data.error) {
+                resultsDiv.innerHTML += `<p class="error-message">${data.error}</p>`;
+            } else {
+                resultsDiv.innerHTML += `<div class="result"><strong>IP:</strong> ${data.query || data.target}</div>`;
+                resultsDiv.innerHTML += `<div class="result"><strong>Country:</strong> ${data.country || 'N/A'} (${data.countryCode || 'N/A'})</div>`;
+                resultsDiv.innerHTML += `<div class="result"><strong>Region:</strong> ${data.region || 'N/A'} (${data.regionName || 'N/A'})</div>`;
+                resultsDiv.innerHTML += `<div class="result"><strong>City:</strong> ${data.city || 'N/A'}</div>`;
+                resultsDiv.innerHTML += `<div class="result"><strong>ISP:</strong> ${data.isp || 'N/A'}</div>`;
+                resultsDiv.innerHTML += `<div class="result"><strong>Organization:</strong> ${data.org || 'N/A'}</div>`;
+                resultsDiv.innerHTML += `<div class="result"><strong>AS:</strong> ${data.as || 'N/A'}</div>`;
+                resultsDiv.innerHTML += `<div class="result"><strong>Date Traced:</strong> ${new Date().toLocaleString()}</div>`;
+            }
+
+            resultsDiv.style.display = 'block'; // Show results
+        }
+    </script>
+</body>
+</html>

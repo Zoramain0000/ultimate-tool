@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced IP Information Tool</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      transition: all 0.3s ease;
+    }
+    :root {
+      --bg: #1e1e2f;
+      --text: #f5f5f5;
+      --card-bg: #2d2d44;
+    }
+    .light {
+      --bg: #f4f4f4;
+      --text: #1e1e2f;
+      --card-bg: #ffffff;
+    }
+    .container {
+      padding: 2rem;
+      max-width: 900px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+      color: #00d1b2;
+    }
+    #ip-info div {
+      margin: 0.5rem 0;
+      background: var(--card-bg);
+      padding: 0.8rem;
+      border-radius: 8px;
+    }
+    #map {
+      margin-top: 2rem;
+      height: 400px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .controls {
+      display: flex;
+      gap: 1rem;
+      margin: 2rem 0 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .controls button {
+      padding: 0.6rem 1rem;
+      background: #00d1b2;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .controls button:hover {
+      background: #00b89c;
+    }
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="capture">
+    <h1>Advanced IP Information</h1>
+    <div class="controls">
+      <button onclick="toggleTheme()">Toggle Dark/Light Mode</button>
+      <button onclick="downloadReport()">Download JSON Report</button>
+      <button onclick="generateQR()">Generate QR Code</button>
+      <button onclick="copyShareLink()">Copy Share Link</button>
+      <button onclick="downloadFullPDF()">Download Full PDF</button>
+    </div>
+
+    <div id="ip-info">
+      <div><strong>IP Address:</strong> <span id="ip"></span></div>
+      <div><strong>City:</strong> <span id="city"></span></div>
+      <div><strong>Region:</strong> <span id="region"></span></div>
+      <div><strong>Country:</strong> <span id="country"></span></div>
+      <div><strong>ISP:</strong> <span id="isp"></span></div>
+      <div><strong>Organization:</strong> <span id="org"></span></div>
+      <div><strong>Hostname:</strong> <span id="hostname"></span></div>
+      <div><strong>Latitude:</strong> <span id="lat"></span></div>
+      <div><strong>Longitude:</strong> <span id="lon"></span></div>
+      <div><strong>Timezone:</strong> <span id="timezone"></span></div>
+      <div><strong>Browser:</strong> <span id="browser"></span></div>
+      <div><strong>Operating System:</strong> <span id="os"></span></div>
+      <div><strong>Screen:</strong> <span id="screen"></span></div>
+    </div>
+
+    <div id="map"></div>
+    <div id="qrcode"></div>
+  </div>
+
+  <script>
+    let ipData = {}, mapInstance;
+
+    async function getIPInfo() {
+      try {
+        const res = await fetch('https://ipwho.is/');
+        const data = await res.json();
+        ipData = data;
+
+        document.getElementById('ip').textContent = data.ip || 'N/A';
+        document.getElementById('city').textContent = data.city || 'N/A';
+        document.getElementById('region').textContent = data.region || 'N/A';
+        document.getElementById('country').textContent = data.country || 'N/A';
+        document.getElementById('isp').textContent = data.connection?.isp || 'N/A';
+        document.getElementById('org').textContent = data.connection?.org || 'N/A';
+        document.getElementById('hostname').textContent = data.connection?.domain || 'N/A';
+        document.getElementById('lat').textContent = data.latitude || 'N/A';
+        document.getElementById('lon').textContent = data.longitude || 'N/A';
+        document.getElementById('timezone').textContent = data.timezone?.id || 'N/A';
+        document.getElementById('browser').textContent = getBrowser(navigator.userAgent);
+        document.getElementById('os').textContent = getOS(navigator.userAgent);
+        document.getElementById('screen').textContent = `${screen.width}x${screen.height}`;
+
+        mapInstance = L.map('map').setView([data.latitude, data.longitude], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(mapInstance);
+        L.marker([data.latitude, data.longitude]).addTo(mapInstance)
+          .bindPopup(`You are here: ${data.city}, ${data.country}`)
+          .openPopup();
+      } catch (err) {
+        console.error('Error fetching IP info:', err);
+      }
+    }
+
+    function getBrowser(ua) {
+      if (ua.includes("Firefox")) return "Firefox";
+      if (ua.includes("Edg")) return "Edge";
+      if (ua.includes("Chrome") && !ua.includes("Edg")) return "Chrome";
+      if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari";
+      return "Unknown";
+    }
+
+    function getOS(ua) {
+      if (ua.includes("Windows NT 10.0")) return "Windows 10";
+      if (ua.includes("Mac OS X")) return "macOS";
+      if (ua.includes("Android")) return "Android";
+      if (ua.includes("Linux")) return "Linux";
+      if (ua.includes("iPhone")) return "iOS";
+      return "Unknown";
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle("light");
+    }
+
+    function downloadReport() {
+      const blob = new Blob([JSON.stringify(ipData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "ip-report.json";
+      a.click();
+    }
+
+    function generateQR() {
+      const qrContainer = document.getElementById('qrcode');
+      qrContainer.innerHTML = "";
+      QRCode.toCanvas(document.createElement('canvas'), window.location.href, (error, canvas) => {
+        if (!error) qrContainer.appendChild(canvas);
+      });
+    }
+
+    function copyShareLink() {
+      navigator.clipboard.writeText(window.location.href)
+        .then(() => alert("Link copied to clipboard!"))
+        .catch(() => alert("Failed to copy link."));
+    }
+
+    function downloadFullPDF() {
+      const { jsPDF } = window.jspdf;
+      const capture = document.getElementById("capture");
+
+      html2canvas(capture, { scale: 2 }).then(canvas1 => {
+        const imgData = canvas1.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = 210;
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgHeight = (imgProps.height * pageWidth) / imgProps.width;
+
+        pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, imgHeight);
+
+        // Capture map as second page
+        html2canvas(document.getElementById("map"), { scale: 2 }).then(canvas2 => {
+          const mapImg = canvas2.toDataURL('image/png');
+          pdf.addPage();
+          pdf.addImage(mapImg, 'PNG', 0, 0, pageWidth, (canvas2.height * pageWidth) / canvas2.width);
+          pdf.save("ip-info-full.pdf");
+        });
+      });
+    }
+
+    function emailExport() {
+      const emailBody = encodeURIComponent(`
+IP Address: ${ipData.ip}
+City: ${ipData.city}
+Region: ${ipData.region}
+Country: ${ipData.country}
+ISP: ${ipData.connection?.isp}
+Org: ${ipData.connection?.org}
+Hostname: ${ipData.connection?.domain}
+Latitude: ${ipData.latitude}
+Longitude: ${ipData.longitude}
+Timezone: ${ipData.timezone?.id}
+Browser: ${getBrowser(navigator.userAgent)}
+OS: ${getOS(navigator.userAgent)}
+Screen: ${screen.width}x${screen.height}
+      `);
+      const subject = encodeURIComponent("Advanced IP Information Report");
+      window.location.href = `mailto:?subject=${subject}&body=${emailBody}`;
+
+      // Optional: Upload to backend
+      // fetch('https://your-backend.com/api/upload-pdf', {
+      //   method: 'POST',
+      //   body: pdfBlob,
+      //   headers: { 'Content-Type': 'application/pdf' }
+      // });
+    }
+
+    getIPInfo();
+  </script>
+</body>
+</html>

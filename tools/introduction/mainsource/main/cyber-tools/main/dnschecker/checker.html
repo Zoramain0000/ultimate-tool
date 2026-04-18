@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI DNS Check Tool</title>
+  <style>
+    body {
+      background-color: #ffffff;
+      color: #33ff33;
+      font-family: 'Courier New', monospace;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      margin: 0;
+      padding: 0;
+    }
+    .terminal {
+      max-width: 900px;
+      margin: 3rem auto;
+      background-color: #000;
+      border-radius: 10px;
+      padding: 2rem;
+      box-shadow: 0 0 15px #33ff33;
+      border: 1px solid #33ff33;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1rem;
+      font-size: 1.6rem;
+      text-shadow: 0 0 10px #33ff33;
+    }
+    .input-group {
+      display: flex;
+      margin-bottom: 1rem;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 0.6rem;
+      font-size: 1rem;
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #33ff33;
+      border-radius: 4px 0 0 4px;
+      outline: none;
+    }
+    button {
+      padding: 0.6rem 1rem;
+      background: #e60202;
+      color: #27ec00;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #22cc22;
+    }
+    .output, .ai-panel, .whois-panel {
+      white-space: pre-wrap;
+      background: #111;
+      padding: 1rem;
+      border-radius: 6px;
+      border: 1px solid #33ff33;
+      margin-top: 1rem;
+    }
+    .ai-panel {
+      border-style: dashed;
+    }
+    .buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+
+<div class="terminal">
+  <h1>🧠 AI DNS Check Tool</h1>
+  <div class="input-group">
+    <input type="text" id="domain" placeholder="example.com" />
+    <button onclick="dnsCheck()">Check</button>
+  </div>
+  <div class="buttons">
+    <button onclick="copyToClipboard()">📋 Copy</button>
+    <button onclick="exportToPDF()">📄 Export PDF</button>
+    <button onclick="whoisLookup()">🌐 WHOIS Lookup</button>
+  </div>
+  <div class="output" id="output">> Awaiting input...</div>
+  <div class="ai-panel" id="ai-panel" style="display: none;"></div>
+  <div class="whois-panel" id="whois-panel" style="display: none;"></div>
+</div>
+
+<script>
+  const recordsToCheck = ['A', 'AAAA', 'MX', 'TXT', 'NS', 'CNAME', 'SOA'];
+
+  async function dnsCheck() {
+    const domain = document.getElementById('domain').value.trim();
+    const output = document.getElementById('output');
+    const aiPanel = document.getElementById('ai-panel');
+    aiPanel.style.display = 'none';
+    aiPanel.innerText = '';
+    if (!domain) return typeOut(output, "> Error: Please enter a domain.");
+
+    let log = `> Performing DNS lookup for: ${domain}\n`;
+
+    const fetchRecord = async (type) => {
+      const res = await fetch(`https://dns.google/resolve?name=${domain}&type=${type}`);
+      const data = await res.json();
+      const answers = data.Answer || [];
+      return answers.map(a => `${a.name} [${a.type}] → ${a.data.replace(/"/g, '')}`);
+    };
+
+    for (const type of recordsToCheck) {
+      try {
+        const results = await fetchRecord(type);
+        log += `\n[${type} Records]:\n${results.length ? results.join('\n') : '❌ None found.'}\n`;
+      } catch {
+        log += `\n[${type} Records]: ❌ Error fetching\n`;
+      }
+    }
+
+    typeOut(output, log);
+
+    // AI Panel for SPF / DMARC / DKIM
+    const getTXT = async (sub) => {
+      const res = await fetch(`https://dns.google/resolve?name=${sub}.${domain}&type=TXT`);
+      const json = await res.json();
+      return (json.Answer || []).map(a => a.data.replace(/"/g, ''));
+    };
+
+    const spf = (await getTXT(domain)).find(txt => txt.startsWith("v=spf1")) || '';
+    const dmarc = (await getTXT("_dmarc")).find(txt => txt.startsWith("v=DMARC1")) || '';
+    const dkim = (await getTXT("default._domainkey")).find(txt => txt.startsWith("v=DKIM1")) || '';
+
+    let aiMsg = '';
+
+    if (spf) {
+      aiMsg += `🔍 SPF Analysis:\n${spf}\n` + analyzeSPF(spf) + '\n\n';
+    }
+    if (dmarc) {
+      aiMsg += `🔍 DMARC Found:\n${dmarc}\n`;
+    } else {
+      aiMsg += `⚠️ No DMARC record found.\n`;
+    }
+    if (dkim) {
+      aiMsg += `🔍 DKIM Found:\n${dkim}\n`;
+    } else {
+      aiMsg += `⚠️ No DKIM record found (selector: default).\n`;
+    }
+
+    if (aiMsg.trim()) {
+      aiPanel.innerText = aiMsg;
+      aiPanel.style.display = 'block';
+    }
+  }
+
+  function analyzeSPF(record) {
+    let notes = '';
+    if (!record.includes('~all') && !record.includes('-all'))
+      notes += "⚠️ Missing '~all' or '-all': SPF is not complete.\n";
+    if ((record.match(/include:/g) || []).length > 10)
+      notes += "⚠️ Too many 'include:' statements may break SPF.\n";
+    if (record.includes('ptr'))
+      notes += "⚠️ Using 'ptr' is discouraged.\n";
+    return notes || "✅ SPF looks good.";
+  }
+
+  function typeOut(el, text, speed = 15) {
+    el.innerText = '';
+    let i = 0;
+    function type() {
+      if (i < text.length) {
+        el.innerText += text.charAt(i);
+        i++;
+        setTimeout(type, speed);
+      }
+    }
+    type();
+  }
+
+  function copyToClipboard() {
+    const text = document.getElementById('output').innerText + '\n\n' +
+                 document.getElementById('ai-panel').innerText;
+    navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!"));
+  }
+
+  function exportToPDF() {
+    const content = document.getElementById('output').innerText + '\n\n' +
+                    document.getElementById('ai-panel').innerText;
+    const win = window.open('', '', 'height=700,width=800');
+    win.document.write('<pre>' + content + '</pre>');
+    win.document.close();
+    win.print();
+  }
+
+  async function whoisLookup() {
+    const domain = document.getElementById('domain').value.trim();
+    const whoisPanel = document.getElementById('whois-panel');
+    whoisPanel.style.display = 'none';
+    whoisPanel.innerText = '';
+
+    if (!domain) return alert("Please enter a domain");
+
+    try {
+      const res = await fetch(`https://api.api-ninjas.com/v1/whois?domain=${domain}`, {
+        headers: { 'X-Api-Key': 'at_OffwFPCV1KBcNU20xSxi6RjDXU' }
+      });
+      const data = await res.json();
+      whoisPanel.innerText = `📄 WHOIS Info:\n\nDomain: ${data.domain_name || 'N/A'}\nRegistrar: ${data.registrar || 'N/A'}\nCreated: ${data.creation_date || 'N/A'}\nExpires: ${data.expiration_date || 'N/A'}\n\n`;
+      whoisPanel.style.display = 'block';
+    } catch (err) {
+      whoisPanel.innerText = "⚠️ WHOIS lookup failed or limit exceeded.";
+      whoisPanel.style.display = 'block';
+    }
+  }
+</script>
+
+</body>
+</html>

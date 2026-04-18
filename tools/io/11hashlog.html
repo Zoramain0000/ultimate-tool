@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hash Generator</title>
+<style>
+  body {
+    margin: 0; padding: 0;
+    background-color: #000; 
+    color: red;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    display: flex; flex-direction: column; height: 100vh;
+    overflow: hidden;
+  }
+
+  #bgVideo {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+    z-index: -1;
+    object-fit: cover;
+    filter: brightness(0.4) grayscale(0.2);
+  }
+
+  header {
+    padding: 12px 20px;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #330000;
+    z-index: 10;
+  }
+
+  label {
+    font-weight: bold;
+    font-size: 14px;
+    color: #ff3333;
+    text-shadow: 0 0 2px black;
+  }
+
+  select, input[type=button], input[type=text] {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid #500000;
+    outline: none;
+    background: rgba(0,0,0,0.5);
+    color: red;
+    transition: all 0.2s ease;
+  }
+
+  input[type=button] {
+    background: #500000;
+    color: #ffcccc;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  input[type=button]:hover {
+    background: red;
+    color: black;
+    box-shadow: 0 0 10px red;
+  }
+
+  input[type=text]:focus, select:focus {
+    border-color: red;
+    box-shadow: 0 0 5px rgba(255, 0, 0, 0.3);
+  }
+
+  #totalCount {
+    background: rgba(0,0,0,0.8);
+    color: #00ff00;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid #00ff00;
+    font-weight: bold;
+    min-width: 120px;
+    text-align: center;
+    font-size: 14px;
+    text-shadow: 0 0 5px #00ff00;
+  }
+
+  #logContainer {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.4);
+    position: relative;
+    padding: 0;
+    margin: 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    table-layout: fixed;
+  }
+
+  thead tr {
+    background: rgba(0,0,0,0.9);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    border-bottom: 2px solid red;
+  }
+
+  th, td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #330000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+  }
+
+  th { color: #00ff00; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; }
+  
+  tbody tr { transition: background 0.1s; }
+  tbody tr:hover { background: rgba(255, 0, 0, 0.15); color: #fff; }
+
+  #loadingIndicator {
+    padding: 10px 0;
+    text-align: center;
+    color: red;
+    font-style: italic;
+    text-transform: uppercase;
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+  #logContainer::-webkit-scrollbar { width: 8px; }
+  #logContainer::-webkit-scrollbar-track { background: #000; }
+  #logContainer::-webkit-scrollbar-thumb { background: #500000; }
+  #logContainer::-webkit-scrollbar-thumb:hover { background: red; }
+
+  @media (max-width: 768px) {
+    header { gap: 8px; padding: 10px; }
+    input[type=text] { min-width: 120px; }
+    select, input[type=button] { font-size: 11px; padding: 5px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<video autoplay muted loop id="bgVideo">
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+  Your browser does not support HTML5 video.
+</video>
+
+<header>
+  <label for="algoSelect">Algo:</label>
+  <select id="algoSelect">
+    <option value="SHA-256" selected>SHA-256</option>
+    <option value="SHA-1">SHA-1</option>
+    <option value="SHA-512">SHA-512</option>
+    <option value="SHA-384">SHA-384</option>
+  </select>
+  
+  <label for="modeSelect">Mode:</label>
+  <select id="modeSelect">
+    <option value="random">Random Data</option>
+    <option value="counter">Sequential</option>
+  </select>
+
+  <input type="text" id="seedInput" placeholder="Custom seed (optional)" />
+
+  <input type="button" id="generateBtn" value="Generate" />
+  <input type="text" id="searchInput" placeholder="Filter hash..." />
+  <span id="totalCount">Total: 0</span>
+  <input type="button" id="downloadBtn" value="Save" />
+</header>
+
+<div id="logContainer" tabindex="0">
+  <table>
+    <thead>
+      <tr>
+        <th>Hash Output</th>
+        <th>Algorithm</th>
+        <th>Input Data</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+  <div id="loadingIndicator" hidden>Processing...</div>
+</div>
+
+<script>
+(() => {
+  const algoSelect = document.getElementById('algoSelect');
+  const modeSelect = document.getElementById('modeSelect');
+  const seedInput = document.getElementById('seedInput');
+  const generateBtn = document.getElementById('generateBtn');
+  const searchInput = document.getElementById('searchInput');
+  const logBody = document.getElementById('logBody');
+  const logContainer = document.getElementById('logContainer');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const totalCount = document.getElementById('totalCount');
+
+  const BATCH_SIZE = 100;
+  const MAX_LOGS = 5000;
+
+  let totalLogsGenerated = 0;
+  let allEntries = [];
+  let currentAlgo = 'SHA-256';
+  let currentMode = 'random';
+  let currentSeed = '';
+  let counter = 0;
+
+  function generateRandomString(length = 16) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+    let randomVals = new Uint8Array(length);
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      crypto.getRandomValues(randomVals);
+    } else {
+      for(let i=0; i<length; i++) randomVals[i] = Math.floor(Math.random() * 256);
+    }
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(randomVals[i] % chars.length);
+    }
+    return result;
+  }
+
+  async function computeHash(message, algorithm) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(message);
+    const hashBuffer = await crypto.subtle.digest(algorithm, data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+  }
+
+  function getTimestamp() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hour = String(now.getHours()).padStart(2, '0');
+    const minute = String(now.getMinutes()).padStart(2, '0');
+    const second = String(now.getSeconds()).padStart(2, '0');
+    const ms = String(now.getMilliseconds()).padStart(3, '0');
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}.${ms}`;
+  }
+
+  async function createEntryAsync() {
+    let inputData = '';
+    
+    if (currentSeed) {
+      inputData = currentSeed + (counter > 0 ? ` [${counter}]` : ''); // Append counter if seed exists to allow duplicates
+      if(!currentSeed) counter++; // Only increment if using seed repetition, handled below logic
+    } else {
+      if (currentMode === 'random') {
+        inputData = generateRandomString(32);
+      } else if (currentMode === 'counter') {
+        counter++;
+        inputData = `SEQ-${counter.toString().padStart(6, '0')}`;
+      }
+    }
+    // Logic fix: ensure counter increments for seeds to see different results if desired, 
+    // or keep constant. Let's increment always to generate a log stream.
+    if(currentSeed) counter++;
+
+    let hashOutput = await computeHash(inputData, currentAlgo);
+
+    return {
+      hash: hashOutput,
+      algo: currentAlgo,
+      input: inputData,
+      time: getTimestamp(),
+      status: 'VERIFIED'
+    };
+  }
+
+  function createRow(entry) {
+    const tr = document.createElement('tr');
+    let displayInput = entry.input;
+    if(displayInput.length > 25) displayInput = displayInput.substring(0, 22) + '...';
+
+    tr.innerHTML = `
+      <td style="font-family: monospace; color: #ffcccc;" title="${entry.hash}">${entry.hash}</td>
+      <td>${entry.algo}</td>
+      <td title="${entry.input}">${displayInput}</td>
+      <td style="color: #00ff00; font-weight: bold;">OK</td>
+    `;
+    return tr;
+  }
+
+  function updateTotalCount() {
+    totalCount.textContent = `Total: ${totalLogsGenerated}`;
+  }
+
+  async function loadMoreLogs() {
+    if (totalLogsGenerated >= MAX_LOGS) {
+      loadingIndicator.textContent = "Max capacity reached.";
+      loadingIndicator.hidden = false;
+      return;
+    }
+    loadingIndicator.hidden = false;
+    await new Promise(r => setTimeout(r, 10));
+
+    const fragment = document.createDocumentFragment();
+    for (let i = 0; i < BATCH_SIZE && totalLogsGenerated < MAX_LOGS; i++) {
+      const entry = await createEntryAsync();
+      allEntries.push(entry);
+      fragment.appendChild(createRow(entry));
+      totalLogsGenerated++;
+    }
+
+    logBody.appendChild(fragment);
+    loadingIndicator.hidden = true;
+    updateTotalCount();
+  }
+
+  function resetLogs() {
+    totalLogsGenerated = 0;
+    counter = 0;
+    allEntries = [];
+    logBody.innerHTML = '';
+    loadingIndicator.textContent = 'Processing...';
+    loadingIndicator.hidden = true;
+    updateTotalCount();
+  }
+
+  function filterLogs() {
+    const filter = searchInput.value.toLowerCase();
+    if (!filter) {
+      [...logBody.children].forEach(tr => tr.style.display = "");
+      return;
+    }
+    [...logBody.children].forEach(tr => {
+      const haystack = tr.textContent.toLowerCase();
+      tr.style.display = haystack.includes(filter) ? "" : "none";
+    });
+  }
+
+  logContainer.addEventListener('scroll', () => {
+    if (searchInput.value.trim() !== '') return;
+    if (totalLogsGenerated >= MAX_LOGS) return;
+    if (loadingIndicator.hidden === false) return;
+
+    const threshold = 50;
+    const position = logContainer.scrollTop + logContainer.clientHeight;
+    const height = logContainer.scrollHeight;
+
+    if (position >= height - threshold) {
+      loadMoreLogs();
+    }
+  });
+
+  generateBtn.addEventListener('click', () => {
+    currentAlgo = algoSelect.value;
+    currentMode = modeSelect.value;
+    currentSeed = seedInput.value.trim();
+    resetLogs();
+    loadMoreLogs();
+    generateBtn.blur();
+  });
+
+  searchInput.addEventListener('input', () => {
+    filterLogs();
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    if (allEntries.length === 0) return;
+    const timestamp = new Date().toISOString().slice(0,19).replace(/:/g,'-');
+    
+    const csvContent = "Hash,Algorithm,Input,Time,Status\n" + 
+      allEntries.map(e => `"${e.hash}","${e.algo}","${e.input}","${e.time}","${e.status}"`).join("\n");
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `hash_logs_${currentAlgo}_${timestamp}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+
+  // Initialize
+  loadMoreLogs();
+})();
+</script>
+
+</body>
+</html>

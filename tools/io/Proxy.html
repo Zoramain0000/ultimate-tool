@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays • Proxy Server Finder</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:Arial;color:#d1d1d1;background:none}
+.bg-video{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-2;filter:brightness(0.3);}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.1);z-index:-1}
+header{background:rgba(0,0,0,0.1);padding:15px;text-align:center;border-bottom:2px solid #00ffcc;}
+header h1{color:#00ffcc;letter-spacing:2px};
+.container{max-width:1200px;margin:20px auto;padding:15px;background:rgba(0,0,0,0.1);border-radius:12px;}
+button{padding:12px 18px;background:rgba(0,0,0,0.1);border:1px solid #00ffcc;color:#00ffcc;cursor:pointer;border-radius:6px;font-weight:bold;margin:5px;}
+button:hover{background:#00ffcc;color:black}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;}
+.card{background:rgba(0,0,0,0.1);border:1px solid #00ffcc;padding:10px;border-radius:8px;}
+.proxy{font-size:14px;cursor:pointer}
+.proxy:hover{text-decoration:underline}
+.country{font-size:12px}
+.type{font-size:12px;margin-top:2px;font-weight:bold;}
+.type-http{color:#00ff00;}       /* green */
+.type-https{color:#00ccff;}      /* blue */
+.type-socks4{color:#ff9900;}     /* orange */
+.type-socks5{color:#cc00ff;}     /* purple */
+.status{font-size:12px;color:#ffaa00}
+.test-btn{padding:3px 8px;margin-top:5px;border:none;background:#00ffcc;color:black;border-radius:4px;cursor:pointer;font-size:12px}
+.test-btn:hover{background:#00ff7f;color:black}
+.log{background:rgba(0,0,0,0.1);border:1px solid #00ffcc;padding:10px;font-family:monospace;font-size:13px;color:#00ff7f;max-height:200px;overflow:auto;}
+footer{text-align:center;color:#777;padding:10px}
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • REAL PROXY SERVER FINDER</h1>
+</header>
+
+<div class="container">
+
+<button onclick="loadProxies()">Fetch Real Proxies</button>
+<button onclick="testAllProxies()">Test All</button>
+<button onclick="copyAll()">Copy All</button>
+<button onclick="clearAll()">Clear</button>
+<button id="stopScrollBtn" onclick="toggleInfiniteScroll()">Stop Infinite Scroll</button>
+
+<h3 style="color:#00ffcc;margin:10px 0">Proxy Results (Infinite Scroll)</h3>
+<div class="grid" id="results"></div>
+
+<h3 style="color:#00ffcc;margin:10px 0">Logs</h3>
+<div class="log" id="log"></div>
+
+</div>
+
+<footer>ZeroDays Cybersecurity Tool • Real Public Proxy Lists</footer>
+
+<script>
+const resultsBox=document.getElementById("results");
+const logBox=document.getElementById("log");
+let proxyList=[], index=0, batchSize=50, infiniteScroll=true;
+
+function log(msg){
+  logBox.innerHTML+=`[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+  logBox.scrollTop=logBox.scrollHeight;
+}
+
+function copy(text){
+  navigator.clipboard.writeText(text);
+  log("Copied: "+text);
+}
+
+const sources=[
+ "https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=all",
+ "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+ "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt",
+ "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt"
+];
+
+async function loadProxies(){
+  proxyList=[]; index=0; resultsBox.innerHTML="";
+  log("Downloading real proxies...");
+  for(const url of sources){
+    try{
+      const r=await fetch(url); const t=await r.text();
+      const lines=t.split(/\r?\n/).filter(l=>l.includes(":"));
+      const typeGuess = url.includes("proxyscrape") ? "HTTP/HTTPS" : "HTTP";
+      proxyList.push(...lines.map(p=>({proxy:p,type:typeGuess})));
+      log(`Loaded ${lines.length} from ${url}`);
+    }catch(e){log("Failed: "+url);}
+  }
+  proxyList=[...new Map(proxyList.map(p => [p.proxy, p])).values()]; // unique
+  log("TOTAL UNIQUE PROXIES: "+proxyList.length);
+  loadNextBatch();
+}
+
+async function getCountry(ip){
+  const apis=[
+    `https://ip-api.com/json/${ip}?fields=country`,
+    `https://ipwhois.app/json/${ip}?objects=country`
+  ];
+  for(const url of apis){
+    try{
+      const res=await fetch(url);
+      const data=await res.json();
+      if(data.country) return data.country;
+      if(data.country_name) return data.country_name;
+    }catch(e){continue;}
+  }
+  return "Unknown";
+}
+
+async function detectProxyType(proxyObj){
+  const [ip, port] = proxyObj.proxy.split(":");
+  const types=[
+    {name:"HTTPS", protocol:`https://${ip}:${port}`},
+    {name:"HTTP", protocol:`http://${ip}:${port}`},
+    {name:"SOCKS4", protocol:`socks4://${ip}:${port}`},
+    {name:"SOCKS5", protocol:`socks5://${ip}:${port}`}
+  ];
+  for(let t of types){
+    try{
+      const controller=new AbortController();
+      const timeout=setTimeout(()=>controller.abort(),5000);
+      await fetch(t.protocol, {signal:controller.signal, method:'HEAD', mode:'no-cors'});
+      clearTimeout(timeout);
+      return t.name;
+    }catch(e){continue;}
+  }
+  return "Unknown";
+}
+
+async function testProxy(proxyObj,statusEl,typeEl){
+  const [ip, port] = proxyObj.proxy.split(":");
+  statusEl.textContent="Status: TESTING...";
+  const start=performance.now();
+  try{
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),5000);
+    await fetch(`http://${ip}:${port}`, {signal:controller.signal, method:'HEAD', mode:'no-cors'});
+    clearTimeout(timeout);
+    const duration=Math.round(performance.now()-start);
+    statusEl.textContent=`Status: WORKING ✓ (${duration}ms)`;
+    statusEl.style.color="#00ff00";
+    log(`Proxy ${proxyObj.proxy} → WORKING (${duration}ms)`);
+
+    const detectedType = await detectProxyType(proxyObj);
+    typeEl.textContent="Type: "+detectedType;
+    typeEl.className="type type-"+detectedType.toLowerCase();
+  }catch(e){
+    statusEl.textContent="Status: FAILED ✗";
+    statusEl.style.color="#ff4444";
+    log(`Proxy ${proxyObj.proxy} → FAILED`);
+    typeEl.textContent="Type: Unknown";
+    typeEl.className="type";
+  }
+}
+
+async function loadNextBatch(){
+  for(let i=0;i<batchSize && index<proxyList.length;i++,index++){
+    const proxyObj=proxyList[index];
+    const card=document.createElement("div");
+    card.className="card";
+    const [ip] = proxyObj.proxy.split(":");
+    const country = await getCountry(ip);
+    card.innerHTML=`
+      <div class="proxy" onclick="copy('https://${proxyObj.proxy}')">https://${proxyObj.proxy}</div>
+      <div class="country">Country: ${country}</div>
+      <div class="type type-http">Type: ${proxyObj.type}</div>
+      <div class="status">Status: UNTESTED</div>
+      <button class="test-btn">Test</button>
+    `;
+    const testBtn=card.querySelector(".test-btn");
+    const statusEl=card.querySelector(".status");
+    const typeEl=card.querySelector(".type");
+    testBtn.onclick=()=>testProxy(proxyObj,statusEl,typeEl);
+    resultsBox.appendChild(card);
+  }
+}
+
+window.addEventListener("scroll",()=>{
+  if(infiniteScroll && window.innerHeight + window.scrollY >= document.body.offsetHeight - 300){
+    loadNextBatch();
+  }
+});
+
+function toggleInfiniteScroll(){
+  infiniteScroll = !infiniteScroll;
+  document.getElementById("stopScrollBtn").textContent = infiniteScroll ? "Stop Infinite Scroll" : "Start Infinite Scroll";
+  log(infiniteScroll ? "Infinite Scroll enabled" : "Infinite Scroll stopped");
+}
+
+function copyAll(){
+  copy(proxyList.map(p=>"https://"+p.proxy).join("\n"));
+}
+
+async function testAllProxies(){
+  log("Batch testing all proxies...");
+  for(let i=0;i<proxyList.length;i++){
+    const card=resultsBox.children[i];
+    const statusEl=card.querySelector(".status");
+    const typeEl=card.querySelector(".type");
+    await testProxy(proxyList[i],statusEl,typeEl);
+  }
+  log("Batch testing completed");
+}
+
+function clearAll(){
+  proxyList=[]; index=0; resultsBox.innerHTML="";
+  log("Cleared all proxies");
+}
+</script>
+
+</body>
+</html>

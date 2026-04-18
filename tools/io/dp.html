@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Domain Health Checker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+  html, body { height: 100%; color: #fff; overflow: hidden; }
+
+  /* Background video */
+  .bg-video {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -2;
+    filter: brightness(0.5) contrast(1.2);
+  }
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.2); /* light overlay to make text visible */
+    z-index: -1;
+  }
+
+  /* Transparent container */
+  .container {
+    position: relative;
+    max-width: 800px;
+    margin: 3rem auto;
+    padding: 2rem;
+    background: rgba(0,0,0,0.3); /* transparent */
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,255,34,0.3);
+    color: #00ff22;
+    backdrop-filter: blur(8px);
+  }
+
+  h1 { text-align: center; margin-bottom: 1.5rem; color: #00ff22; }
+  input[type="text"] {
+    width: 100%; padding: 0.75rem; border-radius: 8px;
+    border: 1px solid #00ff22; margin-bottom: 1rem;
+    background: rgba(0,0,0,0.2); color: #00ff22; font-size: 1rem;
+  }
+  button {
+    display: block; width: 100%; padding: 0.75rem;
+    background-color: #ff0000; color: #00ff22;
+    border: none; border-radius: 8px; font-size: 1rem;
+    cursor: pointer; transition: 0.3s;
+  }
+  button:hover { background-color: #ff3333; }
+
+  .results { margin-top: 2rem; }
+  .result-box {
+    padding: 1rem; margin-bottom: 1rem;
+    background: rgba(0,0,0,0.4); border-radius: 10px;
+    border-left: 4px solid #ff0000;
+    word-break: break-word;
+  }
+  .status { font-weight: bold; }
+  .status.pass { color: #00ff22; }
+  .status.warn { color: #ffcc00; }
+  .status.fail { color: #ff0000; }
+
+  footer {
+    max-width: 800px; margin: 2rem auto; text-align: center;
+    font-size: 0.9rem; color: #00ff22;
+  }
+  footer a { color: #00ff22; text-decoration: none; margin: 0 5px; }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<video autoplay muted loop class="bg-video">
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<div class="container">
+  <h1>AI Domain Health Checker</h1>
+  <input type="text" id="domainInput" placeholder="Enter a domain (e.g. example.com)" />
+  <button onclick="checkDomainHealth()">Check Health</button>
+
+  <div class="results" id="results"></div>
+</div>
+
+<footer>
+  <p>Live DNS Checks (No API Key Needed) | <a href="https://dns.google/resolve" target="_blank">Google DNS API</a></p>
+</footer>
+
+<script>
+async function checkDomainHealth() {
+  const domain = document.getElementById('domainInput').value.trim();
+  const resultsContainer = document.getElementById('results');
+  resultsContainer.innerHTML = '';
+
+  if (!domain) return alert('Please enter a domain.');
+
+  const recordTypes = ['A','MX','NS','TXT'];
+  for (let type of recordTypes) {
+    try {
+      const res = await fetch(`https://dns.google/resolve?name=${domain}&type=${type}`);
+      const data = await res.json();
+      const answer = data?.Answer?.map(a => a.data).join(', ') || 'No record found';
+      const status = answer !== 'No record found' ? 'pass' : 'fail';
+
+      const div = document.createElement('div');
+      div.classList.add('result-box');
+      div.innerHTML = `
+        <div><strong>${type} Record</strong></div>
+        <div class="status ${status}">${status.toUpperCase()}</div>
+        <div>${answer}</div>
+      `;
+      resultsContainer.appendChild(div);
+    } catch (e) {
+      const div = document.createElement('div');
+      div.classList.add('result-box');
+      div.innerHTML = `
+        <div><strong>${type} Record</strong></div>
+        <div class="status warn">WARN</div>
+        <div>DNS check failed.</div>
+      `;
+      resultsContainer.appendChild(div);
+    }
+  }
+}
+</script>
+
+</body>
+</html>

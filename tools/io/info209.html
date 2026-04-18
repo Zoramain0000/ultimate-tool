@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AUTO GEO RECON v4.0 - MULTI-API HackerAI Pentest Scanner</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #000; color: #00ff41; overflow: hidden;
+            position: relative;
+            user-select: none;
+        }
+
+        video {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: -2; opacity: 0.12;
+        }
+
+        .matrix-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: -1;
+            background:
+                linear-gradient(90deg, transparent 48%, rgba(0,255,65,0.03) 50%, transparent 52%),
+                linear-gradient(0deg, transparent 48%, rgba(0,255,65,0.03) 50%, transparent 52%);
+            background-size: 40px 40px;
+            animation: matrix 20s linear infinite;
+        }
+
+        @keyframes matrix {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 40px; }
+        }
+
+        .top-panel {
+            position: fixed; top: 0; left: 0; right: 0;
+            background: rgba(0,0,0,0.95); backdrop-filter: blur(25px);
+            padding: 15px 30px; border-bottom: 2px solid #00ff41;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 1000;
+        }
+
+        .title { font-size: 1.6em; font-weight: 800; letter-spacing: 2px; }
+        .scan-stats {
+            display: flex; gap: 30px; font-size: 0.95em;
+        }
+        .stat { text-align: center; }
+        .stat-num { font-size: 1.4em; font-weight: 700; color: #00ff41; }
+
+        .control-panel {
+            position: fixed; bottom: 20px; left: 20px; right: 20px;
+            background: rgba(0,20,10,0.95); backdrop-filter: blur(20px);
+            padding: 20px; border-radius: 15px; border: 1px solid #00ff41;
+            display: flex; gap: 15px; justify-content: center; align-items: center;
+            z-index: 1000; flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px; background: linear-gradient(135deg, #00ff41, #00cc33);
+            border: none; border-radius: 25px; color: #000;
+            font-family: inherit; font-weight: 700; font-size: 0.95em;
+            cursor: pointer; transition: all 0.3s; text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(0,255,65,0.6); }
+        button.active { background: linear-gradient(135deg, #ff4164, #ff0040); }
+
+        #map {
+            height: 100vh; width: 100%;
+            filter: contrast(1.2) saturate(1.1);
+            cursor: grab;
+        }
+
+        #map:active { cursor: grabbing; }
+
+        /* DRAGGABLE PANELS */
+        .draggable-panel {
+            position: fixed;
+            background: rgba(0,0,0,0.92); backdrop-filter: blur(15px);
+            border: 1px solid #00ff41; border-radius: 15px;
+            padding: 20px; font-family: monospace;
+            cursor: move; user-select: none;
+            box-shadow: 0 8px 32px rgba(0,255,65,0.3);
+            transition: all 0.3s ease;
+            z-index: 999;
+            min-width: 320px; max-width: 420px;
+        }
+
+        .draggable-panel:hover {
+            box-shadow: 0 12px 48px rgba(0,255,65,0.5);
+            border-color: #00ff88;
+        }
+
+        .panel-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin: -20px -20px 15px -20px; padding: 15px 20px;
+            background: rgba(0,20,10,0.8); border-radius: 12px 12px 0 0;
+            border-bottom: 1px solid #00aa28; font-weight: 700;
+            cursor: move; font-size: 1em; color: #00ff41;
+        }
+
+        .panel-drag { font-size: 1.2em; cursor: grab; }
+        .panel-drag:active { cursor: grabbing; }
+        .panel-toggle {
+            background: rgba(255,68,100,0.3); color: #ff4164;
+            border: none; padding: 6px 12px; border-radius: 20px;
+            font-size: 0.8em; cursor: pointer; font-weight: 700;
+        }
+        .panel-toggle:hover { background: rgba(255,68,100,0.6); }
+
+        /* TERMINAL PANEL */
+        #terminalPanel {
+            bottom: 200px; left: 30px; height: 140px;
+            overflow-y: auto; overflow-x: auto;
+        }
+        .terminal-line {
+            margin-bottom: 4px; white-space: pre-wrap; font-size: 0.8em;
+            animation: terminalFade 0.4s ease-out;
+        }
+        @keyframes terminalFade {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .terminal-prompt { color: #00ff41; font-weight: 700; }
+        .terminal-success { color: #00ff41; }
+        .terminal-info { color: #00ccff; }
+        .terminal-warn { color: #ffaa00; }
+        .terminal-error { color: #ff4444; }
+        .terminal-time { color: #666; font-size: 0.75em; }
+
+        /* RESULTS PANEL */
+        #resultsPanel {
+            bottom: 200px; right: 30px; max-height: 420px;
+            overflow-y: auto;
+        }
+        .results-title {
+            font-size: 1.1em; font-weight: 700; color: #00ff41;
+            margin-bottom: 15px; text-align: center;
+            border-bottom: 1px solid #00aa28; padding-bottom: 10px;
+        }
+        .scan-item {
+            background: rgba(0,255,65,0.15); padding: 15px;
+            margin-bottom: 12px; border-radius: 8px;
+            border-left: 4px solid #00ff41; animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 8px rgba(0,255,65,0.3); }
+            50% { box-shadow: 0 0 20px rgba(0,255,65,0.6); }
+        }
+        .scan-ip { font-size: 1.1em; font-weight: 700; color: #00ff41; }
+        .scan-details { font-size: 0.8em; margin-top: 6px; opacity: 0.85; }
+        .scan-geo {
+            background: rgba(0,0,0,0.6); padding: 3px 6px;
+            border-radius: 3px; font-size: 0.75em;
+        }
+        .status-online { color: #00ff41; font-weight: 700; }
+        .status-offline { color: #ff4444; font-weight: 700; }
+        .api-provider { color: #ffaa00; font-size: 0.7em; margin-top: 4px; }
+
+        .spinner {
+            width: 10px; height: 10px; border: 2px solid rgba(0,255,65,0.3);
+            border-top: 2px solid #00ff41; border-radius: 50%;
+            animation: spin 1s linear infinite; display: inline-block; margin-right: 6px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* API SELECTOR PANEL */
+        #apiSelectorPanel {
+            top: 100px; right: 30px; max-height: 300px;
+            min-width: 380px;
+        }
+        .api-selector {
+            max-height: 220px; overflow-y: auto;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        }
+        .api-checkbox {
+            display: flex; align-items: center;
+            padding: 8px; background: rgba(0,20,10,0.6);
+            border-radius: 6px; cursor: pointer;
+            font-size: 0.75em; transition: all 0.2s;
+        }
+        .api-checkbox:hover { background: rgba(0,255,65,0.2); }
+        .api-checkbox input:checked + span { color: #00ff41; font-weight: 700; }
+        .api-checkbox input { margin-right: 8px; accent-color: #00ff41; }
+
+        @media (max-width: 768px) {
+            .draggable-panel { min-width: calc(100vw - 40px); left: 20px !important; right: 20px !important; }
+            .control-panel { flex-direction: column; gap: 10px; bottom: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <video autoplay muted loop playsinline>
+        <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+    </video>
+    
+    <div class="matrix-overlay"></div>
+
+    <div class="top-panel">
+        <div class="title">🦾 AUTO GEO RECON v4.0 - MULTI-API SCANNER</div>
+        <div class="scan-stats">
+            <div class="stat"><div class="stat-num" id="scans">0</div>Scans</div>
+            <div class="stat"><div class="stat-num" id="online">0</div>Online</div>
+            <div class="stat"><div class="stat-num" id="offline">0</div>Offline</div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="control-panel">
+        <button id="startScan" onclick="toggleAutoScan()">🚀 START SCAN</button>
+        <button id="clearScan" onclick="clearScan()">🗑️ CLEAR ALL</button>
+        <button onclick="exportData()">📤 EXPORT</button>
+        <button onclick="resetPanels()">📍 RESET POS</button>
+    </div>
+
+    <!-- DRAGGABLE TERMINAL PANEL -->
+    <div class="draggable-panel" id="terminalPanel">
+        <div class="panel-header">
+            <span class="panel-drag">✋ TERMINAL</span>
+            <button class="panel-toggle" onclick="togglePanel('terminal')">HIDE</button>
+        </div>
+        <div id="terminalContent">
+            <div class="terminal-line terminal-prompt">hackerai@recon:~$ <span class="terminal-success">v4.0 MULTI-API MODE</span></div>
+            <div class="terminal-line terminal-info">[INFO] 15+ Geo APIs | Drag panels | Select providers</div>
+            <div class="terminal-line terminal-info">[READY] Multi-provider recon active</div>
+        </div>
+    </div>
+
+    <!-- DRAGGABLE RESULTS PANEL -->
+    <div class="draggable-panel" id="resultsPanel">
+        <div class="panel-header">
+            <span class="panel-drag">🎯 RESULTS</span>
+            <button class="panel-toggle" onclick="togglePanel('results')">HIDE</button>
+        </div>
+        <div class="results-title">LIVE MULTI-API RECON HITS</div>
+    </div>
+
+    <!-- DRAGGABLE API SELECTOR PANEL -->
+    <div class="draggable-panel" id="apiSelectorPanel">
+        <div class="panel-header">
+            <span class="panel-drag">🔌 API SELECTOR</span>
+            <button class="panel-toggle" onclick="togglePanel('apiSelector')">HIDE</button>
+        </div>
+        <div class="api-selector" id="apiSelector">
+            <label class="api-checkbox"><input type="checkbox" value="abstract" checked> <span>AbstractAPI</span></label>
+            <label class="api-checkbox"><input type="checkbox" value="ipgeolocation" checked> <span>IPGeolocation</span></label>
+            <label class="api-checkbox"><input type="checkbox" value="ip2location" checked> <span>IP2Location</span></label>
+            <label class="api-checkbox"><input type="checkbox" value="opencage" checked> <span>OpenCage</span></label>
+            <label class="api-checkbox"><input type="checkbox" value="geoapify" checked> <span>Geoapify</span></label>
+            <label class="api-checkbox"><input type="checkbox" value="ipwhois" checked> <span>IPWhois</span></label>
+            <label class="api-checkbox"><input type="checkbox" value="ziploc" checked> <span>ZipLoc</span></label>
+            <label class="api-checkbox"><input type="checkbox" value="apninja" checked> <span>APINinja</span></label>
+            <label class="api-checkbox"><input type="checkbox" value="whoisxml" checked> <span>WhoisXML</span></label>
+            <label class="api-checkbox"><input type="checkbox" value="ipdata" checked> <span>IPData</span></label>
+            <label class="api-checkbox"><input type="checkbox" value="graphhopper" checked> <span>GraphHopper</span></label>
+            <label class="api-checkbox"><input type="checkbox" value="locationiq" checked> <span>LocationIQ</span></label>
+            <label class="api-checkbox"><input type="checkbox" value="geocodingmaps" checked> <span>GeoMaps</span></label>
+            <label class="api-checkbox"><input type="checkbox" value="distancematrix" checked> <span>DistanceMatrix</span></label>
+            <label class="api-checkbox"><input type="checkbox" value="metadapi" checked> <span>MetaDAPI</span></label>
+        </div>
+    </div>
+
+    <script>
+        // DRAG LOGIC
+        function makeDraggable(panelId) {
+            const panel = document.getElementById(panelId);
+            const header = panel.querySelector('.panel-header');
+            let isDragging = false, startX, startY, startLeft, startTop;
+
+            header.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                startLeft = panel.offsetLeft;
+                startTop = panel.offsetTop;
+                panel.style.transition = 'none';
+                document.addEventListener('mousemove', onDrag);
+                document.addEventListener('mouseup', onDragEnd);
+            });
+
+            function onDrag(e) {
+                if (!isDragging) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                panel.style.left = `${Math.max(10, Math.min(window.innerWidth - panel.offsetWidth - 10, startLeft + dx))}px`;
+                panel.style.top = `${Math.max(80, Math.min(window.innerHeight - panel.offsetHeight - 10, startTop + dy))}px`;
+                panel.style.right = 'auto';
+                panel.style.bottom = 'auto';
+            }
+
+            function onDragEnd() {
+                isDragging = false;
+                panel.style.transition = 'all 0.3s ease';
+                document.removeEventListener('mousemove', onDrag);
+                document.removeEventListener('mouseup', onDragEnd);
+            }
+        }
+
+        // PANEL TOGGLE
+        const panelStates = { terminal: true, results: true, apiSelector: true };
+        function togglePanel(panelName) {
+            const panel = document.getElementById(panelName + 'Panel');
+            const btn = panel.querySelector('.panel-toggle');
+            panelStates[panelName] = !panelStates[panelName];
+            
+            if (panelStates[panelName]) {
+                panel.style.display = 'block';
+                btn.textContent = 'HIDE';
+            } else {
+                panel.style.display = 'none';
+                btn.textContent = 'SHOW';
+            }
+        }
+
+        // RESET POSITIONS
+        function resetPanels() {
+            document.getElementById('terminalPanel').style.cssText = 
+                'bottom: 200px; left: 30px; right: auto; top: auto; display: block;';
+            document.getElementById('resultsPanel').style.cssText = 
+                'bottom: 200px; right: 30px; left: auto; top: auto; display: block;';
+            document.getElementById('apiSelectorPanel').style.cssText = 
+                'top: 100px; right: 30px; bottom: auto; left: auto; display: block;';
+            document.querySelectorAll('.panel-toggle').forEach(btn => btn.textContent = 'HIDE');
+            logTerminal('info', '📍 ALL PANELS RESET');
+        }
+
+        // INIT DRAGGABLE
+        makeDraggable('terminalPanel');
+        makeDraggable('resultsPanel');
+        makeDraggable('apiSelectorPanel');
+
+        // MAP SETUP
+        const map = L.map('map').setView([0, 0], 0);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OSM | HackerAI v4.0 MULTI-API'
+        }).addTo(map);
+
+        let scanMarkers = L.layerGroup().addTo(map);
+        let isScanning = false, scanInterval;
+        let scanCount = 0, onlineCount = 0, offlineCount = 0;
+
+        const terminalContent = document.getElementById('terminalContent');
+        const resultsPanel = document.getElementById('resultsPanel');
+
+        // MULTI-API PROVIDERS
+        const apiProviders = {
+            abstract: { name: 'AbstractAPI', url: ip => `https://api.abstractapi.com/v1/geoip?ipAddress=${ip}&api_key=04e3e0dc50f34d74a60dc7b45a4abf1d` },
+            ipgeolocation: { name: 'IPGeolocation', url: ip => `https://api.ipgeolocation.io/ipgeo?apiKey=294f98a3977343a8a33f35b7e25d5e61&ip=${ip}` },
+            ip2location: { name: 'IP2Location', url: ip => `https://api.ip2location.com/?ip=${ip}&key=E30841E50B64D74EC7D7CBE6159A6C28c&package=WS6` },
+            opencage: { name: 'OpenCage', url: ip => `https://api.opencagedata.com/geocode/v1/json?q=${ip}&key=6da4b5e698bc4e638dd31ebc9fe7af38` },
+            geoapify: { name: 'Geoapify', url: ip => `https://api.geoapify.com/v1/ipinfo?ip=${ip}&apiKey=a0809826225144cbb40eeebf7d63d0c7` },
+            ipwhois: { name: 'IPWhois', url: ip => `https://ipwhois.app/json/${ip}` },
+            ziploc: { name: 'ZipLoc', url: ip => `https://api.zipcodestack.com/v1/lookup?apikey=01HWQERGEF9KQ4SH4Y6SFQBDHY&ip=${ip}` },
+            apninja: { name: 'APINinja', url: ip => `https://api.api-ninjas.com/v1/iplookup?ip=${ip}` },
+            whoisxml: { name: 'WhoisXML', url: ip => `https://ip-geolocation.whoisxmlapi.com/api/v1?apiKey=at_Ti38rIdTUk3Mj0Vg5KkiT2dtoP8a1&ipAddress=${ip}` },
+            ipdata: { name: 'IPData', url: ip => `https://api.ipdata.co/${ip}?api_key=fdc67b50e9e2a8b9c3c6b2b2a8f1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a` },
+            graphhopper: { name: 'GraphHopper', url: ip => `https://graphhopper.com/api/1/geocode?q=${ip}&key=2f497f07-cb55-40f1-ac27-34d020addeba` },
+            locationiq: { name: 'LocationIQ', url: (ip, lat, lon) => `https://us1.locationiq.com/v1/reverse.php?key=59bcca48bceb97833ffa74410f5bd7b7&lat=${lat}&lon=${lon}&format=json` },
+            geocodingmaps: { name: 'GeoMaps', url: ip => `https://geocoding.maps.com/api/v1/geocode?ip=${ip}&key=662e28fce0b7f817139327cpx78b703` },
+            distancematrix: { name: 'DistanceMatrix', url: ip => `https://distancematrix.ai/api/v1/route?key=jumQOWCDAbJlt45oCWGFdxXjlKu524y3gSvZI42KH0XLHUeP4XFC3ciq51HJ7UhT&ip=${ip}` },
+            metadapi: { name: 'MetaDAPI', url: ip => `https://metadapi.com/api/${ip}?key=90210` }
+        };
+
+        function getSelectedProviders() {
+            return Array.from(document.querySelectorAll('#apiSelector input:checked')).map(cb => cb.value);
+        }
+
+        function logTerminal(type, message, prefix = '') {
+            const time = new Date().toLocaleTimeString();
+            const line = document.createElement('div');
+            line.className = `terminal-line terminal-${type}`;
+            line.innerHTML = `<span class="terminal-time">[${time}]</span> ${prefix}<span class="terminal-prompt">${type.toUpperCase()}</span>: ${message}`;
+            terminalContent.appendChild(line);
+            terminalContent.scrollTop = terminalContent.scrollHeight;
+            if (terminalContent.children.length > 45) terminalContent.removeChild(terminalContent.firstChild);
+        }
+
+        async function scanIPWithMultiAPI(ip) {
+            const selectedProviders = getSelectedProviders();
+            logTerminal('info', `Probing ${ip} with ${selectedProviders.length} APIs...`, '🔄');
+
+            for (const providerKey of selectedProviders) {
+                try {
+                    const provider = apiProviders[providerKey];
+                    const response = await fetch(provider.url(ip, map.getCenter().lat, map.getCenter().lng));
+                    const data = await response.json();
+                    
+                    if (data && (data.country || data.city || data.lat || data.status === 'success')) {
+                        displayMultiAPIResult(ip, data, provider.name, 'online');
+                        logTerminal('success', `${ip} [${provider.name}] HIT`, '✅');
+                    }
+                } catch(e) {
+                    logTerminal('warn', `${ip} [${providerKey}] FAIL`, '⚠️');
+                }
+            }
+        }
+
+        async function autoGeoScan(lat, lon) {
+            if (!panelStates.terminal && !panelStates.results) return;
+            
+            logTerminal('info', `SCAN ${lat.toFixed(4)},${lon.toFixed(4)}`, '🗺️');
+            
+            const testIPs = Array.from({length: 2}, () => 
+                `${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}`
+            );
+
+            for (const ip of testIPs) {
+                await scanIPWithMultiAPI(ip);
+                offlineCount++;
+            }
+            updateStats();
+            logTerminal('info', `${onlineCount} ON | ${offlineCount} OFF (${getSelectedProviders().length} APIs)`, '✓');
+        }
+
+        function displayMultiAPIResult(ip, data, provider, status) {
+            if (!panelStates.results) return;
+            
+            const item = document.createElement('div');
+            item.className = 'scan-item';
+            const address = data.city || data.location || data.display_name || `${data.lat?.toFixed(4) || 'N/A'}, ${data.lon?.toFixed(4) || 'N/A'}`;
+            
+            item.innerHTML = `
+                <div class="scan-ip">${ip}</div>
+                <div class="scan-details">
+                    <div>📍 <span class="scan-geo">${address}</span></div>
+                    ${data.country ? `<div>🌍 <strong>${data.country}</strong></div>` : ''}
+                    ${data.isp || data.org ? `<div>🌐 <strong>${data.isp || data.org}</strong></div>` : ''}
+                    <div>🏁 <span class="status-${status}">${status.toUpperCase()}</span></div>
+                    <div class="api-provider">🔌 ${provider}</div>
+                    <div style="font-size:0.7em;opacity:0.6;">${new Date().toLocaleTimeString()}</div>
+                </div>`;
+            
+            resultsPanel.insertBefore(item, resultsPanel.querySelector('.results-title').nextSibling);
+            if (resultsPanel.querySelectorAll('.scan-item').length > 20) {
+                resultsPanel.removeChild(resultsPanel.querySelector('.scan-item:last-child'));
+            }
+            resultsPanel.scrollTop = 0;
+        }
+
+        function addMapMarker(lat, lon, ip, status) {
+            const color = status === 'online' ? '#00ff41' : '#666';
+            L.circleMarker([lat, lon], {
+                radius: 8, fillColor: color, color: color, weight: 2, opacity: 0.8, fillOpacity: 0.6
+            }).addTo(scanMarkers).bindPopup(ip).on('click', () => logTerminal('info', `${ip} clicked`));
+        }
+
+        // CONTROLS
+        map.on('moveend', () => isScanning && autoGeoScan(map.getCenter().lat, map.getCenter().lng));
+
+        function toggleAutoScan() {
+            const btn = document.getElementById('startScan');
+            isScanning = !isScanning;
+            btn.textContent = isScanning ? '⏹️ STOP' : '🚀 START SCAN';
+            btn.classList.toggle('active');
+            
+            if (isScanning) {
+                autoGeoScan(map.getCenter().lat, map.getCenter().lng);
+                scanInterval = setInterval(() => autoGeoScan(map.getCenter().lat, map.getCenter().lng), 10000);
+                logTerminal('success', `🚀 SCAN ACTIVE | ${getSelectedProviders().length} APIs`);
+            } else {
+                clearInterval(scanInterval);
+                logTerminal('warn', '⏹️ SCAN STOPPED');
+            }
+        }
+
+        function clearScan() {
+            scanMarkers.clearLayers();
+            document.querySelectorAll('.scan-item').forEach(el => el.remove());
+            scanCount = onlineCount = offlineCount = 0;
+            logTerminal('info', '🗑️ ALL DATA CLEARED');
+            updateStats();
+        }
+
+        function updateStats() {
+            document.getElementById('scans').textContent = scanCount++;
+            document.getElementById('online').textContent = onlineCount;
+            document.getElementById('offline').textContent = offlineCount;
+        }
+
+        function exportData() {
+            const data = {
+                timestamp: new Date().toISOString(),
+                providers: getSelectedProviders(),
+                stats: {scanCount, onlineCount, offlineCount},
+                terminal: Array.from(terminalContent.children).map(l => l.textContent),
+                results: Array.from(document.querySelectorAll('.scan-item')).map(item => ({
+                    ip: item.querySelector('.scan-ip').textContent,
+                    details: item.querySelector('.scan-details').innerText
+                }))
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `multi-api-recon-${Date.now()}.json`;
+            a.click();
+            logTerminal('success', '📤 MULTI-API DATA EXPORTED');
+        }
+
+        // INIT
+        fetch('https://api.ipify.org?format=json')
+            .then(r => r.json())
+            .then(({ip}) => {
+                logTerminal('info', `🌐 YOUR IP: ${ip}`);
+                logTerminal('success', '✅ v4.0 MULTI-API | 15+ Providers | Drag Panels Ready');
+            })
+            .catch(() => logTerminal('info', '🌐 Network ready'));
+    </script>
+</body>
+</html>

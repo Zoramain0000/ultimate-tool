@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone OSINT Recon v5.0 - AUTO DETECT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET & BASE STYLES --- */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Orbitron', monospace;
+            background: rgba(0,0,0,0.1);
+            color: #00ff41;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* --- BACKGROUND EFFECTS --- */
+        .matrix-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2;
+            background-color: rgba(0,0,0,0.1);
+        }
+
+        video {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover;
+            z-index: -3;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(0,255,65,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0,0,0,0.1) 0%, transparent 50%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* --- CONTAINER & LAYOUT --- */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: neonGlow 3s ease-in-out infinite alternate;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #00ff41, #ff0040, #00ff41);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 20px rgba(0,0,0,0.1);
+            letter-spacing: 2px;
+        }
+
+        .version {
+            color: #ffaa00;
+            font-size: 0.9rem;
+            margin-top: 5px;
+            letter-spacing: 1px;
+        }
+
+        /* --- INPUT SECTION --- */
+        .input-wrapper {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid #00ff41;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+            position: relative;
+        }
+
+        /* Auto-detected badge */
+        .detect-badge {
+            position: absolute;
+            top: -12px;
+            right: 20px;
+            background: #ff0040;
+            color: #fff;
+            padding: 2px 10px;
+            font-size: 0.7rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: bold;
+            display: none; /* Hidden by default */
+            box-shadow: 0 0 10px #ff0040;
+        }
+
+        .phone-input {
+            width: 100%;
+            background: rgba(0,0,0,0.1);
+            border: 2px solid #003300;
+            color: #00ff41;
+            padding: 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.5rem;
+            border-radius: 5px;
+            transition: 0.3s;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .phone-input:focus {
+            outline: none;
+            border-color: #ff0040;
+            box-shadow: 0 0 20px rgba(0,0,0,0.4);
+        }
+
+        .scan-btn {
+            width: 100%;
+            padding: 20px;
+            margin-top: 20px;
+            background: linear-gradient(90deg, transparent, rgba(0,0,0,0.2), transparent);
+            border: 2px solid #00ff41;
+            color: #00ff41;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 900;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scan-btn:hover {
+            background: #00ff41;
+            color: rgba(0,0,0,0.1);
+            box-shadow: 0 0 30px #00ff41;
+        }
+
+        .detected-info {
+            margin-top: 15px;
+            font-family: 'Share Tech Mono', monospace;
+            color: #ffaa00;
+            text-align: center;
+            font-size: 1.1rem;
+            min-height: 24px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        /* --- STATS BAR --- */
+        .stats-bar {
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(0, 20, 0, 0.1);
+            border: 1px solid #ff0040;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ff0040;
+        }
+
+        /* --- RESULTS CARDS --- */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .result-card {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid #005500;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: 0.3s;
+            position: relative;
+        }
+
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border-color: #00ff41;
+        }
+
+        .card-header {
+            background: linear-gradient(90deg, rgba(0,0,0,0.1), transparent);
+            padding: 15px;
+            border-bottom: 1px solid #003300;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            color: #fff;
+            text-transform: uppercase;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            border-bottom: 1px dashed #003300;
+            padding-bottom: 5px;
+        }
+
+        .data-label {
+            color: #888;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .data-value {
+            color: #00ff41;
+            font-family: 'Share Tech Mono', monospace;
+            text-align: right;
+            font-weight: bold;
+        }
+
+        /* --- OSINT LINKS --- */
+        .osint-links {
+            margin-top: 15px;
+        }
+
+        .osint-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            margin-bottom: 8px;
+            text-decoration: none;
+            color: #00ff41;
+            border-radius: 4px;
+            transition: 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .osint-link:hover {
+            background: #00ff41;
+            color: rgba(0,0,0,0.1);
+            border-color: #00ff41;
+        }
+
+        .osint-name { font-weight: bold; }
+        .osint-arrow { font-size: 1.2rem; }
+
+        /* --- ANIMATIONS --- */
+        @keyframes neonGlow {
+            from { text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41; }
+            to { text-shadow: 0 0 20px #ff0040, 0 0 30px #ff0040; }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.1);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .loader-text {
+            margin-top: 20px;
+            font-size: 1.5rem;
+            animation: pulse 1s infinite;
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .stats-bar { grid-template-columns: 1fr; }
+            .header h1 { font-size: 1.8rem; }
+            .phone-input { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Backgrounds -->
+    <canvas id="matrix" class="matrix-bg"></canvas>
+    <video autoplay muted loop>
+        <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+    </video>
+    <div class="overlay"></div>
+
+    <!-- Loading Screen -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div style="font-size: 3rem; color: #00ff41;">⚡</div>
+        <div class="loader-text">AUTO-DETECTING ORIGIN...</div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <h1>PHONE OSINT RECON <span style="font-size:0.5em; vertical-align:middle;">v5.0</span></h1>
+            <div class="version" id="targetDisplay">🌍 AUTO-DETECT MODE // GLOBAL INTELLIGENCE</div>
+        </header>
+
+        <section class="stats-bar" id="statsBar">
+            <div class="stat-card">
+                <div class="stat-number" id="countryNameDisplay">---</div>
+                <div>DETECTED COUNTRY</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="cityDisplay">---</div>
+                <div>CAPITAL CITY</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="dialCodeDisplay">---</div>
+                <div>DIAL CODE</div>
+            </div>
+        </section>
+
+        <section class="input-wrapper">
+            <div class="detect-badge" id="detectBadge">Auto-Detected</div>
+            
+            <input type="tel" id="phoneInput" class="phone-input" placeholder="Enter Number (e.g. +1 555 0199)" autocomplete="off">
+            
+            <div class="detected-info" id="detectedInfo">
+                <!-- Auto-detected info appears here -->
+            </div>
+
+            <button class="scan-btn" id="scanBtn">INITIATE RECON SEQUENCE</button>
+        </section>
+
+        <div id="results" class="results-grid"></div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. SEPARATED DATA CONSTANTS
+        // ==========================================
+
+        const DIAL_CODES = {
+            'US': '+1', 'CA': '+1', 'GB': '+44', 'DE': '+49', 'FR': '+33', 
+            'IT': '+39', 'ES': '+34', 'AU': '+61', 'IN': '+91', 'BR': '+55',
+            'JP': '+81', 'CN': '+86', 'RU': '+7', 'MX': '+52', 'AR': '+54',
+            'AF': '+93', 'AL': '+355', 'DZ': '+213', 'AS': '+1', 'AD': '+376',
+            'AO': '+244', 'AI': '+1', 'AQ': '+672', 'AG': '+1', 'AM': '+374',
+            'AW': '+297', 'AT': '+43', 'AZ': '+994', 'BS': '+1', 'BH': '+973',
+            'BD': '+880', 'BB': '+1', 'BY': '+375', 'BE': '+32', 'BZ': '+501',
+            'BJ': '+229', 'BM': '+1', 'BT': '+975', 'BO': '+591', 'BA': '+387',
+            'BW': '+267', 'BV': '+47', 'IO': '+246', 'BN': '+673', 'BG': '+359',
+            'BF': '+226', 'BI': '+257', 'KH': '+855', 'CM': '+237', 'CV': '+238',
+            'KY': '+1', 'CF': '+236', 'TD': '+235', 'CL': '+56', 'CX': '+61',
+            'CC': '+61', 'CO': '+57', 'KM': '+269', 'CG': '+242', 'CD': '+243',
+            'CK': '+682', 'CR': '+506', 'CI': '+225', 'HR': '+385', 'CU': '+53',
+            'CY': '+357', 'CZ': '+420', 'DK': '+45', 'DJ': '+253', 'DM': '+1',
+            'DO': '+1', 'EC': '+593', 'EG': '+20', 'SV': '+503', 'GQ': '+240',
+            'ER': '+291', 'EE': '+372', 'ET': '+251', 'FK': '+500', 'FO': '+298',
+            'FJ': '+679', 'FI': '+358', 'GF': '+594', 'PF': '+689', 'TF': '+262',
+            'GA': '+241', 'GM': '+220', 'GE': '+995', 'GH': '+233', 'GI': '+350',
+            'GR': '+30', 'GL': '+299', 'GD': '+1', 'GP': '+590', 'GU': '+1',
+            'GT': '+502', 'GG': '+44', 'GN': '+224', 'GW': '+245', 'GY': '+592',
+            'HT': '+509', 'HM': '+672', 'VA': '+379', 'HN': '+504', 'HK': '+852',
+            'HU': '+36', 'IS': '+354', 'ID': '+62', 'IR': '+98', 'IQ': '+964',
+            'IE': '+353', 'IM': '+44', 'IL': '+972', 'JM': '+1', 'JE': '+44',
+            'JO': '+962', 'KZ': '+7', 'KE': '+254', 'KI': '+686', 'KP': '+850',
+            'KR': '+82', 'KW': '+965', 'KG': '+996', 'LA': '+856', 'LV': '+371',
+            'LB': '+961', 'LS': '+266', 'LR': '+231', 'LY': '+218', 'LI': '+423',
+            'LT': '+370', 'LU': '+352', 'MO': '+853', 'MK': '+389', 'MG': '+261',
+            'MW': '+265', 'MY': '+60', 'MV': '+960', 'ML': '+223', 'MT': '+356',
+            'MH': '+692', 'MQ': '+596', 'MR': '+222', 'MU': '+230', 'YT': '+262',
+            'FM': '+691', 'MD': '+373', 'MC': '+377', 'MN': '+976', 'ME': '+382',
+            'MS': '+1', 'MA': '+212', 'MZ': '+258', 'MM': '+95', 'NA': '+264',
+            'NR': '+674', 'NP': '+977', 'NL': '+31', 'AN': '+599', 'NC': '+687',
+            'NZ': '+64', 'NI': '+505', 'NE': '+227', 'NG': '+234', 'NU': '+683',
+            'NF': '+672', 'MP': '+1', 'NO': '+47', 'OM': '+968', 'PK': '+92',
+            'PW': '+680', 'PS': '+970', 'PA': '+507', 'PG': '+675', 'PY': '+595',
+            'PE': '+51', 'PH': '+63', 'PN': '+64', 'PL': '+48', 'PT': '+351',
+            'PR': '+1', 'QA': '+974', 'RE': '+262', 'RO': '+40', 'RW': '+250',
+            'BL': '+590', 'SH': '+290', 'KN': '+1', 'LC': '+1', 'MF': '+590',
+            'PM': '+508', 'VC': '+1', 'WS': '+685', 'SM': '+378', 'ST': '+239',
+            'SA': '+966', 'SN': '+221', 'RS': '+381', 'SC': '+248', 'SL': '+232',
+            'SG': '+65', 'SK': '+421', 'SI': '+386', 'SB': '+677', 'SO': '+252',
+            'ZA': '+27', 'GS': '+500', 'LK': '+94', 'SD': '+249', 'SR': '+597',
+            'SJ': '+47', 'SZ': '+268', 'SE': '+46', 'CH': '+41', 'SY': '+963',
+            'TW': '+886', 'TJ': '+992', 'TZ': '+255', 'TH': '+66', 'TL': '+670',
+            'TG': '+228', 'TK': '+690', 'TO': '+676', 'TT': '+1', 'TN': '+216',
+            'TR': '+90', 'TM': '+993', 'TC': '+1', 'TV': '+688', 'UG': '+256',
+            'UA': '+380', 'AE': '+971', 'UM': '+1', 'UY': '+598', 'UZ': '+998',
+            'VU': '+678', 'VE': '+58', 'VN': '+84', 'VG': '+1', 'VI': '+1',
+            'WF': '+681', 'EH': '+212', 'YE': '+967', 'ZM': '+260', 'ZW': '+263',
+            'AX': '+358'
+        };
+
+        const COUNTRY_NAMES = {
+            'US': 'United States', 'CA': 'Canada', 'GB': 'United Kingdom', 'DE': 'Germany', 'FR': 'France', 
+            'IT': 'Italy', 'ES': 'Spain', 'AU': 'Australia', 'IN': 'India', 'BR': 'Brazil',
+            'JP': 'Japan', 'CN': 'China', 'RU': 'Russia', 'MX': 'Mexico', 'AR': 'Argentina',
+            'AF': 'Afghanistan', 'AL': 'Albania', 'DZ': 'Algeria', 'AS': 'American Samoa', 'AD': 'Andorra',
+            'AO': 'Angola', 'AI': 'Anguilla', 'AQ': 'Antarctica', 'AG': 'Antigua and Barbuda', 'AM': 'Armenia',
+            'AW': 'Aruba', 'AT': 'Austria', 'AZ': 'Azerbaijan', 'BS': 'Bahamas', 'BH': 'Bahrain',
+            'BD': 'Bangladesh', 'BB': 'Barbados', 'BY': 'Belarus', 'BE': 'Belgium', 'BZ': 'Belize',
+            'BJ': 'Benin', 'BM': 'Bermuda', 'BT': 'Bhutan', 'BO': 'Bolivia', 'BA': 'Bosnia and Herzegovina',
+            'BW': 'Botswana', 'BV': 'Bouvet Island', 'IO': 'British Indian Ocean Territory', 'BN': 'Brunei Darussalam', 'BG': 'Bulgaria',
+            'BF': 'Burkina Faso', 'BI': 'Burundi', 'KH': 'Cambodia', 'CM': 'Cameroon', 'CV': 'Cape Verde',
+            'KY': 'Cayman Islands', 'CF': 'Central African Republic', 'TD': 'Chad', 'CL': 'Chile', 'CX': 'Christmas Island',
+            'CC': 'Cocos (Keeling) Islands', 'CO': 'Colombia', 'KM': 'Comoros', 'CG': 'Congo', 'CD': 'Congo, The Democratic Republic of the',
+            'CK': 'Cook Islands', 'CR': 'Costa Rica', 'CI': 'Cote D\'Ivoire', 'HR': 'Croatia', 'CU': 'Cuba',
+            'CY': 'Cyprus', 'CZ': 'Czech Republic', 'DK': 'Denmark', 'DJ': 'Djibouti', 'DM': 'Dominica',
+            'DO': 'Dominican Republic', 'EC': 'Ecuador', 'EG': 'Egypt', 'SV': 'El Salvador', 'GQ': 'Equatorial Guinea',
+            'ER': 'Eritrea', 'EE': 'Estonia', 'ET': 'Ethiopia', 'FK': 'Falkland Islands (Malvinas)', 'FO': 'Faroe Islands',
+            'FJ': 'Fiji', 'FI': 'Finland', 'GF': 'French Guiana', 'PF': 'French Polynesia', 'TF': 'French Southern Territories',
+            'GA': 'Gabon', 'GM': 'Gambia', 'GE': 'Georgia', 'GH': 'Ghana', 'GI': 'Gibraltar',
+            'GR': 'Greece', 'GL': 'Greenland', 'GD': 'Grenada', 'GP': 'Guadeloupe', 'GU': 'Guam',
+            'GT': 'Guatemala', 'GG': 'Guernsey', 'GN': 'Guinea', 'GW': 'Guinea-Bissau', 'GY': 'Guyana',
+            'HT': 'Haiti', 'HM': 'Heard Island and Mcdonald Islands', 'VA': 'Holy See (Vatican City State)', 'HN': 'Honduras', 'HK': 'Hong Kong',
+            'HU': 'Hungary', 'IS': 'Iceland', 'ID': 'Indonesia', 'IR': 'Iran, Islamic Republic Of', 'IQ': 'Iraq',
+            'IE': 'Ireland', 'IM': 'Isle of Man', 'IL': 'Israel', 'JM': 'Jamaica', 'JE': 'Jersey',
+            'JO': 'Jordan', 'KZ': 'Kazakhstan', 'KE': 'Kenya', 'KI': 'Kiribati', 'KP': 'Korea, Democratic People\'s Republic of',
+            'KR': 'Korea, Republic of', 'KW': 'Kuwait', 'KG': 'Kyrgyzstan', 'LA': 'Lao People\'s Democratic Republic of', 'LV': 'Latvia',
+            'LB': 'Lebanon', 'LS': 'Lesotho', 'LR': 'Liberia', 'LY': 'Libyan Arab Jamahiriya', 'LI': 'Liechtenstein',
+            'LT': 'Lithuania', 'LU': 'Luxembourg', 'MO': 'Macao', 'MK': 'Macedonia, The Former Yugoslav Republic of', 'MG': 'Madagascar',
+            'MW': 'Malawi', 'MY': 'Malaysia', 'MV': 'Maldives', 'ML': 'Mali', 'MT': 'Malta',
+            'MH': 'Marshall Islands', 'MQ': 'Martinique', 'MR': 'Mauritania', 'MU': 'Mauritius', 'YT': 'Mayotte',
+            'FM': 'Micronesia, Federated States of', 'MD': 'Moldova, Republic of', 'MC': 'Monaco', 'MN': 'Mongolia', 'ME': 'Montenegro',
+            'MS': 'Montserrat', 'MA': 'Morocco', 'MZ': 'Mozambique', 'MM': 'Myanmar', 'NA': 'Namibia',
+            'NR': 'Nauru', 'NP': 'Nepal', 'NL': 'Netherlands', 'AN': 'Netherlands Antilles', 'NC': 'New Caledonia',
+            'NZ': 'New Zealand', 'NI': 'Nicaragua', 'NE': 'Niger', 'NG': 'Nigeria', 'NU': 'Niue',
+            'NF': 'Norfolk Island', 'MP': 'Northern Mariana Islands', 'NO': 'Norway', 'OM': 'Oman', 'PK': 'Pakistan',
+            'PW': 'Palau', 'PS': 'Palestinian Territory, Occupied', 'PA': 'Panama', 'PG': 'Papua New Guinea', 'PY': 'Paraguay',
+            'PE': 'Peru', 'PH': 'Philippines', 'PN': 'Pitcairn', 'PL': 'Poland', 'PT': 'Portugal',
+            'PR': 'Puerto Rico', 'QA': 'Qatar', 'RE': 'Reunion', 'RO': 'Romania', 'RW': 'Rwanda',
+            'BL': 'Saint Barthelemy', 'SH': 'Saint Helena', 'KN': 'Saint Kitts and Nevis', 'LC': 'Saint Lucia', 'MF': 'Saint Martin',
+            'PM': 'Saint Pierre and Miquelon', 'VC': 'Saint Vincent and the Grenadines', 'WS': 'Samoa', 'SM': 'San Marino', 'ST': 'Sao Tome and Principe',
+            'SA': 'Saudi Arabia', 'SN': 'Senegal', 'RS': 'Serbia', 'SC': 'Seychelles', 'SL': 'Sierra Leone',
+            'SG': 'Singapore', 'SK': 'Slovakia', 'SI': 'Slovenia', 'SB': 'Solomon Islands', 'SO': 'Somalia',
+            'ZA': 'South Africa', 'GS': 'South Georgia and the South Sandwich Islands', 'LK': 'Sri Lanka', 'SD': 'Sudan', 'SR': 'Suriname',
+            'SJ': 'Svalbard and Jan Mayen', 'SZ': 'Swaziland', 'SE': 'Sweden', 'CH': 'Switzerland', 'SY': 'Syrian Arab Republic',
+            'TW': 'Taiwan, Province of China', 'TJ': 'Tajikistan', 'TZ': 'Tanzania, United Republic of', 'TH': 'Thailand', 'TL': 'Timor-Leste',
+            'TG': 'Togo', 'TK': 'Tokelau', 'TO': 'Tonga', 'TT': 'Trinidad and Tobago', 'TN': 'Tunisia',
+            'TR': 'Turkey', 'TM': 'Turkmenistan', 'TC': 'Turks and Caicos Islands', 'TV': 'Tuvalu', 'UG': 'Uganda',
+            'UA': 'Ukraine', 'AE': 'United Arab Emirates', 'UM': 'United States Minor Outlying Islands', 'UY': 'Uruguay', 'UZ': 'Uzbekistan',
+            'VU': 'Vanuatu', 'VE': 'Venezuela', 'VN': 'Vietnam', 'VG': 'Virgin Islands, British', 'VI': 'Virgin Islands, U.S.',
+            'WF': 'Wallis and Futuna', 'EH': 'Western Sahara', 'YE': 'Yemen', 'ZM': 'Zambia', 'ZW': 'Zimbabwe',
+            'AX': 'Åland Islands'
+        };
+
+        const CITIES = {
+            'US': 'Washington D.C.', 'CA': 'Ottawa', 'GB': 'London', 'DE': 'Berlin', 'FR': 'Paris', 
+            'IT': 'Rome', 'ES': 'Madrid', 'AU': 'Canberra', 'IN': 'New Delhi', 'BR': 'Brasília',
+            'JP': 'Tokyo', 'CN': 'Beijing', 'RU': 'Moscow', 'MX': 'Mexico City', 'AR': 'Buenos Aires',
+            'AF': 'Kabul', 'AL': 'Tirana', 'DZ': 'Algiers', 'AS': 'Pago Pago', 'AD': 'Andorra la Vella',
+            'AO': 'Luanda', 'AI': 'The Valley', 'AQ': 'Research Stations', 'AG': "St. John's", 'AM': 'Yerevan',
+            'AW': 'Oranjestad', 'AT': 'Vienna', 'AZ': 'Baku', 'BS': 'Nassau', 'BH': 'Manama',
+            'BD': 'Dhaka', 'BB': 'Bridgetown', 'BY': 'Minsk', 'BE': 'Brussels', 'BZ': 'Belmopan',
+            'BJ': 'Porto-Novo', 'BM': 'Hamilton', 'BT': 'Thimphu', 'BO': 'La Paz', 'BA': 'Sarajevo',
+            'BW': 'Gaborone', 'BV': 'Research Station', 'IO': 'Diego Garcia', 'BN': 'Bandar Seri Begawan', 'BG': 'Sofia',
+            'BF': 'Ouagadougou', 'BI': 'Bujumbura', 'KH': 'Phnom Penh', 'CM': 'Yaoundé', 'CV': 'Praia',
+            'KY': 'George Town', 'CF': 'Bangui', 'TD': "N'Djamena", 'CL': 'Santiago', 'CX': 'Flying Fish Cove',
+            'CC': 'West Island', 'CO': 'Bogotá', 'KM': 'Moroni', 'CG': 'Brazzaville', 'CD': 'Kinshasa',
+            'CK': 'Avarua', 'CR': 'San José', 'CI': 'Yamoussoukro', 'HR': 'Zagreb', 'CU': 'Havana',
+            'CY': 'Nicosia', 'CZ': 'Prague', 'DK': 'Copenhagen', 'DJ': 'Djibouti', 'DM': 'Roseau',
+            'DO': 'Santo Domingo', 'EC': 'Quito', 'EG': 'Cairo', 'SV': 'San Salvador', 'GQ': 'Malabo',
+            'ER': 'Asmara', 'EE': 'Tallinn', 'ET': 'Addis Ababa', 'FK': 'Stanley', 'FO': 'Tórshavn',
+            'FJ': 'Suva', 'FI': 'Helsinki', 'GF': 'Cayenne', 'PF': 'Papeete', 'TF': 'Port-aux-Français',
+            'GA': 'Libreville', 'GM': 'Banjul', 'GE': 'Tbilisi', 'GH': 'Accra', 'GI': 'Gibraltar',
+            'GR': 'Athens', 'GL': 'Nuuk', 'GD': "St. George's", 'GP': 'Basse-Terre', 'GU': 'Hagåtña',
+            'GT': 'Guatemala City', 'GG': 'St. Peter Port', 'GN': 'Conakry', 'GW': 'Bissau', 'GY': 'Georgetown',
+            'HT': 'Port-au-Prince', 'HM': 'None', 'VA': 'Vatican City', 'HN': 'Tegucigalpa', 'HK': 'Hong Kong',
+            'HU': 'Budapest', 'IS': 'Reykjavik', 'ID': 'Jakarta', 'IR': 'Tehran', 'IQ': 'Baghdad',
+            'IE': 'Dublin', 'IM': 'Douglas', 'IL': 'Jerusalem', 'JM': 'Kingston', 'JE': 'St. Helier',
+            'JO': 'Amman', 'KZ': 'Astana', 'KE': 'Nairobi', 'KI': 'South Tarawa', 'KP': 'Pyongyang',
+            'KR': 'Seoul', 'KW': 'Kuwait City', 'KG': 'Bishkek', 'LA': 'Vientiane', 'LV': 'Riga',
+            'LB': 'Beirut', 'LS': 'Maseru', 'LR': 'Monrovia', 'LY': 'Tripoli', 'LI': 'Vaduz',
+            'LT': 'Vilnius', 'LU': 'Luxembourg', 'MO': 'Macau', 'MK': 'Skopje', 'MG': 'Antananarivo',
+            'MW': 'Lilongwe', 'MY': 'Kuala Lumpur', 'MV': 'Malé', 'ML': 'Bamako', 'MT': 'Valletta',
+            'MH': 'Majuro', 'MQ': 'Fort-de-France', 'MR': 'Nouakchott', 'MU': 'Port Louis', 'YT': 'Mamoudzou',
+            'FM': 'Palikir', 'MD': 'Chișinău', 'MC': 'Monaco', 'MN': 'Ulaanbaatar', 'ME': 'Podgorica',
+            'MS': 'Plymouth', 'MA': 'Rabat', 'MZ': 'Maputo', 'MM': 'Naypyidaw', 'NA': 'Windhoek',
+            'NR': 'Yaren', 'NP': 'Kathmandu', 'NL': 'Amsterdam', 'AN': 'Philipsburg', 'NC': 'Nouméa',
+            'NZ': 'Wellington', 'NI': 'Managua', 'NE': 'Niamey', 'NG': 'Abuja', 'NU': 'Alofi',
+            'NF': 'Kingston', 'MP': 'Saipan', 'NO': 'Oslo', 'OM': 'Muscat', 'PK': 'Islamabad',
+            'PW': 'Ngerulmud', 'PS': 'Ramallah', 'PA': 'Panama City', 'PG': 'Port Moresby', 'PY': 'Asunción',
+            'PE': 'Lima', 'PH': 'Manila', 'PN': 'Adamstown', 'PL': 'Warsaw', 'PT': 'Lisbon',
+            'PR': 'San Juan', 'QA': 'Doha', 'RE': 'Saint-Denis', 'RO': 'Bucharest', 'RW': 'Kigali',
+            'BL': 'Gustavia', 'SH': 'Jamestown', 'KN': 'Basseterre', 'LC': 'Castries', 'MF': 'Marigot',
+            'PM': 'Saint-Pierre', 'VC': 'Kingstown', 'WS': 'Apia', 'SM': 'San Marino', 'ST': 'São Tomé',
+            'SA': 'Riyadh', 'SN': 'Dakar', 'RS': 'Belgrade', 'SC': 'Victoria', 'SL': 'Freetown',
+            'SG': 'Singapore', 'SK': 'Bratislava', 'SI': 'Ljubljana', 'SB': 'Honiara', 'SO': 'Mogadishu',
+            'ZA': 'Pretoria', 'GS': 'King Edward Point', 'LK': 'Colombo', 'SD': 'Khartoum', 'SR': 'Paramaribo',
+            'SJ': 'Longyearbyen', 'SZ': 'Mbabane', 'SE': 'Stockholm', 'CH': 'Bern', 'SY': 'Damascus',
+            'TW': 'Taipei', 'TJ': 'Dushanbe', 'TZ': 'Dodoma', 'TH': 'Bangkok', 'TL': 'Dili',
+            'TG': 'Lomé', 'TK': 'Fakaofo', 'TO': "Nuku'alofa", 'TT': 'Port of Spain', 'TN': 'Tunis',
+            'TR': 'Ankara', 'TM': 'Ashgabat', 'TC': 'Cockburn Town', 'TV': 'Funafuti', 'UG': 'Kampala',
+            'UA': 'Kyiv', 'AE': 'Abu Dhabi', 'UM': 'Washington D.C.', 'UY': 'Montevideo', 'UZ': 'Tashkent',
+            'VU': 'Port Vila', 'VE': 'Caracas', 'VN': 'Hanoi', 'VG': 'Road Town', 'VI': 'Charlotte Amalie',
+            'WF': 'Mata-Utu', 'EH': 'Laayoune', 'YE': "Sana'a", 'ZM': 'Lusaka', 'ZW': 'Harare',
+            'AX': 'Mariehamn'
+        };
+
+        const LOCATIONS = {
+            'US': 'North America', 'CA': 'North America', 'GB': 'Europe', 'DE': 'Europe', 'FR': 'Europe', 
+            'IT': 'Europe', 'ES': 'Europe', 'AU': 'Oceania', 'IN': 'Asia', 'BR': 'South America',
+            'JP': 'Asia', 'CN': 'Asia', 'RU': 'Eurasia', 'MX': 'North America', 'AR': 'South America',
+            'AF': 'Asia', 'AL': 'Europe', 'DZ': 'Africa', 'AS': 'Oceania', 'AD': 'Europe',
+            'AO': 'Africa', 'AI': 'Caribbean', 'AQ': 'Antarctica', 'AG': 'Caribbean', 'AM': 'Asia',
+            'AW': 'Caribbean', 'AT': 'Europe', 'AZ': 'Asia', 'BS': 'Caribbean', 'BH': 'Asia',
+            'BD': 'Asia', 'BB': 'Caribbean', 'BY': 'Europe', 'BE': 'Europe', 'BZ': 'Central America',
+            'BJ': 'Africa', 'BM': 'North Atlantic', 'BT': 'Asia', 'BO': 'South America', 'BA': 'Europe',
+            'BW': 'Africa', 'BV': 'Atlantic', 'IO': 'Indian Ocean', 'BN': 'Asia', 'BG': 'Europe',
+            'BF': 'Africa', 'BI': 'Africa', 'KH': 'Asia', 'CM': 'Africa', 'CV': 'Africa',
+            'KY': 'Caribbean', 'CF': 'Africa', 'TD': 'Africa', 'CL': 'South America', 'CX': 'Oceania',
+            'CC': 'Oceania', 'CO': 'South America', 'KM': 'Africa', 'CG': 'Africa', 'CD': 'Africa',
+            'CK': 'Oceania', 'CR': 'Central America', 'CI': 'Africa', 'HR': 'Europe', 'CU': 'Caribbean',
+            'CY': 'Europe', 'CZ': 'Europe', 'DK': 'Europe', 'DJ': 'Africa', 'DM': 'Caribbean',
+            'DO': 'Caribbean', 'EC': 'South America', 'EG': 'Africa', 'SV': 'Central America', 'GQ': 'Africa',
+            'ER': 'Africa', 'EE': 'Europe', 'ET': 'Africa', 'FK': 'South America', 'FO': 'Europe',
+            'FJ': 'Oceania', 'FI': 'Europe', 'GF': 'South America', 'PF': 'Oceania', 'TF': 'Antarctica',
+            'GA': 'Africa', 'GM': 'Africa', 'GE': 'Asia', 'GH': 'Africa', 'GI': 'Europe',
+            'GR': 'Europe', 'GL': 'North America', 'GD': 'Caribbean', 'GP': 'Caribbean', 'GU': 'Oceania',
+            'GT': 'Central America', 'GG': 'Europe', 'GN': 'Africa', 'GW': 'Africa', 'GY': 'South America',
+            'HT': 'Caribbean', 'HM': 'Antarctica', 'VA': 'Europe', 'HN': 'Central America', 'HK': 'Asia',
+            'HU': 'Europe', 'IS': 'Europe', 'ID': 'Asia', 'IR': 'Asia', 'IQ': 'Asia',
+            'IE': 'Europe', 'IM': 'Europe', 'IL': 'Asia', 'JM': 'Caribbean', 'JE': 'Europe',
+            'JO': 'Asia', 'KZ': 'Asia', 'KE': 'Africa', 'KI': 'Oceania', 'KP': 'Asia',
+            'KR': 'Asia', 'KW': 'Asia', 'KG': 'Asia', 'LA': 'Asia', 'LV': 'Europe',
+            'LB': 'Asia', 'LS': 'Africa', 'LR': 'Africa', 'LY': 'Africa', 'LI': 'Europe',
+            'LT': 'Europe', 'LU': 'Europe', 'MO': 'Asia', 'MK': 'Europe', 'MG': 'Africa',
+            'MW': 'Africa', 'MY': 'Asia', 'MV': 'Asia', 'ML': 'Africa', 'MT': 'Europe',
+            'MH': 'Oceania', 'MQ': 'Caribbean', 'MR': 'Africa', 'MU': 'Africa', 'YT': 'Africa',
+            'FM': 'Oceania', 'MD': 'Europe', 'MC': 'Europe', 'MN': 'Asia', 'ME': 'Europe',
+            'MS': 'Caribbean', 'MA': 'Africa', 'MZ': 'Africa', 'MM': 'Asia', 'NA': 'Africa',
+            'NR': 'Oceania', 'NP': 'Asia', 'NL': 'Europe', 'AN': 'Caribbean', 'NC': 'Oceania',
+            'NZ': 'Oceania', 'NI': 'Central America', 'NE': 'Africa', 'NG': 'Africa', 'NU': 'Oceania',
+            'NF': 'Oceania', 'MP': 'Oceania', 'NO': 'Europe', 'OM': 'Asia', 'PK': 'Asia',
+            'PW': 'Oceania', 'PS': 'Asia', 'PA': 'Central America', 'PG': 'Oceania', 'PY': 'South America',
+            'PE': 'South America', 'PH': 'Asia', 'PN': 'Oceania', 'PL': 'Europe', 'PT': 'Europe',
+            'PR': 'Caribbean', 'QA': 'Asia', 'RE': 'Africa', 'RO': 'Europe', 'RW': 'Africa',
+            'BL': 'Caribbean', 'SH': 'Atlantic', 'KN': 'Caribbean', 'LC': 'Caribbean', 'MF': 'Caribbean',
+            'PM': 'North America', 'VC': 'Caribbean', 'WS': 'Oceania', 'SM': 'Europe', 'ST': 'Africa',
+            'SA': 'Asia', 'SN': 'Africa', 'RS': 'Europe', 'SC': 'Africa', 'SL': 'Africa',
+            'SG': 'Asia', 'SK': 'Europe', 'SI': 'Europe', 'SB': 'Oceania', 'SO': 'Africa',
+            'ZA': 'Africa', 'GS': 'Antarctica', 'LK': 'Asia', 'SD': 'Africa', 'SR': 'South America',
+            'SJ': 'Europe', 'SZ': 'Africa', 'SE': 'Europe', 'CH': 'Europe', 'SY': 'Asia',
+            'TW': 'Asia', 'TJ': 'Asia', 'TZ': 'Africa', 'TH': 'Asia', 'TL': 'Asia',
+            'TG': 'Africa', 'TK': 'Oceania', 'TO': 'Oceania', 'TT': 'Caribbean', 'TN': 'Africa',
+            'TR': 'Asia/Europe', 'TM': 'Asia', 'TC': 'Caribbean', 'TV': 'Oceania', 'UG': 'Africa',
+            'UA': 'Europe', 'AE': 'Asia', 'UM': 'Oceania', 'UY': 'South America', 'UZ': 'Asia',
+            'VU': 'Oceania', 'VE': 'South America', 'VN': 'Asia', 'VG': 'Caribbean', 'VI': 'Caribbean',
+            'WF': 'Oceania', 'EH': 'Africa', 'YE': 'Asia', 'ZM': 'Africa', 'ZW': 'Africa',
+            'AX': 'Europe'
+        };
+
+const STREETS = {
+    'US': '1600 Pennsylvania Ave NW',
+    'GB': '10 Downing Street',
+    'FR': 'Rue de la Loi 16',
+    'DE': 'Wilhelmstraße 77',
+    'JP': '1-6-1 Nagata-cho',
+    'CN': '1 Chang\'an Avenue',
+    'RU': '23 Ilinka Street',
+    'IN': 'Rajpath',
+    'BR': 'Praça dos Três Poderes',
+    'AF': 'Arg Presidential Palace',
+    'AL': 'Bulevardi Dëshmorët e Kombit',
+    'DZ': 'El-Mouradia Palace',
+    'AS': 'Fagatogo Village',
+    'AD': 'Casa de la Vall',
+    'AO': 'Palácio da Cidade Alta',
+    'AI': 'The Valley',
+    'AQ': 'Scott Base',
+    'AG': 'St. John\'s',
+    'AR': 'Balcarce 50',
+    'AM': 'Baghramyan Ave 26',
+    'AW': 'J.G. Emanstraat 1',
+    'AU': '5 Burdekin Street',
+    'AT': 'Ballhausplatz 2',
+    'AZ': 'Istiglaliyyat Street 12',
+    'BS': 'Duke Street',
+    'BH': 'Rifa\'a Palace',
+    'BD': 'Bangabhaban',
+    'BB': 'Government Hill',
+    'BY': 'Independence Palace',
+    'BE': 'Rue de la Loi 16',
+    'BZ': 'Belmopan',
+    'BJ': 'Place des Martyrs',
+    'BM': 'Front Street',
+    'BT': 'Tashichho Dzong',
+    'BO': 'Plaza Murillo',
+    'BA': 'Marsala Tita',
+    'BW': 'The Presidency',
+    'BV': 'Norwegian Station',
+    'BR': 'Praça dos Três Poderes',
+    'IO': 'Diego Garcia',
+    'BN': 'Jalan Maulana',
+    'BG': '2 Boulevard Dondukov',
+    'BF': 'Ouagadougou',
+    'BI': 'Bujumbura',
+    'KH': 'Norodom Boulevard',
+    'CM': 'Palais de l\'Unité',
+    'CV': 'Praia',
+    'KY': 'George Town',
+    'CF': 'Rue de la Martyrs',
+    'TD': 'N\'Djamena',
+    'CL': 'La Moneda Palace',
+    'CN': '1 Chang\'an Avenue',
+    'CX': 'Flying Fish Cove',
+    'CC': 'West Island',
+    'CO': 'Casa de Nariño',
+    'KM': 'Palais du Peuple',
+    'CG': 'Palais du Peuple',
+    'CD': 'Palais de la Nation',
+    'CK': 'Avarua',
+    'CR': 'Casa Presidencial',
+    'CI': 'Abidjan',
+    'HR': 'Predsjednički dvori',
+    'CU': 'Revolution Square',
+    'CY': 'The Presidential Palace',
+    'CZ': 'Hradčany',
+    'DK': 'Christiansborg Slot',
+    'DJ': 'Villa Hornak',
+    'DM': 'Victoria Street',
+    'DO': 'National Palace',
+    'EC': 'Carondelet Palace',
+    'EG': 'Heliopolis Palace',
+    'SV': 'Casa Presidencial',
+    'GQ': 'Malabo',
+    'ER': 'Asmara',
+    'EE': 'Stenbock House',
+    'ET': 'National Palace',
+    'FK': 'Stanley',
+    'FO': 'Tórshavn',
+    'FJ': 'Government Buildings',
+    'FI': 'Mariankatu 2',
+    'GF': 'Cayenne',
+    'PF': 'Papeete',
+    'TF': 'Martin-de-Viviès',
+    'GA': 'Libreville',
+    'GM': 'State House',
+    'GE': 'Avlabari Presidential Palace',
+    'GH': 'Flagstaff House',
+    'GI': 'Convent House',
+    'GR': 'Maximos Mansion',
+    'GL': 'Nuuk',
+    'GD': 'St. George\'s',
+    'GP': 'Basse-Terre',
+    'GU': 'Hagåtña',
+    'GT': 'National Palace',
+    'GG': 'Candie Gardens',
+    'GN': 'Sékou Touré',
+    'GW': 'Bissau',
+    'GY': 'State House',
+    'HT': 'Palais National',
+    'HM': 'Atlas Cove',
+    'VA': 'San Giovanni',
+    'HN': 'Presidential House',
+    'HK': 'Government House',
+    'HU': 'Sándor Palace',
+    'IS': 'Bessastaðir',
+    'IN': 'Rajpath',
+    'ID': 'Merdeka Palace',
+    'IR': 'Pasteur Street',
+    'IQ': 'Republican Palace',
+    'IE': 'Áras an Uachtaráin',
+    'IM': 'Douglas',
+    'IL': 'Beit HaNasi',
+    'IT': 'Palazzo del Quirinale',
+    'JM': 'King\'s House',
+    'JP': '1-6-1 Nagata-cho',
+    'JE': 'St. Helier',
+    'JO': 'Raghadan Palace',
+    'KZ': 'Ak Orda Presidential Palace',
+    'KE': 'State House',
+    'KI': 'Bikenibeu',
+    'KP': 'Kumsusan Palace',
+    'KR': 'Blue House',
+    'KW': 'Dasman Palace',
+    'KG': 'White House',
+    'LA': 'Patuxay',
+    'LV': 'Riga Castle',
+    'LB': 'Baabda Palace',
+    'LS': 'Maseru',
+    'LR': 'Executive Mansion',
+    'LY': 'Bab al-Azizia',
+    'LI': 'Vaduz Castle',
+    'LT': 'Daukanto Square',
+    'LU': 'Boulevard Royal',
+    'MO': 'Macau',
+    'MK': 'Vodno',
+    'MG': 'Iavoloha Palace',
+    'MW': 'Lilongwe',
+    'MY': 'Perdana Putra',
+    'MV': 'Mulee-aage',
+    'ML': 'Koulouba Palace',
+    'MT': 'San Anton Palace',
+    'MH': 'Majuro',
+    'MQ': 'Fort-de-France',
+    'MR': 'Presidential Palace',
+    'MU': 'Le Réduit',
+    'YT': 'Dzaoudzi',
+    'MX': 'National Palace',
+    'FM': 'Palikir',
+    'MD': 'Pride Hill',
+    'MC': 'Palais Princier',
+    'MN': 'State Palace',
+    'ME': 'Petrovići',
+    'MS': 'Brades',
+    'MA': 'Rabat',
+    'MZ': 'Palácio da Ponta Vermelha',
+    'MM': 'Naypyidaw',
+    'NA': 'State House',
+    'NR': 'Meneng District',
+    'NP': 'Sheet Niwas',
+    'NL': 'Binnenhof',
+    'NC': 'Nouméa',
+    'NZ': 'The Beehive',
+    'NI': 'Managua',
+    'NE': 'Presidential Palace',
+    'NG': 'Aso Villa',
+    'NU': 'Alofi',
+    'NF': 'Kingston',
+    'MP': 'Saipan',
+    'NO': 'Oslo',
+    'OM': 'Al Alam Palace',
+    'PK': 'Aiwan-e-Sadr',
+    'PW': 'Melekeok',
+    'PS': 'Muqata\'a',
+    'PA': 'Palacio de las Garzas',
+    'PG': 'Government House',
+    'PY': 'López Palace',
+    'PE': 'Palacio de Gobierno',
+    'PH': 'Malacañang Palace',
+    'PN': 'Adamstown',
+    'PL': 'Belweder Palace',
+    'PT': 'Belém Palace',
+    'PR': 'La Fortaleza',
+    'QA': 'Emiri Diwan',
+    'RE': 'Saint-Denis',
+    'RO': 'Cotroceni Palace',
+    'RU': '23 Ilinka Street',
+    'RW': 'Kigali',
+    'BL': 'Gustavia',
+    'SH': 'Jamestown',
+    'KN': 'Basseterre',
+    'LC': 'Castries',
+    'MF': 'Marigot',
+    'PM': 'Saint-Pierre',
+    'VC': 'Kingstown',
+    'WS': 'Vailima',
+    'SM': 'Palazzo Pubblico',
+    'ST': 'São Tomé',
+    'SA': 'Al Yamamah Palace',
+    'SN': 'Palais Présidentiel',
+    'RS': 'Novi Dvor',
+    'SC': 'State House',
+    'SL': 'Tower Hill',
+    'SG': 'Istana',
+    'SX': 'Philipsburg',
+    'SK': 'Grassalkovich Castle',
+    'SI': 'Presidential Palace',
+    'SB': 'Honiara',
+    'SO': 'Villa Somalia',
+    'ZA': 'Union Buildings',
+    'GS': 'King Edward Point',
+    'SS': 'Juba',
+    'ES': 'Palacio de la Moncloa',
+    'LK': 'Janadhipathi Mandiraya',
+    'SD': 'Republican Palace',
+    'SR': 'Presidential Palace',
+    'SJ': 'Longyearbyen',
+    'SZ': 'Lozitha Palace',
+    'SE': 'Sager House',
+    'CH': 'Bundeshaus',
+    'SY': 'Presidential Palace',
+    'TW': 'Presidential Office Building',
+    'TJ': 'Dushanbe',
+    'TZ': 'State House',
+    'TH': 'Government House',
+    'TL': 'Palácio Presidencial Nicolau Lobato',
+    'TG': 'Palais des Lomé',
+    'TK': 'Falefono',
+    'TO': 'Nuku\'alofa',
+    'TT': 'St. Ann\'s',
+    'TN': 'Carthage Palace',
+    'TR': 'Cumhurbaşkanlığı Külliyesi',
+    'TM': 'Oguzkhan Palace',
+    'TC': 'Grand Turk',
+    'TV': 'Vaiaku',
+    'UG': 'State House Entebbe',
+    'UA': 'Bankova Street',
+    'AE': 'Mushrif Palace',
+    'GB': '10 Downing Street',
+    'US': '1600 Pennsylvania Ave NW',
+    'UM': 'Washington D.C.',
+    'UY': 'Liberty Building',
+    'UZ': 'Presidential Palace',
+    'VU': 'Vila',
+    'VE': 'Miraflores Palace',
+    'VN': 'Presidential Palace',
+    'VG': 'Road Town',
+    'VI': 'Charlotte Amalie',
+    'WF': 'Mata-Utu',
+    'EH': 'Laayoune',
+    'YE': 'Republican Palace',
+    'ZM': 'State House',
+    'ZW': 'State House',
+    'AX': 'Mariehamn',
+    'default': 'Main Government Street'
+};
+
+const REGIONS = {
+    'US': 'District of Columbia',
+    'CA': 'Ontario',
+    'GB': 'England',
+    'DE': 'Berlin',
+    'FR': 'Île-de-France',
+    'AF': 'Kabul',
+    'AL': 'Tirana',
+    'DZ': 'Algiers',
+    'AS': 'Eastern',
+    'AD': 'Andorra la Vella',
+    'AO': 'Luanda',
+    'AI': 'Anguilla',
+    'AQ': 'Antarctica',
+    'AG': 'Saint John',
+    'AR': 'Buenos Aires',
+    'AM': 'Yerevan',
+    'AW': 'Aruba',
+    'AU': 'New South Wales',
+    'AT': 'Vienna',
+    'AZ': 'Baku',
+    'BS': 'New Providence',
+    'BH': 'Capital',
+    'BD': 'Dhaka',
+    'BB': 'Saint Michael',
+    'BY': 'Minsk',
+    'BE': 'Flemish Region',
+    'BZ': 'Belize District',
+    'BJ': 'Littoral',
+    'BM': 'Hamilton',
+    'BT': 'Thimphu',
+    'BO': 'La Paz',
+    'BA': 'Federation of Bosnia and Herzegovina',
+    'BW': 'South-East',
+    'BV': 'Bouvet Island',
+    'BR': 'São Paulo',
+    'IO': 'British Indian Ocean Territory',
+    'BN': 'Brunei-Muara',
+    'BG': 'Sofia Province',
+    'BF': 'Centre',
+    'BI': 'Bujumbura Mairie',
+    'KH': 'Phnom Penh',
+    'CM': 'Centre',
+    'CV': 'Santiago',
+    'KY': 'George Town',
+    'CF': 'Bangui',
+    'TD': 'N\'Djamena',
+    'CL': 'Santiago Metropolitan',
+    'CN': 'Guangdong',
+    'CX': 'Christmas Island',
+    'CC': 'Cocos (Keeling) Islands',
+    'CO': 'Bogotá',
+    'KM': 'Grande Comore',
+    'CG': 'Pointe-Noire',
+    'CD': 'Kinshasa',
+    'CK': 'Rarotonga',
+    'CR': 'San José',
+    'CI': 'Abidjan',
+    'HR': 'Zagreb',
+    'CU': 'La Habana',
+    'CY': 'Nicosia',
+    'CZ': 'Prague',
+    'DK': 'Capital Region',
+    'DJ': 'Djibouti',
+    'DM': 'Saint George',
+    'DO': 'Distrito Nacional',
+    'EC': 'Pichincha',
+    'EG': 'Cairo',
+    'SV': 'San Salvador',
+    'GQ': 'Bioko Norte',
+    'ER': 'Maekel',
+    'EE': 'Harju',
+    'ET': 'Oromia',
+    'FK': 'Falkland Islands',
+    'FO': 'Streymoy',
+    'FJ': 'Central',
+    'FI': 'Uusimaa',
+    'GF': 'French Guiana',
+    'PF': 'Tahiti',
+    'TF': 'French Southern Territories',
+    'GA': 'Estuaire',
+    'GM': 'Banjul',
+    'GE': 'Tbilisi',
+    'GH': 'Greater Accra',
+    'GI': 'Gibraltar',
+    'GR': 'Attica',
+    'GL': 'Sermersooq',
+    'GD': 'Saint George',
+    'GP': 'Guadeloupe',
+    'GU': 'Guam',
+    'GT': 'Guatemala Department',
+    'GG': 'Guernsey',
+    'GN': 'Conakry',
+    'GW': 'Bissau',
+    'GY': 'Demerara-Mahaica',
+    'HT': 'Ouest',
+    'HM': 'Heard Island and McDonald Islands',
+    'VA': 'Vatican City',
+    'HN': 'Francisco Morazán',
+    'HK': 'Hong Kong Island',
+    'HU': 'Budapest',
+    'IS': 'Capital Region',
+    'IN': 'Maharashtra',
+    'ID': 'West Java',
+    'IR': 'Tehran',
+    'IQ': 'Baghdad',
+    'IE': 'Leinster',
+    'IM': 'Isle of Man',
+    'IL': 'Tel Aviv',
+    'IT': 'Lombardy',
+    'JM': 'Surrey',
+    'JP': 'Tokyo',
+    'JE': 'Jersey',
+    'JO': 'Amman',
+    'KZ': 'Almaty',
+    'KE': 'Nairobi',
+    'KI': 'Tarawa',
+    'KP': 'Pyongyang',
+    'KR': 'Seoul',
+    'KW': 'Al Asimah',
+    'KG': 'Bishkek',
+    'LA': 'Vientiane',
+    'LV': 'Riga',
+    'LB': 'Beirut',
+    'LS': 'Maseru',
+    'LR': 'Montserrado',
+    'LY': 'Tripoli',
+    'LI': 'Vaduz',
+    'LT': 'Vilnius County',
+    'LU': 'Luxembourg',
+    'MO': 'Macau',
+    'MK': 'Skopje',
+    'MG': 'Analamanga',
+    'MW': 'Central',
+    'MY': 'Selangor',
+    'MV': 'Malé',
+    'ML': 'Bamako',
+    'MT': 'Central',
+    'MH': 'Majuro',
+    'MQ': 'Martinique',
+    'MR': 'Nouakchott',
+    'MU': 'Plaines Wilhems',
+    'YT': 'Mayotte',
+    'MX': 'Mexico City',
+    'FM': 'Chuuk',
+    'MD': 'Chișinău',
+    'MC': 'Monaco',
+    'MN': 'Ulaanbaatar',
+    'ME': 'Podgorica',
+    'MS': 'Saint Peter',
+    'MA': 'Casablanca-Settat',
+    'MZ': 'Maputo City',
+    'MM': 'Yangon',
+    'NA': 'Khomas',
+    'NR': 'Denigomodu',
+    'NP': 'Bagmati',
+    'NL': 'North Holland',
+    'NC': 'South Province',
+    'NZ': 'Auckland',
+    'NI': 'Managua',
+    'NE': 'Niamey',
+    'NG': 'Lagos',
+    'NU': 'Niue',
+    'NF': 'Norfolk Island',
+    'MP': 'Northern Islands',
+    'NO': 'Oslo',
+    'OM': 'Muscat',
+    'PK': 'Punjab',
+    'PW': 'Koror',
+    'PS': 'West Bank',
+    'PA': 'Panamá',
+    'PG': 'National Capital',
+    'PY': 'Central',
+    'PE': 'Lima',
+    'PH': 'Metro Manila',
+    'PN': 'Pitcairn Islands',
+    'PL': 'Masovian',
+    'PT': 'Lisbon',
+    'PR': 'San Juan',
+    'QA': 'Ad Dawhah',
+    'RE': 'Réunion',
+    'RO': 'Bucharest',
+    'RU': 'Moscow',
+    'RW': 'Kigali',
+    'BL': 'Saint Barthelemy',
+    'SH': 'Saint Helena',
+    'KN': 'Saint George Basseterre',
+    'LC': 'Castries',
+    'MF': 'Saint Martin',
+    'PM': 'Saint Pierre and Miquelon',
+    'VC': 'Charlotte',
+    'WS': 'Upolu',
+    'SM': 'San Marino',
+    'ST': 'São Tomé',
+    'SA': 'Riyadh',
+    'SN': 'Dakar',
+    'RS': 'Belgrade',
+    'SC': 'Mahé',
+    'SL': 'Western Area',
+    'SG': 'Central',
+    'SX': 'Sint Maarten',
+    'SK': 'Bratislava',
+    'SI': 'Central Slovenia',
+    'SB': 'Guadalcanal',
+    'SO': 'Banaadir',
+    'ZA': 'Gauteng',
+    'GS': 'South Georgia',
+    'SS': 'Jonglei',
+    'ES': 'Madrid',
+    'LK': 'Western',
+    'SD': 'Khartoum',
+    'SR': 'Paramaribo',
+    'SJ': 'Svalbard',
+    'SZ': 'Hhohho',
+    'SE': 'Stockholm',
+    'CH': 'Zürich',
+    'SY': 'Damascus',
+    'TW': 'Taipei',
+    'TJ': 'Dushanbe',
+    'TZ': 'Dar es Salaam',
+    'TH': 'Bangkok',
+    'TL': 'Dili',
+    'TG': 'Maritime',
+    'TK': 'Tokelau',
+    'TO': 'Tongatapu',
+    'TT': 'San Juan-Laventille',
+    'TN': 'Tunis',
+    'TR': 'Istanbul',
+    'TM': 'Ashgabat',
+    'TC': 'Grand Turk',
+    'TV': 'Funafuti',
+    'UG': 'Central',
+    'UA': 'Kyiv',
+    'AE': 'Dubai',
+    'GB': 'England',
+    'US': 'District of Columbia',
+    'UM': 'United States Minor Outlying Islands',
+    'UY': 'Montevideo',
+    'UZ': 'Tashkent',
+    'VU': 'Shefa',
+    'VE': 'Capital District',
+    'VN': 'Ho Chi Minh City',
+    'VG': 'Tortola',
+    'VI': 'Saint Thomas',
+    'WF': 'Wallis and Futuna',
+    'EH': 'Western Sahara',
+    'YE': 'Sana\'a',
+    'ZM': 'Lusaka',
+    'ZW': 'Harare',
+    'AX': 'Åland Islands',
+    'default': 'Capital District'
+};
+
+const TIMEZONES = {
+    'US': 'UTC-5 to UTC-10',
+    'CA': 'UTC-3 to UTC-8',
+    'GB': 'GMT/BST',
+    'DE': 'CET/CEST',
+    'FR': 'CET/CEST',
+    'AF': 'AFT',
+    'AL': 'CET/CEST',
+    'DZ': 'CET/CEST',
+    'AS': 'SST',
+    'AD': 'CET/CEST',
+    'AO': 'WAT',
+    'AI': 'AST',
+    'AQ': 'Various (UTC-12 to UTC+12)',
+    'AG': 'AST',
+    'AR': 'ART',
+    'AM': 'AMT',
+    'AW': 'AST',
+    'AU': 'AWST/AEST/AEST',
+    'AT': 'CET/CEST',
+    'AZ': 'AZT/AZST',
+    'BS': 'EST',
+    'BH': 'AST',
+    'BD': 'BST',
+    'BB': 'AST',
+    'BY': 'MSK/EET',
+    'BE': 'CET/CEST',
+    'BZ': 'CST',
+    'BJ': 'WAT',
+    'BM': 'AST',
+    'BT': 'BTT',
+    'BO': 'BOT',
+    'BA': 'CET/CEST',
+    'BW': 'CAT',
+    'BV': 'UTC',
+    'BR': 'BRT/BRST',
+    'IO': 'UTC',
+    'BN': 'BNT',
+    'BG': 'EET/EEST',
+    'BF': 'GMT',
+    'BI': 'CAT',
+    'KH': 'ICT',
+    'CM': 'WAT',
+    'CV': 'CVT',
+    'KY': 'EST',
+    'CF': 'WAT',
+    'TD': 'WAT',
+    'CL': 'CLT/CLST',
+    'CN': 'CST',
+    'CX': 'AWST',
+    'CC': 'CCT',
+    'CO': 'COT',
+    'KM': 'EAT',
+    'CG': 'WAT',
+    'CD': 'WAT',
+    'CK': 'CKT',
+    'CR': 'CST',
+    'CI': 'GMT',
+    'HR': 'CET/CEST',
+    'CU': 'CST',
+    'CY': 'EET/EEST',
+    'CZ': 'CET/CEST',
+    'DK': 'CET/CEST',
+    'DJ': 'EAT',
+    'DM': 'AST',
+    'DO': 'AST',
+    'EC': 'ECT',
+    'EG': 'EET',
+    'SV': 'CST',
+    'GQ': 'WAT',
+    'ER': 'EAT',
+    'EE': 'EET/EEST',
+    'ET': 'EAT',
+    'FK': 'FKST',
+    'FO': 'WET/WEST',
+    'FJ': 'FJT',
+    'FI': 'EET/EEST',
+    'GF': 'UTC-3',
+    'PF': 'TAHT',
+    'TF': 'TFT',
+    'GA': 'WAT',
+    'GM': 'GMT',
+    'GE': 'GET',
+    'GH': 'GMT',
+    'GI': 'CET/CEST',
+    'GR': 'EET/EEST',
+    'GL': 'WEGT/WT',
+    'GD': 'AST',
+    'GP': 'AST',
+    'GU': 'ChST',
+    'GT': 'CST',
+    'GG': 'GMT/BST',
+    'GN': 'GMT',
+    'GW': 'GMT',
+    'GY': 'GYT',
+    'HT': 'EST',
+    'HM': 'UTC',
+    'VA': 'CET/CEST',
+    'HN': 'CST',
+    'HK': 'HKT',
+    'HU': 'CET/CEST',
+    'IS': 'GMT',
+    'IN': 'IST',
+    'ID': 'WIB/WITA/WIT',
+    'IR': 'IRST',
+    'IQ': 'AST',
+    'IE': 'GMT/IST',
+    'IM': 'GMT/BST',
+    'IL': 'IST/IDT',
+    'IT': 'CET/CEST',
+    'JM': 'EST',
+    'JP': 'JST',
+    'JE': 'GMT/BST',
+    'JO': 'EET/EEST',
+    'KZ': 'ALMT/ORAT',
+    'KE': 'EAT',
+    'KI': 'GILT',
+    'KP': 'KST',
+    'KR': 'KST',
+    'KW': 'AST',
+    'KG': 'KGT',
+    'LA': 'ICT',
+    'LV': 'EET/EEST',
+    'LB': 'EET/EEST',
+    'LS': 'SAST',
+    'LR': 'GMT',
+    'LY': 'EET',
+    'LI': 'CET/CEST',
+    'LT': 'EET/EEST',
+    'LU': 'CET/CEST',
+    'MO': 'CST',
+    'MK': 'CET/CEST',
+    'MG': 'EAT',
+    'MW': 'CAT',
+    'MY': 'MYT',
+    'MV': 'MVT',
+    'ML': 'GMT',
+    'MT': 'CET/CEST',
+    'MH': 'MHT/KWJT',
+    'MQ': 'AST',
+    'MR': 'GMT',
+    'MU': 'MUT',
+    'YT': 'EAT',
+    'MX': 'CST/CDT',
+    'FM': 'CHUT/PONT',
+    'MD': 'EET/EEST',
+    'MC': 'CET/CEST',
+    'MN': 'ULAT/Khovd',
+    'ME': 'CET/CEST',
+    'MS': 'AST',
+    'MA': 'WET/WEST',
+    'MZ': 'CAT',
+    'MM': 'MMT',
+    'NA': 'CAT',
+    'NR': 'NRT',
+    'NP': 'NPT',
+    'NL': 'CET/CEST',
+    'NC': 'NCT',
+    'NZ': 'NZST/NZDT',
+    'NI': 'CST',
+    'NE': 'WAT',
+    'NG': 'WAT',
+    'NU': 'NUT',
+    'NF': 'NFT',
+    'MP': 'ChST',
+    'NO': 'CET/CEST',
+    'OM': 'GST',
+    'PK': 'PKT',
+    'PW': 'PWT',
+    'PS': 'EET/EEST',
+    'PA': 'EST',
+    'PG': 'PGT',
+    'PY': 'PYST/PYT',
+    'PE': 'PET',
+    'PH': 'PST',
+    'PN': 'PST',
+    'PL': 'CET/CEST',
+    'PT': 'WET/WEST',
+    'PR': 'AST',
+    'QA': 'AST',
+    'RE': 'RET',
+    'RO': 'EET/EEST',
+    'RU': 'MSK/SAMT/YEKT',
+    'RW': 'CAT',
+    'BL': 'AST',
+    'SH': 'GMT',
+    'KN': 'AST',
+    'LC': 'AST',
+    'MF': 'AST',
+    'PM': 'PMST',
+    'VC': 'AST',
+    'WS': 'WST',
+    'SM': 'CET/CEST',
+    'ST': 'GMT',
+    'SA': 'AST',
+    'SN': 'GMT',
+    'RS': 'CET/CEST',
+    'SC': 'SCT',
+    'SL': 'GMT',
+    'SG': 'SGT',
+    'SX': 'AST',
+    'SK': 'CET/CEST',
+    'SI': 'CET/CEST',
+    'SB': 'SBT',
+    'SO': 'EAT',
+    'ZA': 'SAST',
+    'GS': 'GST',
+    'SS': 'EAT',
+    'ES': 'CET/CEST',
+    'LK': 'IST',
+    'SD': 'CAT',
+    'SR': 'SRT',
+    'SJ': 'CET/CEST',
+    'SZ': 'SAST',
+    'SE': 'CET/CEST',
+    'CH': 'CET/CEST',
+    'SY': 'EET',
+    'TW': 'CST',
+    'TJ': 'TJT',
+    'TZ': 'EAT',
+    'TH': 'ICT',
+    'TL': 'TLT',
+    'TG': 'GMT',
+    'TK': 'TKT',
+    'TO': 'TOT',
+    'TT': 'AST',
+    'TN': 'CET/CEST',
+    'TR': 'TRT',
+    'TM': 'TMT',
+    'TC': 'EST',
+    'TV': 'TVT',
+    'UG': 'EAT',
+    'UA': 'EET/EEST',
+    'AE': 'GST',
+    'GB': 'GMT/BST',
+    'US': 'UTC-5 to UTC-10',
+    'UM': 'Various',
+    'UY': 'UYST',
+    'UZ': 'UZT',
+    'VU': 'VUT',
+    'VE': 'VET',
+    'VN': 'ICT',
+    'VG': 'AST',
+    'VI': 'AST',
+    'WF': 'WFT',
+    'EH': 'WAT',
+    'YE': 'AST',
+    'ZM': 'CAT',
+    'ZW': 'CAT',
+    'AX': 'EET/EEST',
+    'default': 'UTC'
+};
+
+        // ==========================================
+        // 2. AUTO-DETECTION LOGIC
+        // ==========================================
+
+        const phoneInput = document.getElementById('phoneInput');
+        const detectedInfo = document.getElementById('detectedInfo');
+        const detectBadge = document.getElementById('detectBadge');
+        let currentDetectedCode = null;
+
+        // Sort countries by dial code length (descending) to match longest prefixes first
+        // This ensures +1242 (Bahamas) is checked before +1 (US)
+        const sortedCountries = Object.entries(DIAL_CODES).sort((a, b) => b[1].length - a[1].length);
+
+        phoneInput.addEventListener('input', (e) => {
+            let raw = e.target.value.replace(/\D/g, ''); // Remove non-digits
+            
+            // Handle user typing +
+            if(e.target.value.startsWith('+')) raw = raw.substring(1);
+
+            let detected = null;
+
+            // Search for matching prefix
+            for (const [code, dialCode] of sortedCountries) {
+                const prefix = dialCode.replace('+', '');
+                if (raw.startsWith(prefix)) {
+                    detected = code;
+                    break;
+                }
+            }
+
+            if (detected && detected !== currentDetectedCode) {
+                currentDetectedCode = detected;
+                const countryName = COUNTRY_NAMES[detected];
+                const capital = CITIES[detected];
+                
+                // Show detected info
+                detectedInfo.style.opacity = '1';
+                detectedInfo.innerHTML = `> DETECTED: <span style="color:#fff">${countryName}</span> (${capital})`;
+                detectBadge.style.display = 'block';
+                
+                // Add green glow to input
+                phoneInput.style.borderColor = '#00ff41';
+            } else if (!detected && currentDetectedCode) {
+                // Lost detection
+                currentDetectedCode = null;
+                detectedInfo.style.opacity = '0';
+                detectBadge.style.display = 'none';
+                phoneInput.style.borderColor = '#003300';
+            }
+        });
+
+        // ==========================================
+        // 3. SCAN LOGIC
+        // ==========================================
+
+        const scanBtn = document.getElementById('scanBtn');
+        const resultsDiv = document.getElementById('results');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const statsBar = document.getElementById('statsBar');
+
+        scanBtn.addEventListener('click', () => {
+            const rawNumber = phoneInput.value.replace(/\D/g, '');
+            
+            // Re-verify detection
+            let detected = null;
+            for (const [code, dialCode] of sortedCountries) {
+                if (rawNumber.startsWith(dialCode.replace('+', ''))) {
+                    detected = code;
+                    break;
+                }
+            }
+
+            if (!detected || rawNumber.length < 5) {
+                alert('Could not auto-detect country. Please enter a valid international number (e.g. +1 555...).');
+                return;
+            }
+
+            // Assemble Data
+            const data = {
+                code: detected,
+                name: COUNTRY_NAMES[detected],
+                dialCode: DIAL_CODES[detected],
+                city: CITIES[detected],
+                location: LOCATIONS[detected],
+                street: STREETS[detected] || STREETS['default'],
+                region: REGIONS[detected] || REGIONS['default'],
+                timezone: TIMEZONES[detected] || TIMEZONES['default'],
+                zip: '00000'
+            };
+
+            const formattedNumber = `+${rawNumber}`;
+
+            // UI Feedback
+            document.getElementById('targetDisplay').textContent = `TARGET: ${formattedNumber} // ${data.name.toUpperCase()}`;
+            loadingOverlay.style.display = 'flex';
+            resultsDiv.innerHTML = '';
+
+            setTimeout(() => {
+                loadingOverlay.style.display = 'none';
+                renderResults(formattedNumber, data);
+            }, 1000);
+        });
+
+        function renderResults(number, data) {
+            statsBar.style.display = 'grid';
+            document.getElementById('countryNameDisplay').textContent = data.name.toUpperCase();
+            document.getElementById('cityDisplay').textContent = data.city;
+            document.getElementById('dialCodeDisplay').textContent = data.dialCode;
+
+            const dataCard = document.createElement('div');
+            dataCard.className = 'result-card';
+            dataCard.innerHTML = `
+                <div class="card-header">
+                    <span class="card-title">Target Profile (Auto-Detected)</span>
+                    <span>📍</span>
+                </div>
+                <div class="card-body">
+                    <div class="data-row"><span class="data-label">Country</span><span class="data-value">${data.name}</span></div>
+                    <div class="data-row"><span class="data-label">Capital</span><span class="data-value">${data.city}</span></div>
+                    <div class="data-row"><span class="data-label">Location</span><span class="data-value">${data.location}</span></div>
+                    <div class="data-row"><span class="data-label">Region</span><span class="data-value">${data.region}</span></div>
+                    <div class="data-row"><span class="data-label">Street</span><span class="data-value">${data.street}</span></div>
+                    <div class="data-row"><span class="data-label">Timezone</span><span class="data-value">${data.timezone}</span></div>
+                </div>
+            `;
+            resultsDiv.appendChild(dataCard);
+
+            const osintCard = document.createElement('div');
+            osintCard.className = 'result-card';
+
+            const links = [
+                { name: "Google Search", url: `https://www.google.com/search?q="${number}"` },
+                { name: "Google Images", url: `https://www.google.com/search?tbm=isch&q="${number}"` },
+                { name: "Bing Search", url: `https://www.bing.com/search?q="${number}"` },
+                { name: "Yandex Search", url: `https://yandex.com/search/?text="${number}"` },
+                { name: "WhoCallsMe", url: `https://whocallsme.com/Phone-Number.aspx/${number}` },
+                { name: "Sync.me", url: `https://sync.me/search?number=${number}` },
+                { name: "TrueCaller", url: `https://www.truecaller.com/search/${data.dialCode.replace('+','')}/${number.replace(/\D/g,'')}` },
+                { name: "SpamReports", url: `https://spamcalls.net/en/Number-Details/${number}` },
+                { name: "Social Mention", url: `https://www.socialmention.com/search?q="${number}"&t=all` },
+                { name: "GetContact", url: `https://getcontact.com/en` }
+            ];
+
+            let linksHtml = '<div class="osint-links">';
+            links.forEach(link => {
+                linksHtml += `
+                    <a href="${link.url}" target="_blank" class="osint-link">
+                        <span class="osint-name">${link.name}</span>
+                        <span class="osint-arrow">➔</span>
+                    </a>
+                `;
+            });
+            linksHtml += '</div>';
+
+            osintCard.innerHTML = `
+                <div class="card-header">
+                    <span class="card-title">OSINT Search Vectors</span>
+                    <span>🔍</span>
+                </div>
+                <div class="card-body">
+                    <p style="margin-bottom:15px; color:#aaa; font-size:0.9rem;">Global intelligence vectors generated for ${number}</p>
+                    ${linksHtml}
+                </div>
+            `;
+            resultsDiv.appendChild(osintCard);
+        }
+
+        // ==========================================
+        // 4. MATRIX EFFECT
+        // ==========================================
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%';
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = Array(Math.floor(columns)).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0F0';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = letters.charAt(Math.floor(Math.random() * letters.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        setInterval(drawMatrix, 33);
+
+    </script>
+</body>
+</html>

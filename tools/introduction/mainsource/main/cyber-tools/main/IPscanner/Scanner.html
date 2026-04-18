@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>AI IP Scanner</title>
+    <style>
+        body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 0;
+        }
+        .scanner {
+            max-width: 900px;
+            margin: 2rem auto;
+            background-color: #000;
+            border-radius: 10px;
+            padding: 2rem;
+            border: 1px solid #00ff88;
+            box-shadow: 0 0 15px #00ff88;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            text-shadow: 0 0 10px #00ff88;
+        }
+        input {
+            width: 45%;
+            padding: 0.5rem;
+            margin: 0.5rem;
+            background: #111;
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            border-radius: 6px;
+            font-family: monospace;
+        }
+        button {
+            padding: 0.6rem 1rem;
+            background: #ff0000;
+            color: #7dff04;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            display: block;
+            margin: 1rem auto;
+        }
+        button:hover {
+            background: #6706e6;
+        }
+        .output, .ai-panel {
+            white-space: pre-wrap;
+            background: #111;
+            padding: 1rem;
+            border: 1px solid #00ff88;
+            border-radius: 6px;
+            margin-top: 1rem;
+        }
+        .ai-panel {
+            border-style: dashed;
+        }
+        .range-input {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="scanner">
+        <h1>🌐 AI IP Scanner</h1>
+        <div class="range-input">
+            <input type="text" id="start-ip" placeholder="Start IP (e.g. 192.168.1.1)" />
+            <input type="text" id="end-ip" placeholder="End IP (e.g. 192.168.1.5)" />
+        </div>
+        <button onclick="scanCustomRange()">📡 Scan IP Range</button>
+        <button onclick="stopScan()">🛑 Stop Scan</button>
+        <button onclick="exportResults()">📥 Export Results</button>
+        <div class="output" id="output">> Enter IP range and scan...</div>
+        <div class="ai-panel" id="ai-panel" style="display: none;"></div>
+    </div>
+    <script>
+        const knownPorts = [
+            { port: 2222, service: "Alt SSH (Dropbear/Custom)" },
+            { port: 23, service: "Telnet (Insecure)" },
+            { port: 2323, service: "Telnet Honeypot Port" },
+            { port: 50022, service: "Custom SSH Gateway" },
+            { port: 1604, service: "DarkComet RAT" },
+            { port: 9001, service: "BO2K (Back Orifice 2K)" },
+            { port: 3131, service: "Cobalt Strike Beacon" },
+            { port: 6969, service: "C2 Server (Simulated)" },
+            { port: 7000, service: "NetWire RAT" },
+            { port: 4444, service: "Metasploit Handler" },
+            { port: 4505, service: "SaltStack Master" },
+            { port: 4506, service: "SaltStack Minion" },
+            { port: 2375, service: "Docker Daemon (Insecure)" },
+            { port: 2376, service: "Docker Daemon (TLS)" },
+            { port: 8500, service: "Consul" },
+            { port: 8200, service: "HashiCorp Vault" },
+            { port: 9990, service: "WildFly Admin" },
+            { port: 20000, service: "DNP3 (SCADA)" },
+            { port: 44818, service: "EtherNet/IP (ICS)" },
+            { port: 502, service: "Modbus TCP (ICS)" },
+            { port: 47808, service: "BACnet (Building Automation)" },
+            { port: 4222, service: "NATS Messaging" },
+            { port: 5672, service: "RabbitMQ (AMQP)" },
+            { port: 15672, service: "RabbitMQ Admin UI" },
+            { port: 9042, service: "Cassandra" },
+            { port: 6667, service: "IRC (or Attack Tool)" },
+            { port: 8888, service: "Jupyter Notebook" },
+            { port: 6006, service: "TensorBoard" },
+            { port: 8501, service: "Streamlit" },
+            { port: 7860, service: "Stable Diffusion UI" },
+            { port: 102, service: "Siemens S7 (ICS)" },
+            { port: 1911, service: "Tridium Niagara Fox" },
+            { port: 31337, service: "Elite Backdoor / NetBus" },
+            { port: 666, service: "Doom / Attack Tool Port" },
+            { port: 12345, service: "NetBus" },
+            { port: 27374, service: "Sub7 Trojan" },
+            { port: 54321, service: "SchoolBus Backdoor" },
+            { port: 1521, service: "Oracle DB" },
+            { port: 3306, service: "MySQL" },
+            { port: 5432, service: "PostgreSQL" },
+            { port: 27017, service: "MongoDB" },
+            { port: 6379, service: "Redis" },
+            { port: 9200, service: "Elasticsearch" },
+            { port: 30080, service: "Kubernetes HTTP" },
+            { port: 30443, service: "Kubernetes HTTPS" },
+            { port: 10250, service: "Kubelet API" },
+            { port: 10255, service: "Kubelet Read-Only" },
+            { port: 8333, service: "Bitcoin P2P" },
+            { port: 30303, service: "Ethereum Geth" },
+            { port: 18080, service: "Monero" },
+            { port: 9050, service: "Tor SOCKS Proxy" },
+            { port: 8118, service: "Privoxy Proxy" },
+            { port: 3128, service: "Squid Proxy" },
+            { port: 515, service: "LPD (Printer Daemon)" },
+            { port: 631, service: "IPP (Internet Printing)" },
+            { port: 445, service: "SMB (Windows File Sharing)" },
+            { port: 10000, service: "Webmin" },
+            { port: 2095, service: "cPanel Webmail" },
+            { port: 22222, service: "VestaCP / Custom Admin" },
+            { port: 9000, service: "SWIFT Interface" },
+            { port: 8443, service: "HTTPS Alt / Admin UI" }
+        ];
+
+        let scanning = false;
+        let scanInterval;
+
+        function isPrivateIP(ip) {
+            return (
+                ip.startsWith("10.") ||
+                (ip.startsWith("172.") && parseInt(ip.split(".")[1]) >= 16 && parseInt(ip.split(".")[1]) <= 31) ||
+                ip.startsWith("192.168.")
+            );
+        }
+
+        function ipToNumber(ip) {
+            return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0);
+        }
+
+        function numberToIP(num) {
+            return [24, 16, 8, 0].map(shift => (num >> shift) & 255).join('.');
+        }
+
+        async function scanCustomRange() {
+            const startIP = document.getElementById('start-ip').value;
+            const endIP = document.getElementById('end-ip').value;
+            const output = document.getElementById('output');
+            const aiPanel = document.getElementById('ai-panel');
+            aiPanel.style.display = 'none';
+            aiPanel.innerText = '';
+            if (!startIP || !endIP) {
+                output.innerText = '> Please enter both Start and End IP.';
+                return;
+            }
+            const start = ipToNumber(startIP);
+            const end = ipToNumber(endIP);
+            if (start > end) {
+                output.innerText = '> Start IP must be less than or equal to End IP.';
+                return;
+            }
+            typeOut(output, '> Scanning custom IP range...\n');
+            let scanned = [];
+            let aliveCount = 0;
+            let deadCount = 0;
+            scanning = true;
+            scanInterval = setInterval(async () => {
+                for (let i = start; i <= end && scanning; i++) {
+                    const ip = numberToIP(i);
+                    await new Promise(res => setTimeout(res, 120));
+                    let type = isPrivateIP(ip) ? '🛡️ Private' : '🌍 Public';
+                    let status = await checkIPStatus(ip);
+                    let deviceType = await detectDeviceType(ip);
+                    let openPort = knownPorts[Math.floor(Math.random() * knownPorts.length)];
+                    output.innerText += `> IP: ${ip} → ${type} | Status: ${status} | Device: ${deviceType} | Port: ${openPort.port} (${openPort.service})\n`;
+                    scanned.push({ ip, type, status, deviceType, openPort });
+                    if (status === 'Alive') aliveCount++;
+                    else deadCount++;
+                }
+                clearInterval(scanInterval);
+                aiPanel.innerText = generateRangeAnalysis(scanned, aliveCount, deadCount);
+                aiPanel.style.display = 'block';
+                scanning = false;
+            }, 0);
+        }
+
+        function stopScan() {
+            scanning = false;
+            clearInterval(scanInterval);
+            document.getElementById('output').innerText += '\n> Scan stopped.';
+        }
+
+        function exportResults() {
+            const output = document.getElementById('output').innerText;
+            const blob = new Blob([output], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'scan_results.txt';
+            link.click();
+        }
+
+        function typeOut(el, text, speed = 15) {
+            el.innerText = '';
+            let i = 0;
+            function type() {
+                if (i < text.length) {
+                    el.innerText += text.charAt(i);
+                    i++;
+                    setTimeout(type, speed);
+                }
+            }
+            type();
+        }
+
+        function generateRangeAnalysis(scanned, aliveCount, deadCount) {
+            const total = scanned.length;
+            const privateCount = scanned.filter(s => s.type.includes('Private')).length;
+            const publicCount = total - privateCount;
+            return `🤖 AI IP Range Analysis:\n 🔎 Scanned ${total} IPs:\n- 🛡️ Private IPs: ${privateCount}\n- 🌍 Public IPs: ${publicCount}\n- ✅ Alive Hosts: ${aliveCount}\n- ❌ Dead Hosts: ${deadCount}\n💡 Notes: - Private IPs are typically used for internal networks. - Public IPs may be routable over the internet and should be secured. 📘 Recommendation: - Avoid exposing unnecessary private IPs to public interfaces. - Consider subnetting for organized network segmentation. - Use NAT or VPNs to protect internal addresses.`;
+        }
+
+        async function checkIPStatus(ip) {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const isAlive = Math.random() > 0.5;
+                    resolve(isAlive ? 'Alive' : 'Dead');
+                }, 100);
+            });
+        }
+
+        async function detectDeviceType(ip) {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const deviceTypes = ['Phone', 'Tablet', 'Laptop', 'Computer'];
+                    const randomType = deviceTypes[Math.floor(Math.random() * deviceTypes.length)];
+                    let brand = '';
+                    let model = '';
+                    const phones = {
+                        Apple: ['iPhone 15 Pro', 'iPhone SE 2022', 'iPhone 13'],
+                        Samsung: ['Galaxy S23 Ultra', 'Galaxy A54', 'Galaxy Note20'],
+                        Xiaomi: ['Redmi Note 12', 'Mi 11', 'POCO X5'],
+                        Huawei: ['P50 Pro', 'Mate 40', 'Nova 9']
+                    };
+                    const tablets = {
+                        Apple: ['iPad Pro', 'iPad Air', 'iPad Mini'],
+                        Microsoft: ['Surface Pro 9', 'Surface Go 3'],
+                        Lenovo: ['Tab P11 Pro', 'Yoga Tab 13'],
+                        Samsung: ['Galaxy Tab S8', 'Galaxy Tab A8']
+                    };
+                    const computers = {
+                        Dell: ['XPS 13', 'Inspiron 15', 'Latitude 7430'],
+                        HP: ['Pavilion 14', 'EliteBook 840', 'Spectre x360'],
+                        ASUS: ['ROG Zephyrus G14', 'VivoBook 15'],
+                        Acer: ['Aspire 5', 'Predator Helios 300']
+                    };
+                    const selectRandom = obj => {
+                        const brands = Object.keys(obj);
+                        const randomBrand = brands[Math.floor(Math.random() * brands.length)];
+                        const randomModel = obj[randomBrand][Math.floor(Math.random() * obj[randomBrand].length)];
+                        return `${randomBrand} ${randomModel}`;
+                    };
+                    if (randomType === 'Phone') model = selectRandom(phones);
+                    else if (randomType === 'Tablet') model = selectRandom(tablets);
+                    else model = selectRandom(computers);
+                    resolve(`${randomType} (${model})`);
+                }, 100);
+            });
+        }
+
+        function getRandomDeviceType() {
+            const devices = [
+                '💻 PC (Windows)',
+                '💻 Laptop (Mac)',
+                '📱 Mobile (Android)',
+                '📱 iPhone',
+                '📱 Tablet',
+                '🧠 IoT Device',
+                '📺 Smart TV',
+                '📡 Router',
+                '🖨️ Printer',
+                '🔐 Firewall',
+                '💾 NAS Storage',
+                '🕹️ Gaming Console'
+            ];
+            return devices[Math.floor(Math.random() * devices.length)];
+        }
+    </script>
+</body>
+</html>

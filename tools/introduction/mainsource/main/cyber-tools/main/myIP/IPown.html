@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MY IPown</title>
+  <style>
+    body {
+      background-color: white;
+      color: #00ff88;
+      font-family: 'Courier New', monospace;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      margin: 0;
+      padding: 0;
+    }
+    .scanner {
+      max-width: 900px;
+      margin: 2rem auto;
+      background-color: #000;
+      border-radius: 10px;
+      padding: 2rem;
+      border: 1px solid #00ff88;
+      box-shadow: 0 0 15px #00ff88;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.5rem;
+      text-shadow: 0 0 10px #00ff88;
+    }
+    button {
+      padding: 0.6rem 1rem;
+      background: #ff0000;
+      color: #00ff15;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: block;
+      margin: 1rem auto;
+    }
+    button:hover {
+      background: #00cc66;
+    }
+    .output, .ai-panel {
+      white-space: pre-wrap;
+      background: #111;
+      padding: 1rem;
+      border: 1px solid #00ff88;
+      border-radius: 6px;
+      margin-top: 1rem;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .ai-panel {
+      border-style: dashed;
+    }
+  </style>
+</head>
+<body>
+
+<div class="scanner">
+  <h1>🌐 AI IP Own</h1>
+  <button onclick="scanIP()">🔍 Simulate Full Port Scan (1 - 65535)</button>
+  <div class="output" id="output">> Ready to scan...</div>
+  <div class="ai-panel" id="ai-panel" style="display: none;"></div>
+</div>
+<script>
+    async function scanIP() {
+      const output = document.getElementById('output');
+      const aiPanel = document.getElementById('ai-panel');
+      aiPanel.style.display = 'none';
+      aiPanel.innerText = '';
+      output.innerText = '';
+  
+      typeOut(output, '> Scanning public IP, local IPs, and ports...\n');
+  
+      // Public IP via API
+      let publicIP = 'Unknown';
+      try {
+        const res = await fetch('https://api64.ipify.org?format=json');
+        const data = await res.json();
+        publicIP = data.ip;
+      } catch {
+        publicIP = 'Error fetching public IP';
+      }
+  
+      // Local IPs via WebRTC
+      let privateIPs = new Set();
+      try {
+        const pc = new RTCPeerConnection({iceServers: []});
+        pc.createDataChannel("");
+        pc.createOffer().then(offer => pc.setLocalDescription(offer));
+        pc.onicecandidate = event => {
+          if (event && event.candidate && event.candidate.candidate) {
+            const ipMatch = event.candidate.candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3})/);
+            if (ipMatch) privateIPs.add(ipMatch[1]);
+          }
+        };
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      } catch {
+        privateIPs.add("Error detecting local IP");
+      }
+  
+      output.innerText += `> Public IP: ${publicIP}\n> Private IP(s): ${[...privateIPs].join(', ') || 'None'}\n`;
+      output.innerText += '> Simulating full port scan from port 1 to 65535...\n';
+  
+      const openPorts = [];
+      const simulatedOpenPorts = [
+        // Well-known ports (0–1023)
+        { port: 7, service: "Echo" },
+        { port: 9, service: "Discard" },
+        { port: 13, service: "Daytime" },
+        { port: 19, service: "CHARGEN" },
+        { port: 20, service: "FTP Data" },
+        { port: 21, service: "FTP Control" },
+        { port: 22, service: "SSH" },
+        { port: 23, service: "Telnet" },
+        { port: 25, service: "SMTP" },
+        { port: 37, service: "Time Protocol" },
+        { port: 53, service: "DNS" },
+        { port: 67, service: "DHCP Server" },
+        { port: 68, service: "DHCP Client" },
+        { port: 69, service: "TFTP" },
+        { port: 79, service: "Finger" },
+        { port: 80, service: "HTTP" },
+        { port: 110, service: "POP3" },
+        { port: 119, service: "NNTP" },
+        { port: 123, service: "NTP" },
+        { port: 135, service: "RPC" },
+        { port: 137, service: "NetBIOS Name" },
+        { port: 138, service: "NetBIOS Datagram" },
+        { port: 139, service: "NetBIOS Session" },
+        { port: 143, service: "IMAP" },
+        { port: 161, service: "SNMP" },
+        { port: 162, service: "SNMP Trap" },
+        { port: 179, service: "BGP" },
+        { port: 194, service: "IRC" },
+        { port: 389, service: "LDAP" },
+        { port: 443, service: "HTTPS" },
+        { port: 445, service: "Microsoft-DS" },
+        { port: 465, service: "SMTPS" },
+        { port: 500, service: "IPSec (ISAKMP)" },
+        { port: 514, service: "Syslog" },
+        { port: 515, service: "LPD (Line Printer Daemon)" },
+        { port: 520, service: "RIP" },
+        { port: 587, service: "SMTP (submission)" },
+        { port: 631, service: "IPP (Internet Printing Protocol)" },
+        { port: 636, service: "LDAPS" },
+        { port: 873, service: "rsync" },
+        { port: 993, service: "IMAPS" },
+        { port: 995, service: "POP3S" },
+        { port: 1080, service: "SOCKS Proxy" },
+        { port: 1194, service: "OpenVPN" },
+        { port: 1352, service: "Lotus Notes" },
+        { port: 1433, service: "Microsoft SQL Server" },
+        { port: 1521, service: "Oracle DB" },
+        { port: 1701, service: "L2TP" },
+        { port: 1723, service: "PPTP VPN" },
+        { port: 1812, service: "RADIUS (Auth)" },
+        { port: 1813, service: "RADIUS (Acct)" },
+        { port: 2049, service: "NFS" },
+        { port: 2082, service: "cPanel Admin" },
+        { port: 2083, service: "cPanel Admin SSL" },
+        { port: 2483, service: "Oracle DB (non-SSL)" },
+        { port: 2484, service: "Oracle DB (SSL)" },
+        { port: 2600, service: "Zebra Routing" },
+        { port: 3306, service: "MySQL" },
+        { port: 3389, service: "RDP" },
+        { port: 3690, service: "Subversion (SVN)" },
+        { port: 4000, service: "Terra" },
+        { port: 4444, service: "Metasploit" },
+        { port: 5000, service: "UPnP" },
+        { port: 5060, service: "SIP (VoIP)" },
+        { port: 5432, service: "PostgreSQL" },
+        { port: 5500, service: "VNC over HTTP" },
+        { port: 5631, service: "PCAnywhere Data" },
+        { port: 5900, service: "VNC" },
+        { port: 6000, service: "X11" },
+        { port: 6379, service: "Redis" },
+        { port: 7001, service: "WebLogic" },
+        { port: 8000, service: "Common HTTP Alt" },
+        { port: 8080, service: "HTTP Proxy/Alt" },
+        { port: 8081, service: "HTTP Admin Alt" },
+        { port: 8443, service: "HTTPS Alt" },
+        { port: 8888, service: "Alt HTTP Services" },
+        { port: 9000, service: "SonarQube/Dev Tools" },
+        { port: 9090, service: "Web Admin/Monitor" },
+        { port: 9200, service: "Elasticsearch" },
+        { port: 9999, service: "Monitoring/Debug Tools" },
+        { port: 10000, service: "Webmin" },
+        { port: 11211, service: "Memcached" },
+        { port: 27017, service: "MongoDB" },
+        { port: 28017, service: "MongoDB Web Admin" },
+        // Game servers and real-time apps
+        { port: 25565, service: "Minecraft Server" },
+        { port: 27015, service: "Steam (Source Engine)" },
+        { port: 28960, service: "Call of Duty" },
+        // Development tools and frameworks
+        { port: 3000, service: "Node.js Dev Server" },
+        { port: 3001, service: "React Dev Tools" },
+        { port: 4200, service: "Angular Dev Server" },
+        { port: 5001, service: "HTTPS Dev Tools" },
+        { port: 5173, service: "Vite Dev Server" },
+        // Remote management / Admin
+        { port: 5800, service: "VNC Web Interface" },
+        { port: 8008, service: "HTTP Alt (IoT / Chromecast)" },
+        { port: 8181, service: "Web Admin / Node-RED" },
+        { port: 9001, service: "Tor / Web Admin" },
+        { port: 9091, service: "Transmission Web UI" },
+        // Security & monitoring tools
+        { port: 9390, service: "OpenVAS" },
+        { port: 10050, service: "Zabbix Agent" },
+        { port: 10051, service: "Zabbix Server" },
+        // Enterprise / Middleware
+        { port: 61616, service: "Apache ActiveMQ" },
+        { port: 5672, service: "RabbitMQ" },
+        { port: 15672, service: "RabbitMQ Management" },
+        // Elasticsearch / Kibana
+        { port: 9200, service: "Elasticsearch" },
+        { port: 9300, service: "Elasticsearch Node Comm" },
+        { port: 5601, service: "Kibana" },
+        // DevOps & Docker
+        { port: 2375, service: "Docker API (insecure)" },
+        { port: 2376, service: "Docker API (secure)" },
+        { port: 7946, service: "Docker Swarm" },
+        { port: 4789, service: "Docker Overlay Network" },
+        // SCADA / ICS systems
+        { port: 20000, service: "DNP3 SCADA Protocol" },
+        { port: 44818, service: "EtherNet/IP (Rockwell)" },
+        { port: 502, service: "Modbus TCP" },
+        // IoT & Home Automation
+        { port: 1883, service: "MQTT" },
+        { port: 8883, service: "MQTT over TLS" },
+        { port: 49152, service: "UPnP (IoT / Printers)" },
+        // Misc popular services
+        { port: 2222, service: "Alternate SSH" },
+        { port: 6543, service: "MythTV" },
+        { port: 6667, service: "IRC" },
+        { port: 8009, service: "Tomcat AJP Connector" },
+        { port: 16992, service: "Intel AMT HTTP" },
+        { port: 16993, service: "Intel AMT HTTPS" },
+        { port: 50070, service: "Hadoop NameNode" },
+        { port: 50470, service: "Hadoop Admin" },
+        // VoIP / SIP / Telephony
+        { port: 5060, service: "SIP (VoIP)" },
+        { port: 5061, service: "SIP-TLS (Secure VoIP)" },
+        { port: 5004, service: "RTP (Media Streaming)" },
+        // Mail servers (SMTP, IMAP, POP3, alt ports)
+        { port: 2525, service: "SMTP (Alt)" },
+        { port: 110, service: "POP3" },
+        { port: 995, service: "POP3 over SSL" },
+        { port: 143, service: "IMAP" },
+        { port: 993, service: "IMAP over SSL" },
+        { port: 8025, service: "MailCatcher SMTP" }
+      ];
+  
+      const services = [
+        // Proxy and anonymity tools
+        { port: 9050, service: "Tor SOCKS Proxy" },
+        { port: 8118, service: "Privoxy Proxy" },
+        { port: 3128, service: "Squid Proxy" },
+  
+        // Print / file sharing
+        { port: 515, service: "LPD (Printer Daemon)" },
+        { port: 631, service: "IPP (Internet Printing)" },
+        { port: 445, service: "SMB (Windows File Sharing)" },
+  
+        // Web admin / control panels
+        { port: 10000, service: "Webmin" },
+        { port: 2095, service: "cPanel Webmail" },
+        { port: 22222, service: "VestaCP / Custom Admin" },
+  
+        // Banking / finance systems
+        { port: 9000, service: "SWIFT Interface" },
+        { port: 8443, service: "HTTPS Alt / Admin UI" },
+  
+        // SCADA/ICS continued
+        { port: 102, service: "Siemens S7 (ICS)" },
+        { port: 1911, service: "Tridium Niagara Fox" },
+  
+        // Hacking-related / backdoor ports (simulated)
+        { port: 31337, service: "Elite Backdoor / NetBus" },
+        { port: 666, service: "Doom / Attack Tool Port" },
+        { port: 12345, service: "NetBus" },
+        { port: 27374, service: "Sub7 Trojan" },
+        { port: 54321, service: "SchoolBus Backdoor" },
+  
+        // Database systems
+        { port: 1521, service: "Oracle DB" },
+        { port: 3306, service: "MySQL" },
+        { port: 5432, service: "PostgreSQL" },
+        { port: 27017, service: "MongoDB" },
+        { port: 6379, service: "Redis" },
+        { port: 9200, service: "Elasticsearch" },
+  
+        // Cloud services & containers
+        { port: 30080, service: "Kubernetes HTTP" },
+        { port: 30443, service: "Kubernetes HTTPS" },
+        { port: 10250, service: "Kubelet API" },
+        { port: 10255, service: "Kubelet Read-Only" },
+  
+        // Crypto / blockchain
+        { port: 8333, service: "Bitcoin P2P" },
+        { port: 30303, service: "Ethereum Geth" },
+        { port: 18080, service: "Monero" },
+  
+        // Misc / fun / simulated ports
+        { port: 7, service: "Echo Protocol" },
+        { port: 19, service: "CHARGEN (DOS target)" },
+        { port: 135, service: "RPC DCOM" },
+        { port: 137, service: "NetBIOS Name Service" },
+        { port: 138, service: "NetBIOS Datagram" },
+        { port: 139, service: "NetBIOS Session Service" },
+        { port: 1984, service: "Big Brother (monitoring)" },
+        { port: 6666, service: "Alternate IRC / Backdoor" },
+        { port: 8086, service: "InfluxDB" },
+        { port: 11211, service: "Memcached" },
+  
+        { port: 5000, service: "Flutter/Dart Dev Server" },
+        { port: 8081, service: "React Native Dev Server" },
+        { port: 9393, service: "Spring Boot Admin" },
+  
+        // Cloud & DevOps
+        { port: 4505, service: "SaltStack Master" },
+        { port: 4506, service: "SaltStack Minion" },
+        { port: 2375, service: "Docker Daemon (Insecure)" },
+        { port: 2376, service: "Docker Daemon (TLS)" },
+        { port: 8500, service: "Consul" },
+        { port: 8200, service: "HashiCorp Vault" },
+        { port: 9990, service: "WildFly Admin" },
+  
+        // Industrial & IoT
+        { port: 20000, service: "DNP3 (SCADA)" },
+        { port: 44818, service: "EtherNet/IP (ICS)" },
+        { port: 502, service: "Modbus TCP (ICS)" },
+        { port: 47808, service: "BACnet (Building Automation)" },
+  
+        // Exotic Databases & Message Queues
+        { port: 4222, service: "NATS Messaging" },
+        { port: 5672, service: "RabbitMQ (AMQP)" },
+        { port: 15672, service: "RabbitMQ Admin UI" },
+        { port: 9042, service: "Cassandra" },
+        { port: 6667, service: "IRC (or Attack Tool)" },
+  
+        // AI / ML / Data Science Tools
+        { port: 8888, service: "Jupyter Notebook" },
+        { port: 6006, service: "TensorBoard" },
+        { port: 8501, service: "Streamlit" },
+        { port: 7860, service: "Stable Diffusion UI" },
+  
+        // Malware / RAT / C2
+        { port: 1604, service: "DarkComet RAT" },
+        { port: 9001, service: "BO2K (Back Orifice 2K)" },
+        { port: 3131, service: "Cobalt Strike Beacon" },
+        { port: 6969, service: "C2 Server (Simulated)" },
+        { port: 7000, service: "NetWire RAT" },
+        { port: 4444, service: "Metasploit Handler" },
+  
+        // Alternative Shells / Remote Access
+        { port: 2222, service: "Alt SSH (Dropbear/Custom)" },
+        { port: 23, service: "Telnet (Insecure)" },
+        { port: 2323, service: "Telnet Honeypot Port" },
+        { port: 50022, service: "Custom SSH Gateway" },
+  
+        // Random Rare Services
+        { port: 2100, service: "Warp Server (Legacy)" },
+        { port: 5800, service: "VNC over HTTP" },
+        { port: 5900, service: "VNC Remote Desktop" },
+        { port: 6901, service: "KDE Remote Desktop" },
+        { port: 10050, service: "Zabbix Agent" },
+        { port: 10051, service: "Zabbix Server" },
+        { port: 33060, service: "MySQL X Protocol" },
+        { port: 9999, service: "Custom Java App / UI" },
+  
+        // Blockchain & Crypto Nodes
+        { port: 8333, service: "Bitcoin Node" },
+        { port: 30303, service: "Ethereum Node (Geth)" },
+        { port: 9735, service: "Lightning Network (LND)" },
+        { port: 18080, service: "Monero Daemon" },
+        { port: 9050, service: "Tor SOCKS Proxy" },
+  
+        // Cloud-Native & API Infrastructure
+        { port: 10250, service: "Kubernetes Kubelet API" },
+        { port: 6443, service: "Kubernetes API Server" },
+        { port: 10255, service: "Kubelet ReadOnly Port" },
+        { port: 50051, service: "gRPC Service" },
+        { port: 4200, service: "Angular Dev Server" },
+        { port: 3001, service: "Node.js API (Alt)" },
+  
+        // Gaming Servers
+        { port: 25565, service: "Minecraft Server" },
+        { port: 27015, service: "Steam (Source Engine)" },
+        { port: 7777, service: "Unreal Engine Game" },
+        { port: 28960, service: "Call of Duty Server" },
+        { port: 3724, service: "World of Warcraft" },
+  
+        // 5G, Telco & IMS (for flavor)
+        { port: 3868, service: "Diameter Protocol (5G Core)" },
+        { port: 5060, service: "SIP (VoIP)" },
+        { port: 1812, service: "RADIUS Auth" },
+        { port: 1813, service: "RADIUS Accounting" },
+        { port: 5061, service: "SIP TLS" },
+        { port: 9000, service: "GTP-U (Mobile Data Tunneling)" },
+  
+        // Edge/IoT Platforms
+        { port: 8883, service: "MQTT over TLS" },
+        { port: 5683, service: "CoAP (IoT Protocol)" },
+        { port: 4840, service: "OPC UA (Industrial)" },
+  
+        // Security / Honeypot Ports
+        { port: 22222, service: "HoneySSH (Simulated Trap)" },
+        { port: 12345, service: "NetBus Trojan (Trap)" },
+        { port: 31337, service: "Elite Backdoor" },
+        { port: 23231, service: "Fake Database (Decoy)" },
+        { port: 9998, service: "Decoy Dashboard" },
+  
+        // AI Agent Infra
+        { port: 7700, service: "Meilisearch (AI Indexer)" },
+        { port: 6333, service: "Qdrant Vector DB" },
+        { port: 54321, service: "LangChain Router" },
+        { port: 8502, service: "Gradio Interface" },
+  
+        // Monitoring & Observability
+        { port: 3000, service: "Grafana Dashboard" },
+        { port: 9090, service: "Prometheus Metrics" },
+        { port: 9093, service: "Alertmanager" },
+        { port: 9323, service: "cAdvisor (Docker Metrics)" },
+        { port: 9187, service: "PostgreSQL Exporter" },
+  
+        // Obscure & Enterprise Stuff
+        { port: 137, service: "NetBIOS Name Service" },
+        { port: 138, service: "NetBIOS Datagram" },
+        { port: 139, service: "NetBIOS Session" },
+        { port: 445, service: "SMB Direct (Windows Shares)" },
+        { port: 3268, service: "Global Catalog LDAP" },
+        { port: 5985, service: "WinRM (HTTP)" },
+        { port: 5986, service: "WinRM (HTTPS)" },
+        { port: 7937, service: "Legato Port Mapper" },
+        { port: 7938, service: "Legato Daemon" },
+  
+        { port: 11211, service: "Memcached" },
+        { port: 12000, service: "WebSocket Test Port" },
+        { port: 12345, service: "NetBus (Remote Access Trojan)" },
+        { port: 13720, service: "Symantec AV" },
+        { port: 13721, service: "Symantec AV (Alt)" },
+        { port: 15000, service: "Admin Interfaces (Generic)" },
+        { port: 16000, service: "SHOUTcast Server" },
+        { port: 18080, service: "Alternate HTTP" },
+        { port: 19150, service: "Gadget Server" },
+        { port: 20000, service: "DNP (Distributed Network Protocol)" },
+        { port: 21554, service: "Standard Accounting Port" },
+        { port: 22000, service: "Tivoli Storage Manager" },
+        { port: 22222, service: "DirectAdmin" },
+        { port: 22939, service: "D2D (Distributed Data)" },
+        { port: 23456, service: "EvilFTP / Backdoor" },
+        { port: 24444, service: "NetBeans IDE Debugger" },
+        { port: 25565, service: "Minecraft Server" },
+        { port: 27017, service: "MongoDB" },
+        { port: 27018, service: "MongoDB Shard" },
+        { port: 27019, service: "MongoDB Config" },
+        { port: 28017, service: "MongoDB Web Status" },
+        { port: 30000, service: "Kubernetes / Apps" },
+        { port: 30718, service: "IoT Device Port" },
+        { port: 31337, service: "Elite (Back Orifice / Old Trojans)" },
+        { port: 32768, service: "RPC (Random High Port)" },
+        { port: 33848, service: "Backup or Admin Port" },
+        { port: 34567, service: "Open Management Port" },
+        { port: 37777, service: "Dahua DVR (IoT Video)" },
+        { port: 40000, service: "ICCP (Industrial Control)" },
+        { port: 41523, service: "RemoteView Service" },
+        { port: 44444, service: "Router Debug Port" },
+        { port: 47808, service: "BACnet (Building Automation)" },
+        { port: 50000, service: "UPnP / SSDP / SCADA Systems" },
+        { port: 54321, service: "Backdoor / Alternate Port" },
+        { port: 55055, service: "Internal Admin Panel" },
+        { port: 56789, service: "Database Shadow Service" },
+        { port: 58080, service: "Alternate HTTP Dev" },
+        { port: 60000, service: "ICS Remote Access" },
+        { port: 61439, service: "NetBackup v6.5" },
+        { port: 62078, service: "Apple Sync Services (lockdown)" },
+        { port: 65534, service: "Max Port Minus One - Reserved" }
+      ];
+  
+      for (let port = 1; port <= 65535; port++) {
+        await new Promise(resolve => setTimeout(resolve, 0.1)); // Fast simulate
+        const found = simulatedOpenPorts.find(p => p.port === port);
+        if (port % 2000 === 0) output.innerText += `> ...scanning port ${port}...\n`;
+        if (found) {
+          output.innerText += `> Port ${found.port} (${found.service}): 🟢 Open\n`;
+          openPorts.push(found);
+        }
+      }
+  
+      aiPanel.innerText = generateAISuggestions(publicIP, [...privateIPs], openPorts);
+      aiPanel.style.display = 'block';
+    }
+  
+    function typeOut(el, text, speed = 15) {
+      el.innerText = '';
+      let i = 0;
+      function type() {
+        if (i < text.length) {
+          el.innerText += text.charAt(i);
+          i++;
+          setTimeout(type, speed);
+        }
+      }
+      type();
+    }
+  
+    function generateAISuggestions(publicIP, privateIPs, openPorts) {
+      let threatLevel = openPorts.length * 25;
+      if (threatLevel > 100) threatLevel = 100;
+  
+      return `🤖 AI Network Insight:\n
+  - 🌐 Public IP: ${publicIP}
+  - 🖧 Local IP(s): ${privateIPs.join(', ')}
+  
+  📊 Port Scan Summary:
+  - Open Ports Detected: ${openPorts.length}
+  ${openPorts.map(p => `  - ${p.port} (${p.service})`).join('\n')}
+  
+  ⚠️ Threat Score: ${threatLevel}/100
+  ${threatLevel > 50 ? '🔴 High Risk - Secure exposed services immediately!' :
+  threatLevel > 20 ? '🟠 Medium Risk - Monitor unusual activity.' :
+  '🟢 Low Risk - Looking good!'}
+  
+  🛡️ Security Tips:
+  - Close unused ports (firewall or router settings).
+  - Update exposed services (like SSH, HTTP).
+  - Use VPN to hide public IP and encrypt traffic.
+  - Disable remote access if not needed.
+  
+  💡 Need more help? Ask your AI assistant or a sysadmin friend!`;
+    }
+  </script>
+  
+</body>
+</html>

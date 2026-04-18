@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays • Hash Generator</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:Arial,Helvetica,sans-serif;color:#d1d1d1;overflow-x:hidden}
+
+/* BACKGROUND VIDEO */
+.bg-video{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  object-fit:cover;z-index:-2;filter:brightness(0.3);
+}
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:-1;
+}
+
+header{
+  background:rgba(0,0,0,0.7);
+  padding:18px;text-align:center;
+  border-bottom:1px solid #1f1f1f;
+}
+header h1{font-size:26px;letter-spacing:2px;}
+
+.container{
+  max-width:900px;margin:30px auto;padding:20px;
+  background:rgba(0,0,0,0.65);
+  border-radius:10px;
+  box-shadow:0 0 25px rgba(0,0,0,0.8);
+}
+
+.section{margin-bottom:25px;}
+.section h2{
+  font-size:18px;margin-bottom:10px;
+  color:#9f9f9f;border-left:4px solid #555;
+  padding-left:10px;
+}
+
+textarea{
+  width:100%;min-height:90px;
+  padding:12px;border-radius:6px;
+  border:1px solid #444;background:black;
+  color:#fff;font-family:monospace;
+  resize:none;margin-bottom:10px;
+}
+
+button{
+  padding:12px 20px;
+  background:black;border:1px solid #333;
+  color:white;cursor:pointer;
+  border-radius:6px;
+  transition:.3s;margin-right:6px;
+}
+button:hover{background:#111;transform:scale(1.05);}
+
+.result-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:12px;
+}
+
+.card{
+  background:rgba(15,15,15,0.85);
+  padding:14px;border-radius:8px;
+  border:1px solid #222;font-size:14px;
+}
+.card span{
+  display:block;color:#777;
+  font-size:12px;margin-bottom:6px;
+}
+.card div{
+  word-wrap:break-word;
+  font-family:monospace;
+  color:#00ff7f;
+}
+
+.log{
+  background:black;padding:12px;border-radius:6px;
+  font-family:monospace;font-size:13px;
+  color:#8aff8a;max-height:200px;
+  overflow:auto;border:1px solid #222;
+}
+
+footer{
+  background:rgba(0,0,0,0.7);
+  text-align:center;padding:15px;
+  font-size:13px;color:#777;
+}
+</style>
+</head>
+
+<body>
+
+<!-- BACKGROUND VIDEO -->
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • HASH GENERATOR</h1>
+</header>
+
+<div class="container">
+
+  <div class="section">
+    <h2>Input Text / String</h2>
+    <textarea id="inputText" placeholder="Enter text to hash..."></textarea>
+    <button onclick="generateHashes()">Generate Hash</button>
+  </div>
+
+  <div class="section">
+    <h2>Hash Results</h2>
+    <div class="result-grid" id="results"></div>
+  </div>
+
+  <div class="section">
+    <h2>Activity Log</h2>
+    <div class="log" id="log"></div>
+  </div>
+
+</div>
+
+<footer>
+  Technology information system tools for cyber‑security<br>
+  Educational & ethical use only
+</footer>
+
+<script>
+const log = msg=>{
+  const l=document.getElementById("log");
+  l.innerHTML+=`[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+  l.scrollTop=l.scrollHeight;
+};
+
+const addResult=(title,value)=>{
+  const c=document.createElement("div");
+  c.className="card";
+  c.innerHTML=`<span>${title}</span><div>${value}</div>`;
+  document.getElementById("results").appendChild(c);
+};
+
+async function shaHash(algo,text){
+  const enc=new TextEncoder().encode(text);
+  const buf=await crypto.subtle.digest(algo,enc);
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+/* SIMPLE MD5 (JS implementation) */
+function md5(str){
+  return CryptoJS.MD5(str).toString();
+}
+
+async function generateHashes(){
+  const input=document.getElementById("inputText").value.trim();
+  if(!input){ alert("Enter text to hash."); return; }
+
+  document.getElementById("results").innerHTML="";
+  log("Generating hashes…");
+
+  addResult("MD5", md5(input));
+  addResult("SHA-1", await shaHash("SHA-1",input));
+  addResult("SHA-256", await shaHash("SHA-256",input));
+  addResult("SHA-512", await shaHash("SHA-512",input));
+
+  log("Hash generation completed.");
+}
+</script>
+
+<!-- MD5 LIBRARY -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+</body>
+</html>

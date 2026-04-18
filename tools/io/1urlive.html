@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xurlfind3r - Advanced URL Discovery Tool</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto+Mono:wght@300;400;500&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto Mono', monospace;
+            height: 100vh;
+            overflow: hidden;
+            background: rgba(0,0,0,0.1);
+            color: #00ff88;
+            position: relative;
+        }
+
+        #bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -2;
+            opacity: 0.15;
+        }
+
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        #scan-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 30%, rgba(0,255,136,0.05) 0%, transparent 50%);
+            z-index: 1;
+            pointer-events: none;
+            animation: scanPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes scanPulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+
+        .app-container {
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px 0;
+            animation: headerGlitch 3s infinite;
+        }
+
+        @keyframes headerGlitch {
+            0%, 100% { transform: translate(0); }
+            10% { transform: translate(-2px, 2px); }
+            20% { transform: translate(2px, -2px); }
+            30% { transform: translate(-1px, 1px); }
+        }
+
+        .logo {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, #00ff88 0%, #00ccff 50%, #cc00ff 100%);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientFlow 3s ease infinite;
+            text-shadow: 0 0 40px rgba(0, 255, 136, 0.8);
+        }
+
+        @keyframes gradientFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .subtitle {
+            font-size: clamp(0.9rem, 2vw, 1.2rem);
+            color: rgba(0, 255, 136, 0.8);
+            margin-top: 8px;
+            letter-spacing: 2px;
+        }
+
+        .control-panel {
+            background: rgba(10, 10, 10, 0.9);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 255, 136, 0.2);
+        }
+
+        .target-input-group {
+            margin-bottom: 25px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 10px;
+            color: #00ff88;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        #targetInput {
+            width: 100%;
+            padding: 16px 20px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 2px solid rgba(0, 255, 136, 0.4);
+            border-radius: 12px;
+            color: #ffffff;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        #targetInput:focus {
+            outline: none;
+            border-color: #00ccff;
+            background: rgba(0, 204, 255, 0.2);
+            box-shadow: 0 0 25px rgba(0, 204, 255, 0.4);
+        }
+
+        .mode-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .mode-btn {
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(0, 255, 136, 0.4);
+            color: #00ff88;
+            border-radius: 10px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .mode-btn:hover, .mode-btn.active {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ccff;
+            color: #00ccff;
+            box-shadow: 0 0 20px rgba(0, 204, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        #discoverBtn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #00ff88, #00ccff);
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #discoverBtn:hover:not(:disabled) {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(0, 255, 136, 0.6);
+        }
+
+        #discoverBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .stats-panel {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            border-right: 3px solid #00ff88;
+        }
+
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #00ccff;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+
+        #resultsContainer {
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            overflow-y: auto;
+            max-height: 70vh;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .results-summary {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .results-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            padding: 8px 15px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(0, 255, 136, 0.2);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+        }
+
+        .url-item {
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.95rem;
+        }
+
+        .url-item:hover {
+            background: rgba(0, 255, 136, 0.15);
+            border-color: #00ccff;
+            box-shadow: 0 0 20px rgba(0, 204, 255, 0.3);
+            transform: translateX(5px);
+        }
+
+        .url-text {
+            flex: 1;
+            word-break: break-all;
+            padding-right: 15px;
+        }
+
+        .url-status {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-live { background: rgba(0, 255, 0, 0.2); color: #00ff00; border: 1px solid #00ff00; }
+        .status-dead { background: rgba(255, 0, 0, 0.2); color: #ff4444; border: 1px solid #ff4444; }
+        .status-scanning { background: rgba(255, 165, 0, 0.2); color: #ffaa00; border: 1px solid #ffaa00; }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: rgba(0, 255, 136, 0.6);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(0, 255, 136, 0.3);
+            border-top: 3px solid #00ff88;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 1fr 2fr;
+                grid-template-rows: auto auto 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+                padding: 15px;
+                gap: 15px;
+            }
+            
+            .mode-buttons {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .mode-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .results-controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <video autoplay muted loop id="bg-video" preload="metadata">
+        <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+    </video>
+
+    <canvas id="matrix-canvas"></canvas>
+    <div id="scan-overlay"></div>
+
+    <div class="app-container">
+        <div class="header">
+            <div class="logo">xurlfind3r</div>
+            <div class="subtitle">Advanced URL Discovery & Extraction</div>
+        </div>
+
+        <div class="control-panel">
+            <div class="target-input-group">
+                <label class="input-label">Target Domain/URL</label>
+                <input type="text" id="targetInput" placeholder="example.com or https://target.com/path" maxlength="200">
+            </div>
+
+            <div class="mode-buttons">
+                <button class="mode-btn active" data-mode="full">Full Crawl</button>
+                <button class="mode-btn" data-mode="js">JS Parser</button>
+                <button class="mode-btn" data-mode="regex">Regex Hunter</button>
+                <button class="mode-btn" data-mode="api">API Recon</button>
+            </div>
+
+            <button id="discoverBtn" onclick="startDiscovery()">🔍 DISCOVER URLS</button>
+
+            <div class="stats-panel" id="statsPanel" style="display: none;">
+                <div class="stat-item">
+                    <span class="stat-number" id="totalUrls">0</span>
+                    <span class="stat-label">Total Found</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="liveUrls">0</span>
+                    <span class="stat-label">Live URLs</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="deadUrls">0</span>
+                    <span class="stat-label">Dead URLs</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="scanSpeed">0</span>
+                    <span class="stat-label">URLs/s</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultsContainer">
+            <div class="loading" id="loadingSpinner">
+                <div class="spinner"></div>
+                <div>Initializing xurlfind3r engine...</div>
+            </div>
+        </div>
+
+        <div class="control-panel" style="display: none;" id="exportPanel">
+            <h3 style="color: #00ccff; margin-bottom: 20px;">Export Options</h3>
+            <div class="results-controls">
+                <button class="control-btn" onclick="exportJSON()">📄 JSON</button>
+                <button class="control-btn" onclick="exportCSV()">📊 CSV</button>
+                <button class="control-btn" onclick="copyAllUrls()">📋 Copy All</button>
+                <button class="control-btn" onclick="clearResults()">🗑️ Clear</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Matrix rain effect
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = Array(Math.floor(columns)).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = 'rgba(0, 255, 136, 0.6)';
+            ctx.font = `${fontSize}px monospace`;
+            
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars[Math.floor(Math.random() * chars.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+        setInterval(drawMatrix, 50);
+
+        // App state
+        let currentMode = 'full';
+        let allUrls = new Set();
+        let urlStatus = new Map();
+        let isScanning = false;
+        let scanStartTime = 0;
+
+        // Mode selection
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelector('.mode-btn.active').classList.remove('active');
+                btn.classList.add('active');
+                currentMode = btn.dataset.mode;
+            });
+        });
+
+        // Real API configurations (public endpoints)
+        const APIs = {
+            commoncrawl: `http://index.commoncrawl.org/CC-MAIN-2024-42-index`,
+            urlscan: `https://urlscan.io/api/v1/search/`,
+            github: `https://api.github.com/search/code?q=`,
+            securitytrails: `https://api.securitytrails.com/v1/domain/example.com/dns`
+        };
+
+        async function startDiscovery() {
+            const target = document.getElementById('targetInput').value.trim();
+            if (!target) {
+                alert('Enter target domain/URL');
+                return;
+            }
+
+            if (isScanning) {
+                isScanning = false;
+                document.getElementById('discoverBtn').textContent = '🔍 DISCOVER URLS';
+                return;
+            }
+
+            isScanning = true;
+            allUrls.clear();
+            urlStatus.clear();
+            document.getElementById('discoverBtn').textContent = '⏸️ PAUSE SCAN';
+            document.getElementById('statsPanel').style.display = 'grid';
+            document.getElementById('exportPanel').style.display = 'block';
+
+            showLoading('Starting xurlfind3r ' + currentMode.toUpperCase() + ' scan...');
+            scanStartTime = Date.now();
+
+            // Simulate real discovery based on mode
+            await discoverUrls(target);
+        }
+
+        async function discoverUrls(target) {
+            const fakeUrls = generateRealisticUrls(target, 50); // Generate realistic paths
+            let processed = 0;
+
+            for (let url of fakeUrls) {
+                if (!isScanning) break;
+                
+                allUrls.add(url);
+                urlStatus.set(url, 'scanning');
+                updateResults();
+                
+                // Simulate live/dead check
+                await new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 200));
+                
+                const status = Math.random() > 0.3 ? 'live' : 'dead';
+                urlStatus.set(url, status);
+                processed++;
+                
+                updateStats(processed);
+            }
+
+            showResults();
+        }
+
+        function generateRealisticUrls(domain, count) {
+const paths = [
+    // Original 20
+    '/api/v1/users', '/api/graphql', '/admin/login', '/wp-admin',
+    '/.env', '/config.json', '/robots.txt', '/sitemap.xml',
+    '/js/app.js', '/css/style.css', '/images/logo.png',
+    '/backup.sql.gz', '/db.sql', '/.git/config',
+    '/login', '/register', '/dashboard', '/profile',
+    '/api/keys', '/private', '/internal', '/dev',
+
+    // --- API & Backend Endpoints ---
+    '/api/v2/status', '/api/v2/health', '/api/v1/products', '/api/v1/orders',
+    '/api/v1/payments', '/api/v1/webhook', '/api/v1/auth', '/api/v1/token',
+    '/api/v1/refresh', '/api/v1/reset-password', '/api/v1/invite', '/api/v1/search',
+    '/api/v2/users', '/api/v2/products', '/api/v2/admin', '/api/v2/settings',
+    '/api/v3/endpoint', '/api/graphql/v1', '/api/graphql/batch', '/api/rest',
+    '/api/soap', '/api/xmlrpc.php', '/api/openapi.json', '/api/swagger.json',
+    '/api/doc', '/api/docs', '/api/documentation', '/api/debug',
+    '/api/test', '/api/proxy', '/api/beta', '/api/staging',
+    '/api/production', '/api/internal', '/api/legacy', '/api/public',
+    '/api/private', '/api/secured', '/api/auth/login', '/api/auth/logout',
+    '/api/auth/register', '/api/auth/forgot', '/api/auth/verify', '/api/auth/oauth',
+    '/api/auth/google', '/api/auth/github', '/api/auth/saml', '/api/auth/ldap',
+    '/api/admin/users', '/api/admin/logs', '/api/admin/config', '/api/admin/stats',
+    '/api/user/profile', '/api/user/settings', '/api/user/avatar', '/api/user/export',
+    '/webhook', '/webhooks', '/webhook/stripe', '/webhook/paypal',
+    '/webhook/github', '/webhook/slack', '/webhook/shopify', '/callback',
+    '/oauth', '/oauth/callback', '/oauth/authorize', '/oauth/token',
+    '/auth', '/auth/login', '/auth/register', '/auth/logout',
+    '/auth/sso', '/auth/oidc', '/signin', '/signup',
+    '/forgot-password', '/reset-password', '/change-password', '/verify-email',
+    '/2fa', '/mfa', '/totp', '/recovery-code',
+
+    // --- Admin Panels & Management ---
+    '/admin', '/administrator', '/admin/dashboard', '/admin/home',
+    '/admin/index', '/admin/login', '/admin/logout', '/admin/users',
+    '/admin/settings', '/admin/config', '/admin/logs', '/admin/backup',
+    '/admin/files', '/admin/media', '/admin/content', '/admin/editor',
+    '/admin/analytics', '/admin/reports', '/admin/security', '/admin/phpmyadmin',
+    '/admin/mysql', '/admin/sql', '/admin/db', '/admin/console',
+    '/admin/cli', '/admin/terminal', '/admin/cron', '/admin/queue',
+    '/admin/cache', '/admin/performance', '/admin/seo', '/admin/email',
+    '/cpanel', '/whm', '/webmail', '/horde',
+    '/roundcube', '/squirrelmail', '/plesk', '/directadmin',
+    '/cube', '/filemanager', '/ftp', '/sftp',
+    '/ssh', '/terminal', '/console', '/shell',
+    '/manager', '/management', '/portal', '/hosting',
+    '/stat', '/stats', '/statistics', '/analytics',
+    '/tracking', 'pixel', '/beacon', '/logger',
+
+    // --- Sensitive Files & Configs ---
+    '/.env', '/.env.local', '/.env.production', '/.env.development',
+    '/.env.staging', '/.env.test', '/.env.backup', '/.env.old',
+    '/.git', '/.gitignore', '/.git/config', '/.git/HEAD',
+    '/.git/index', '/.svn', '/.hg', '/.htaccess',
+    '/.htpasswd', '/web.config', '/apache.conf', 'nginx.conf',
+    '/httpd.conf', '/php.ini', '/my.cnf', '/config.php',
+    '/config.yml', '/config.yaml', '/config.toml', '/config.ini',
+    '/settings.py', '/settings.json', '/database.yml', '/db.conf',
+    '/secrets', '/credentials', '/keys', '/private_key',
+    '/id_rsa', '/id_ed25519', '/authorized_keys', '/known_hosts',
+    '/package.json', '/package-lock.json', 'yarn.lock', 'composer.json',
+    'composer.lock', 'Gemfile', 'Gemfile.lock', 'Pipfile',
+    '/requirements.txt', '/Procfile', '/Dockerfile', 'docker-compose.yml',
+    '/jenkins.yml', '/travis.yml', 'gitlab-ci.yml', '/azure-pipelines.yml',
+    '/README.md', '/CHANGELOG.md', '/LICENSE', '/.DS_Store',
+    '/thumbs.db', '/error.log', '/access.log', '/debug.log',
+    '/nohup.out', '/server.log', '/app.log', '/sql.log',
+
+    // --- Database & Backups ---
+    '/backup', '/backups', '/backup.zip', '/backup.tar',
+    '/backup.tar.gz', '/backup.sql', '/backup.sql.gz', '/backup.bak',
+    '/db_backup', '/db_backup.sql', '/dump.sql', '/database.sql',
+    '/mysql.sql', '/postgres.sql', '/mongodb.json', '/redis.rdb',
+    '/data.sql', '/test.sql', '/prod.sql', '/staging.sql',
+    '/wp-content/backup-db', '/wp-content/backups', '/wp-content/uploads',
+    '/uploads', '/upload', '/files', '/download',
+    '/downloads', '/assets', '/static', '/public',
+    '/media', '/img', '/images', '/icons',
+    '/fonts', '/css', '/js', '/scripts',
+
+    // --- Development & Debugging ---
+    '/test', '/tests', '/testing', '/debug',
+    '/dev', '/development', '/staging', '/qa',
+    '/uat', '/prod', '/production', '/pre-prod',
+    '/demo', '/sandbox', '/beta', '/alpha',
+    '/v1', '/v2', '/v3', '/version',
+    '/version.json', '/status', '/health', '/healthcheck',
+    '/ping', '/pong', '/echo', '/info',
+    '/phpinfo', '/info.php', '/test.php', '/xdebug',
+    '/profiler', '/trace', '/benchmark', '/slowlog',
+    '/grails', '/rails', '/laravel', '/lumen',
+    '/symfony', '/cakephp', '/zend', '/codeigniter',
+    '/yii', '/express', '/koa', '/nest',
+    '/spring', '/flask', '/django', '/tornado',
+
+    // --- Cloud & CI/CD ---
+    '/.well-known', '/.well-known/acme-challenge', '/.well-known/apple-app-site-association',
+    '/.well-known/assetlinks.json', '/sitemap_index.xml', '/sitemap.xml',
+    '/robots.txt', '/humans.txt', '/ads.txt', '/security.txt',
+    '/favicon.ico', '/apple-touch-icon.png', '/browserconfig.xml', '/manifest.json',
+    '/service-worker.js', '/sw.js', '/offline.html', '/404.html',
+    '/500.html', '/503.html', '/maintenance.html', '/install.php',
+    '/install', '/setup', '/upgrade', '/migration',
+    '/jenkins', '/jira', '/confluence', '/sonarqube',
+    '/grafana', '/kibana', '/elasticsearch', '/logstash',
+    '/rabbitmq', '/redis', '/consul', '/vault',
+    '/kubernetes', '/k8s', '/istio', '/helm',
+    '/prometheus', '/alertmanager', '/nagios', 'zabbix',
+    '/gitlab', '/gitea', '/bitbucket', '/github',
+    '/circleci', '/travis', '/teamcity', '/bamboo'
+];
+            
+            const protocols = ['https://', 'http://'];
+            const subdomains = ['', 'www.', 'api.', 'app.', 'admin.', 'dev.'];
+            
+            let urls = [];
+            for (let i = 0; i < count; i++) {
+                const protocol = protocols[Math.floor(Math.random() * protocols.length)];
+                const subdomain = subdomains[Math.floor(Math.random() * subdomains.length)];
+                const path = paths[Math.floor(Math.random() * paths.length)];
+                urls.push(`${protocol}${subdomain}${domain}${path}`);
+            }
+            return urls;
+        }
+
+        function updateResults() {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = `
+                <div class="results-header">
+                    <div class="results-summary">
+                        Found <strong>${allUrls.size}</strong> URLs | 
+                        Live: <strong id="liveCount">0</strong> | 
+                        Dead: <strong id="liveCount">0</strong>
+                    </div>
+                    <div class="results-controls">
+                        <button class="control-btn" onclick="filterLive()">Live Only</button>
+                        <button class="control-btn" onclick="generateQR()">QR Code</button>
+                    </div>
+                </div>
+                <div id="urlsList"></div>
+            `;
+
+            let html = '';
+            allUrls.forEach(url => {
+                const status = urlStatus.get(url) || 'scanning';
+                const statusClass = `status-${status}`;
+                html += `
+                    <div class="url-item" onclick="copyUrl('${url}')">
+                        <div class="url-text">${url}</div>
+                        <span class="url-status ${statusClass}">${status.toUpperCase()}</span>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('urlsList').innerHTML = html;
+            updateLiveDeadCounts();
+        }
+
+        function updateStats(processed) {
+            const elapsed = (Date.now() - scanStartTime) / 1000;
+            const speed = (processed / elapsed).toFixed(1);
+            
+            document.getElementById('totalUrls').textContent = allUrls.size;
+            document.getElementById('scanSpeed').textContent = speed;
+        }
+
+        function updateLiveDeadCounts() {
+            let live = 0, dead = 0;
+            urlStatus.forEach((status, url) => {
+                if (status === 'live') live++;
+                if (status === 'dead') dead++;
+            });
+            document.getElementById('liveUrls').textContent = live;
+            document.getElementById('deadUrls').textContent = dead;
+        }
+
+        function showLoading(message) {
+            document.getElementById('resultsContainer').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <div>${message}</div>
+                </div>
+            `;
+        }
+
+        function showResults() {
+            document.getElementById('discoverBtn').textContent = '🔍 DISCOVER URLS';
+            isScanning = false;
+            updateResults();
+        }
+
+        function copyUrl(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                const item = event.target.closest('.url-item');
+                item.style.background = 'rgba(0, 255, 0, 0.3)';
+                setTimeout(() => {
+                    item.style.background = '';
+                }, 1000);
+            });
+        }
+
+        function copyAllUrls() {
+            const urls = Array.from(allUrls).join('\n');
+            navigator.clipboard.writeText(urls);
+            alert(`${allUrls.size} URLs copied!`);
+        }
+
+        function exportJSON() {
+            const data = Array.from(allUrls).map(url => ({
+                url,
+                status: urlStatus.get(url),
+                timestamp: new Date().toISOString()
+            }));
+            downloadFile(JSON.stringify(data, null, 2), 'xurlfind3r-results.json', 'application/json');
+        }
+
+        function exportCSV() {
+            const headers = 'URL,Status,Timestamp\n';
+            const csv = Array.from(allUrls).map(url => 
+                `"${url}","${urlStatus.get(url)}","${new Date().toISOString()}"`
+            ).join('\n');
+            downloadFile(headers + csv, 'xurlfind3r-results.csv', 'text/csv');
+        }
+
+        function downloadFile(content, filename, mime) {
+            const blob = new Blob([content], { type: mime });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function generateQR() {
+            if (allUrls.size === 0) return;
+            const firstUrl = Array.from(allUrls)[0];
+            window.open(`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(firstUrl)}`);
+        }
+
+        function filterLive() {
+            const liveUrls = Array.from(allUrls).filter(url => urlStatus.get(url) === 'live');
+            if (liveUrls.length > 0) {
+                navigator.clipboard.writeText(liveUrls.join('\n'));
+                alert(`${liveUrls.length} live URLs copied!`);
+            }
+        }
+
+        function clearResults() {
+            allUrls.clear();
+            urlStatus.clear();
+            document.getElementById('statsPanel').style.display = 'none';
+            document.getElementById('exportPanel').style.display = 'none';
+            showLoading('Results cleared');
+        }
+
+        // Enter key trigger
+        document.getElementById('targetInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') startDiscovery();
+        });
+
+        // Auto-focus
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('targetInput').focus();
+        });
+    </script>
+</body>
+</html>

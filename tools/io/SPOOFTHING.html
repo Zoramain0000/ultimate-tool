@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpoofFinder - ASN Spoofing Intelligence</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            overflow-x: hidden;
+            height: 100vh;
+            position: relative;
+        }
+
+        video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -2;
+            opacity: 0.15;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(10,10,10,0.95) 0%, rgba(20,20,40,0.9) 50%, rgba(5,5,25,0.98) 100%);
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00ff88, #00ccff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+            margin-bottom: 10px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 10px rgba(0,255,136,0.5)); }
+            to { filter: drop-shadow(0 0 20px rgba(0,204,255,0.5)); }
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #888;
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+        }
+
+        .input-section {
+            background: rgba(20, 20, 40, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        #targetInput {
+            flex: 1;
+            min-width: 300px;
+            padding: 15px 20px;
+            background: rgba(10, 10, 20, 0.8);
+            border: 2px solid rgba(0, 255, 136, 0.3);
+            border-radius: 12px;
+            color: #e0e0e0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        #targetInput:focus {
+            outline: none;
+            border-color: #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        #searchBtn {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #00ff88, #00ccff);
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+        }
+
+        #searchBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(0, 255, 136, 0.4);
+        }
+
+        #searchBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(0,255,136,0.3);
+            border-top: 2px solid #00ff88;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .result-card {
+            background: rgba(15, 15, 35, 0.9);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 255, 136, 0.1);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            animation: slideIn 0.5s ease-out;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+        }
+
+        .result-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #00ff88;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 0.95rem;
+        }
+
+        .data-label {
+            color: #888;
+            font-weight: 500;
+        }
+
+        .data-value {
+            color: #e0e0e0;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .status-good { color: #00ff88; }
+        .status-bad { color: #ff4444; }
+        .status-warning { color: #ffaa00; }
+
+        .links-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .link-item {
+            padding: 10px 15px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            word-break: break-all;
+        }
+
+        .link-item:hover {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+            transform: translateX(5px);
+        }
+
+        .error {
+            background: rgba(255, 68, 68, 0.15);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            color: #ff8888;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 15px; }
+            .logo { font-size: 2rem; }
+            .input-group { flex-direction: column; }
+            #targetInput { min-width: auto; }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(20,20,40,0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,255,136,0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,255,136,0.5);
+        }
+    </style>
+</head>
+<body>
+    <video autoplay muted loop playsinline>
+        <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+    </video>
+    
+    <div class="overlay"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="logo">SPOOFFINDER</h1>
+            <p class="subtitle">ASN Spoofing Intelligence • Powered by CAIDA, ARIN, ipapi APIs</p>
+        </div>
+
+        <div class="input-section">
+            <div class="input-group">
+                <input type="text" id="targetInput" placeholder="Enter ASN (AS12345), IP, or CIDR (192.168.1.0/24)...">
+                <button id="searchBtn">
+                    <span id="btnText">🔍 ANALYZE</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="results" id="results">
+            <div style="text-align: center; color: #666; padding: 60px 20px; font-family: 'Inter', sans-serif;">
+                Enter an ASN, IP address, or CIDR range to analyze spoofing capabilities and contact information.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SpoofFinder {
+            constructor() {
+                this.client = null;
+                this.init();
+            }
+
+            async init() {
+                this.searchBtn = document.getElementById('searchBtn');
+                this.targetInput = document.getElementById('targetInput');
+                this.results = document.getElementById('results');
+                this.btnText = document.getElementById('btnText');
+
+                this.searchBtn.addEventListener('click', () => this.run());
+                this.targetInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.run();
+                });
+
+                // Parse ASN helper
+                this.parseASN = (target) => {
+                    if (target.toLowerCase().startsWith('as')) return target.slice(2);
+                    return target.match(/^\d+$/) ? target : target;
+                };
+            }
+
+            async createClient() {
+                if (!this.client) {
+                    this.client = new XMLHttpRequest(); // Use native XHR for better compatibility
+                }
+            }
+
+            async fetch(url, asJson = true) {
+                try {
+                    return new Promise((resolve) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('GET', url);
+                        xhr.setRequestHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+                        xhr.timeout = 10000;
+                        
+                        xhr.onload = () => {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                try {
+                                    resolve(asJson ? JSON.parse(xhr.responseText) : xhr.responseText);
+                                } catch {
+                                    resolve(asJson ? null : xhr.responseText);
+                                }
+                            } else {
+                                resolve(null);
+                            }
+                        };
+                        
+                        xhr.onerror = () => resolve(null);
+                        xhr.ontimeout = () => resolve(null);
+                        xhr.send();
+                    });
+                } catch {
+                    return null;
+                }
+            }
+
+            async searchLinks(query) {
+                // Google Custom Search fallback - real search would need API key
+                // For demo, we'll simulate with direct searches
+                const engines = [
+                    `https://www.google.com/search?q=${encodeURIComponent(query)}+server`,
+                    `https://duckduckgo.com/?q=${encodeURIComponent(query)}+server`
+                ];
+                
+                // In production, rotate through multiple engines
+                return engines.slice(0, 3);
+            }
+
+            async getASNInfo(target) {
+                return await this.fetch(`https://ipapi.co/${target}/json/`);
+            }
+
+            async findContact(asn) {
+                const response = await this.fetch(`https://rdap.arin.net/registry/autnum/${asn}`, false);
+                if (!response) return [null, null, null];
+                
+                const emailMatch = response.match(/[\w+.-]+@[\w.-]+\.\w+/i);
+                const phoneMatch = response.match(/[+\d][\d\-\s()]+/);
+                const site = emailMatch ? emailMatch[0].split('@')[1] : null;
+                
+                return [site, emailMatch?.[0] || null, phoneMatch?.[0] || null];
+            }
+
+            async fetchSpoofData(asn) {
+                const [spoofData, asrankData] = await Promise.all([
+                    this.fetch(`https://api.spoofer.caida.org/sessions?asn=${asn}`),
+                    this.fetch(`https://api.asrank.caida.org/v2/restful/asns/${asn}`)
+                ]);
+                return [spoofData, asrankData];
+            }
+
+            async handleASN(asn) {
+                this.showLoading(true);
+                
+                try {
+                    const [spoofData, asrankData] = await this.fetchSpoofData(asn);
+                    
+                    if (!spoofData || !asrankData?.data?.asn) {
+                        throw new Error('No data found for ASN');
+                    }
+
+                    let spoofDataList = spoofData['hydra:member'] || spoofData;
+                    if (!spoofDataList) throw new Error('No spoofing data');
+
+                    const latestSpoofData = Array.isArray(spoofDataList) ? spoofDataList[spoofDataList.length - 1] : spoofDataList;
+                    const asName = asrankData.data.asn.asnName || 'Unknown';
+
+                    // Parse spoofability
+                    const spoofableLocalV4 = latestSpoofData.routedspoof === 'received';
+                    const spoofableInternetV4 = latestSpoofData.privatespoof === 'sent';
+                    const spoofableLocalV6 = latestSpoofData.routedspoof6 === 'received';
+                    const spoofableInternetV6 = latestSpoofData.privatespoof6 === 'sent';
+
+                    const [site, email, phone] = await this.findContact(asn);
+
+                    // Build HTML result
+                    let html = `
+                        <div class="result-card">
+                            <div class="section-title">🌍 ASN Overview <span style="color: #888; font-size: 0.9rem;">AS${asn}</span></div>
+                            
+                            <div class="data-row">
+                                <span class="data-label">Name:</span>
+                                <span class="data-value">${asName}</span>
+                            </div>
+                            
+                            <div class="data-row">
+                                <span class="data-label">Rank:</span>
+                                <span class="data-value">${asrankData.data.asn.rank || 'N/A'}</span>
+                            </div>
+                            
+                            <div class="data-row">
+                                <span class="data-label">Country:</span>
+                                <span class="data-value">${latestSpoofData.country?.toUpperCase() || 'N/A'}</span>
+                            </div>
+                    `;
+
+                    if (site) {
+                        html += `
+                            <div class="data-row">
+                                <span class="data-label">Domain:</span>
+                                <span class="data-value">${site}</span>
+                            </div>
+                        `;
+                    }
+
+                    // Spoofability status
+                    let spoofStatus = 'No';
+                    let spoofType = '';
+                    if (spoofableLocalV4 || spoofableInternetV4 || spoofableLocalV6 || spoofableInternetV6) {
+                        const types = [];
+                        if (spoofableLocalV4 || spoofableInternetV4) types.push('IPv4');
+                        if (spoofableLocalV6 || spoofableInternetV6) types.push('IPv6');
+                        spoofStatus = types.join(', ');
+                        spoofType = 'status-warning';
+                    } else {
+                        spoofType = 'status-good';
+                    }
+
+                    html += `
+                            <div class="data-row">
+                                <span class="data-label">Spoofable:</span>
+                                <span class="data-value ${spoofType}">${spoofStatus}</span>
+                            </div>
+                    `;
+
+                    if (latestSpoofData.client4) {
+                        html += `
+                            <div class="data-row">
+                                <span class="data-label">Client IPv4:</span>
+                                <span class="data-value">${latestSpoofData.client4}</span>
+                            </div>
+                        `;
+                    }
+
+                    if (latestSpoofData.client6) {
+                        html += `
+                            <div class="data-row">
+                                <span class="data-label">Client IPv6:</span>
+                                <span class="data-value">${latestSpoofData.client6}</span>
+                            </div>
+                        `;
+                    }
+
+                    if (email) {
+                        html += `
+                            <div class="data-row">
+                                <span class="data-label">Contact Email:</span>
+                                <span class="data-value">${email}</span>
+                            </div>
+                        `;
+                    }
+
+                    if (phone) {
+                        html += `
+                            <div class="data-row">
+                                <span class="data-label">Contact Phone:</span>
+                                <span class="data-value">${phone}</span>
+                            </div>
+                        `;
+                    }
+
+                    // Links
+                    const links = await this.searchLinks(asName + ' server');
+                    if (links && links.length > 0) {
+                        html += `
+                            <div class="result-section">
+                                <div class="section-title">🔗 Related Links</div>
+                                <div class="links-list">
+                        `;
+                        links.slice(0, 8).forEach(link => {
+                            html += `<div class="link-item">${link}</div>`;
+                        });
+                        html += `</div></div>`;
+                    }
+
+                    html += `</div>`;
+                    this.results.innerHTML = html;
+                    
+                } catch (error) {
+                    this.results.innerHTML = `
+                        <div class="result-card error">
+                            ❌ ${error.message || 'Analysis failed. Please check your input and try again.'}
+                        </div>
+                    `;
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            async run() {
+                const target = this.targetInput.value.trim();
+                if (!target) {
+                    alert('Please enter an ASN, IP, or CIDR');
+                    return;
+                }
+
+                let asn = this.parseASN(target);
+                
+                // Handle CIDR/IP
+                if (asn.includes('/') || asn.includes('-')) {
+                    try {
+                        // Simple IP extraction for demo
+                        const ipMatch = asn.match(/(\d+\.\d+\.\d+\.\d+)/);
+                        if (ipMatch) asn = ipMatch[1];
+                    } catch {
+                        this.results.innerHTML = `<div class="result-card error">Invalid CIDR/IP format</div>`;
+                        return;
+                    }
+                }
+
+                if (!asn.match(/^\d+$/)) {
+                    const asnInfo = await this.getASNInfo(asn);
+                    if (!asnInfo?.asn) {
+                        this.results.innerHTML = `<div class="result-card error">No ASN found for ${asn}</div>`;
+                        return;
+                    }
+                    asn = asnInfo.asn.replace('AS', '');
+                }
+
+                await this.handleASN(asn);
+            }
+
+            showLoading(show) {
+                this.searchBtn.disabled = show;
+                if (show) {
+                    this.btnText.innerHTML = '<span class="spinner"></span> ANALYZING...';
+                } else {
+                    this.btnText.textContent = '🔍 ANALYZE';
+                }
+            }
+        }
+
+        // Initialize
+        new SpoofFinder();
+
+        // Auto-focus input
+        document.getElementById('targetInput').focus();
+    </script>
+</body>
+</html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays YouTube Thumbnail Downloader</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  height:100%;
+  font-family:Arial,Helvetica,sans-serif;
+  color:#d1d1d1;
+  overflow-x:hidden;
+}
+
+/* BACKGROUND VIDEO */
+.bg-video{
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  object-fit:cover;
+  z-index:-2;
+  filter:brightness(0.3);
+}
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.35);
+  z-index:-1;
+}
+
+header{
+  background:rgba(0,0,0,0.7);
+  padding:18px;
+  text-align:center;
+  border-bottom:1px solid #1f1f1f;
+}
+
+header h1{
+  font-size:26px;
+  letter-spacing:2px;
+}
+
+.container{
+  max-width:900px;
+  margin:30px auto;
+  padding:20px;
+  background:rgba(0,0,0,0.65);
+  border-radius:10px;
+  box-shadow:0 0 25px rgba(0,0,0,0.8);
+}
+
+.section{
+  margin-bottom:25px;
+}
+
+.section h2{
+  font-size:18px;
+  margin-bottom:10px;
+  color:#9f9f9f;
+  border-left:4px solid #555;
+  padding-left:10px;
+}
+
+input{
+  width:100%;
+  padding:12px;
+  border-radius:6px;
+  border:1px solid #444;
+  background:black;
+  color:#fff;
+  margin-bottom:10px;
+}
+
+button{
+  padding:12px 20px;
+  background:black;
+  border:1px solid #333;
+  color:white;
+  cursor:pointer;
+  border-radius:6px;
+  transition:.3s;
+}
+button:hover{
+  background:#111;
+  transform:scale(1.05);
+}
+
+.thumb-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:15px;
+}
+
+.thumb-card{
+  background:rgba(15,15,15,0.9);
+  border:1px solid #222;
+  border-radius:8px;
+  padding:10px;
+  text-align:center;
+}
+
+.thumb-card img{
+  width:100%;
+  border-radius:6px;
+  margin-bottom:8px;
+}
+
+.thumb-card a{
+  display:block;
+  margin-top:6px;
+  color:#00ff7f;
+  font-size:13px;
+  text-decoration:none;
+}
+
+.log{
+  background:black;
+  padding:12px;
+  border-radius:6px;
+  font-family:monospace;
+  font-size:13px;
+  color:#8aff8a;
+  max-height:180px;
+  overflow:auto;
+  border:1px solid #222;
+}
+
+footer{
+  background:rgba(0,0,0,0.7);
+  text-align:center;
+  padding:15px;
+  font-size:13px;
+  color:#777;
+}
+</style>
+</head>
+
+<body>
+
+<!-- BACKGROUND VIDEO -->
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • YOUTUBE THUMBNAIL DOWNLOADER</h1>
+</header>
+
+<div class="container">
+
+  <div class="section">
+    <h2>YouTube Video URL / ID</h2>
+    <input id="ytInput" placeholder="https://www.youtube.com/watch?v=VIDEO_ID" />
+    <button onclick="getThumbnails()">Fetch Thumbnails</button>
+  </div>
+
+  <div class="section">
+    <h2>Available Thumbnails</h2>
+    <div class="thumb-grid" id="thumbs"></div>
+  </div>
+
+  <div class="section">
+    <h2>Activity Log</h2>
+    <div class="log" id="log"></div>
+  </div>
+
+</div>
+
+<footer>
+  Technology information system tools for cyber‑security<br>
+  Educational & ethical use only
+</footer>
+
+<script>
+const log = msg=>{
+  const l=document.getElementById("log");
+  l.innerHTML+=`[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+  l.scrollTop=l.scrollHeight;
+};
+
+function extractVideoID(input){
+  const regex=/((youtu\.be\/)|(v=)|(\/shorts\/))([a-zA-Z0-9_-]{11})/;
+  const match=input.match(regex);
+  return match?match[5]:input.trim();
+}
+
+function getThumbnails(){
+  const input=document.getElementById("ytInput").value.trim();
+  if(!input){
+    alert("Enter YouTube URL or Video ID");
+    return;
+  }
+
+  const id=extractVideoID(input);
+  log(`Video ID detected: ${id}`);
+
+  const qualities=[
+    {name:"Max Resolution",file:"maxresdefault.jpg"},
+    {name:"High Quality",file:"hqdefault.jpg"},
+    {name:"Medium Quality",file:"mqdefault.jpg"},
+    {name:"Default",file:"default.jpg"}
+  ];
+
+  const container=document.getElementById("thumbs");
+  container.innerHTML="";
+
+  qualities.forEach(q=>{
+    const url=`https://img.youtube.com/vi/${id}/${q.file}`;
+    const card=document.createElement("div");
+    card.className="thumb-card";
+    card.innerHTML=`
+      <strong>${q.name}</strong>
+      <img src="${url}" alt="${q.name}">
+      <a href="${url}" download target="_blank">Download</a>
+    `;
+    container.appendChild(card);
+  });
+
+  log("Thumbnails loaded successfully.");
+}
+</script>
+
+</body>
+</html>

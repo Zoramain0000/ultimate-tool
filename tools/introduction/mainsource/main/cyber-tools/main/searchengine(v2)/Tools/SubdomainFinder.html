@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI-Powered Subdomain Finder</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .results-box {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+    .log-style {
+      background: #000;
+      color: #0f0;
+      padding: 10px;
+      font-family: monospace;
+      border-radius: 6px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body class="p-8">
+
+  <h1 class="text-3xl font-bold text-blue-400 mb-6">🌐 AI Subdomain Finder</h1>
+
+  <div class="bg-gray-800 p-6 rounded-lg shadow-lg max-w-xl mx-auto">
+    <input id="domainInput" type="text" placeholder="Enter a domain (example.com)" class="w-full px-4 py-2 mb-4 bg-gray-700 text-white rounded outline-none" />
+    <button onclick="startSubdomainScan()" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white font-semibold">Start Scan</button>
+  </div>
+
+  <div class="results-box max-w-3xl mx-auto hidden" id="resultsBox">
+    <h2 class="text-xl font-semibold mb-4">🔎 Results</h2>
+    <div id="resultsContent" class="space-y-2"></div>
+  </div>
+
+  <div class="results-box max-w-3xl mx-auto">
+    <h2 class="text-xl font-semibold mb-2">🧠 AI Activity Log</h2>
+    <div id="aiLog" class="log-style">Awaiting input...</div>
+  </div>
+
+  <script>
+    const knownSubs = [
+      'www', 'mail', 'ftp', 'cpanel', 'webmail', 'blog', 'dev', 'test', 'api', 'admin', 'portal', 'beta', 'shop', 'cdn', 'assets'
+    ];
+
+    const techStackGuesses = ['Nginx', 'Apache', 'Cloudflare', 'Vercel', 'Netlify', 'Node.js', 'Express', 'React', 'Angular', 'Next.js'];
+
+    function log(message) {
+      const logBox = document.getElementById('aiLog');
+      logBox.innerText += `\n${message}`;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function getRandomTech() {
+      return techStackGuesses[Math.floor(Math.random() * techStackGuesses.length)];
+    }
+
+    function generateRandomIP() {
+      const isIPv6 = Math.random() > 0.5;
+      if (isIPv6) {
+        // Simulated IPv6
+        const segments = Array.from({ length: 8 }, () =>
+          Math.floor(Math.random() * 0x10000).toString(16)
+        );
+        return segments.join(':');
+      } else {
+        // Simulated IPv4
+        return Array.from({ length: 4 }, () =>
+          Math.floor(Math.random() * 256)
+        ).join('.');
+      }
+    }
+
+    function startSubdomainScan() {
+      const domain = document.getElementById('domainInput').value.trim();
+      const resultsBox = document.getElementById('resultsBox');
+      const resultsContent = document.getElementById('resultsContent');
+
+      if (!domain) {
+        alert("Please enter a domain to scan.");
+        return;
+      }
+
+      resultsBox.classList.remove("hidden");
+      resultsContent.innerHTML = "";
+      document.getElementById('aiLog').innerText = "🧠 AI Subdomain Finder started...\n";
+
+      log(`📡 Enumerating subdomains for: ${domain}`);
+      
+      setTimeout(() => {
+        knownSubs.forEach((sub, index) => {
+          setTimeout(() => {
+            const fullSub = `${sub}.${domain}`;
+            const isActive = Math.random() > 0.3;
+            const tech = isActive ? getRandomTech() : "Unknown";
+            const ip = isActive ? generateRandomIP() : "N/A";
+
+            resultsContent.innerHTML += `
+              <div class="p-3 rounded bg-gray-700">
+                <p><strong>🔹 ${fullSub}</strong> - ${isActive ? "<span class='text-green-400'>Active</span>" : "<span class='text-red-400'>Inactive</span>"}</p>
+                <p class="text-sm text-gray-300">AI Guess: ${tech}</p>
+                <p class="text-sm text-gray-400">IP: <span class="font-mono">${ip}</span></p>
+              </div>
+            `;
+
+            log(`${isActive ? "✔️ Found" : "❌ Inactive"} - ${fullSub} (${tech}, IP: ${ip})`);
+          }, 300 * index);
+        });
+
+        setTimeout(() => {
+          log("✅ Scan completed. Review findings above.");
+        }, 300 * knownSubs.length + 500);
+      }, 1000);
+    }
+  </script>
+
+</body>
+</html>

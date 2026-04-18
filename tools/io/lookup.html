@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays IP Address Lookup</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  height:100%;
+  font-family:Segoe UI,Arial,sans-serif;
+  color:#d6d6d6;
+  overflow-x:hidden;
+}
+
+/* BACKGROUND VIDEO */
+.bg-video{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:-2;
+}
+
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0); /* fully transparent */
+  z-index:-1;
+}
+
+header{
+  padding:20px;
+  text-align:center;
+  background:rgba(255,255,255,0.0); /* transparent */
+  border-bottom:1px solid rgba(255,255,255,0.1);
+  text-shadow:0 0 6px #000; /* makes text visible on video */
+}
+header h1{
+  letter-spacing:3px;
+  font-size:28px;
+}
+header span{
+  color:#00ff88;
+  font-size:12px;
+  text-shadow:0 0 6px #000;
+}
+
+.container{
+  max-width:1100px;
+  margin:30px auto;
+  padding:20px;
+  background:rgba(255,255,255,0.0); /* fully transparent */
+}
+
+.section{margin-bottom:30px}
+.section h2{
+  font-size:18px;
+  margin-bottom:12px;
+  border-left:4px solid #00ff88;
+  padding-left:10px;
+  color:#bfbfbf;
+  text-shadow:0 0 6px #000;
+}
+
+input{
+  width:100%;
+  padding:12px;
+  background:rgba(0,0,0,0.1); /* slight tint to see input */
+  border:1px solid rgba(255,255,255,0.2);
+  border-radius:6px;
+  color:#fff;
+  margin-bottom:12px;
+  font-size:14px;
+}
+
+button{
+  padding:12px 22px;
+  background:rgba(0,0,0,0.1);
+  border:1px solid #00ff88;
+  color:#00ff88;
+  border-radius:6px;
+  cursor:pointer;
+  transition:.3s;
+}
+button:hover{
+  background:#00ff88;
+  color:black;
+  transform:scale(1.05);
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:14px;
+}
+
+.card{
+  background:rgba(0,0,0,0.05); /* almost invisible, only text shadow for readability */
+  padding:14px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.05);
+  font-size:14px;
+  text-shadow:0 0 6px #000;
+}
+
+.card span{
+  display:block;
+  font-size:11px;
+  color:#aaa;
+  margin-bottom:5px;
+  text-shadow:0 0 4px #000;
+}
+
+.safe{color:#00ff88}
+.warn{color:#ffaa00}
+.bad{color:#ff4d4d}
+
+.log{
+  background:rgba(0,0,0,0.05);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:6px;
+  padding:12px;
+  font-family:monospace;
+  font-size:13px;
+  max-height:220px;
+  overflow:auto;
+  color:#8aff8a;
+  text-shadow:0 0 4px #000;
+}
+
+footer{
+  text-align:center;
+  padding:15px;
+  font-size:12px;
+  color:#777;
+  background:rgba(255,255,255,0.0); /* transparent */
+  border-top:1px solid rgba(255,255,255,0.1);
+  text-shadow:0 0 6px #000;
+}
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • IP INTELLIGENCE</h1>
+  <span>Real‑time OSINT Network Analysis</span>
+</header>
+
+<div class="container">
+
+  <div class="section">
+    <h2>Target IP Address</h2>
+    <input id="ipInput" placeholder="Enter IPv4 or IPv6 address">
+    <button onclick="lookupIP()">Analyze IP</button>
+  </div>
+
+  <div class="section">
+    <h2>Network & Provider</h2>
+    <div class="grid">
+      <div class="card"><span>IP</span><div id="ip">-</div></div>
+      <div class="card"><span>ISP / Org</span><div id="isp">-</div></div>
+      <div class="card"><span>ASN</span><div id="asn">-</div></div>
+      <div class="card"><span>IP Type</span><div id="type">-</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Geolocation</h2>
+    <div class="grid">
+      <div class="card"><span>Country</span><div id="country">-</div></div>
+      <div class="card"><span>Region</span><div id="region">-</div></div>
+      <div class="card"><span>City</span><div id="city">-</div></div>
+      <div class="card"><span>Coordinates</span><div id="coords">-</div></div>
+      <div class="card"><span>Timezone</span><div id="timezone">-</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Security Intelligence</h2>
+    <div class="grid">
+      <div class="card"><span>VPN</span><div id="vpn">-</div></div>
+      <div class="card"><span>Proxy</span><div id="proxy">-</div></div>
+      <div class="card"><span>Tor</span><div id="tor">-</div></div>
+      <div class="card"><span>Hosting</span><div id="hosting">-</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Activity Log</h2>
+    <div class="log" id="log"></div>
+  </div>
+
+</div>
+
+<footer>
+  Educational & ethical cybersecurity intelligence tool<br>
+  No backend • No tracking • Public data only
+</footer>
+
+<script>
+const log = msg=>{
+  const l=document.getElementById("log");
+  l.innerHTML+=`[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+  l.scrollTop=l.scrollHeight;
+};
+
+async function lookupIP(){
+  const ip=document.getElementById("ipInput").value.trim();
+  if(!ip){alert("Enter an IP address");return;}
+  log("Starting intelligence lookup for "+ip);
+
+  try{
+    const geo=await fetch(`https://ipapi.co/${ip}/json/`).then(r=>r.json());
+    if(geo.error){throw geo.reason;}
+    const sec=await fetch(`https://ipwho.is/${ip}`).then(r=>r.json());
+
+    document.getElementById("ip").textContent=geo.ip;
+    document.getElementById("isp").textContent=geo.org || geo.network;
+    document.getElementById("asn").textContent=geo.asn;
+    document.getElementById("type").textContent=geo.version;
+
+    document.getElementById("country").textContent=geo.country_name;
+    document.getElementById("region").textContent=geo.region;
+    document.getElementById("city").textContent=geo.city;
+    document.getElementById("coords").textContent=`${geo.latitude}, ${geo.longitude}`;
+    document.getElementById("timezone").textContent=geo.timezone;
+
+    document.getElementById("vpn").innerHTML=sec.security.vpn ? "<span class='bad'>Detected</span>" : "<span class='safe'>No</span>";
+    document.getElementById("proxy").innerHTML=sec.security.proxy ? "<span class='warn'>Detected</span>" : "<span class='safe'>No</span>";
+    document.getElementById("tor").innerHTML=sec.security.tor ? "<span class='bad'>Detected</span>" : "<span class='safe'>No</span>";
+    document.getElementById("hosting").innerHTML=sec.security.hosting ? "<span class='warn'>Yes</span>" : "<span class='safe'>No</span>";
+
+    log("IP intelligence completed successfully");
+
+  }catch(e){
+    log("Lookup failed: "+e);
+    alert("Failed to fetch IP data");
+  }
+}
+</script>
+
+</body>
+</html>

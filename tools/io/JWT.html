@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT-HACK // Web Interface</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent: #00ff41;
+            --bg-dark: rgba(10, 10, 12, 0.85);
+            --border-glow: 0 0 10px rgba(0, 255, 65, 0.3);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'JetBrains+Mono', monospace;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        /* Video Background */
+        #video-bg {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            min-width: 100%;
+            min-height: 100%;
+            z-index: -1;
+            filter: brightness(0.4) contrast(1.2);
+            object-fit: cover;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent 20%, #000 100%);
+            z-index: 0;
+        }
+
+        /* Main Layout */
+        main {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 40px;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .header {
+            grid-column: span 2;
+            text-align: center;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 10px;
+            text-shadow: var(--border-glow);
+        }
+
+        .pane {
+            background: var(--bg-dark);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 65, 0.2);
+            padding: 20px;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--border-glow);
+        }
+
+        label {
+            color: var(--accent);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        textarea {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            color: #ccc;
+            padding: 15px;
+            font-family: inherit;
+            resize: none;
+            flex-grow: 1;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        textarea:focus {
+            border-color: var(--accent);
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 8px;
+            background: #111;
+            border: 1px solid #444;
+            color: var(--accent);
+            font-family: inherit;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            border: 1px solid transparent;
+        }
+
+        .valid { border-color: var(--accent); color: var(--accent); }
+        .invalid { border-color: #ff3e3e; color: #ff3e3e; }
+    </style>
+</head>
+<body>
+    <video autoplay muted loop id="video-bg">
+        <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+    </video>
+    <div class="overlay"></div>
+
+    <main>
+        <div class="header">
+            <h1>JWT-HACK // WEBKIT</h1>
+            <p>ADVANCED TOKEN DECODING & SIGNATURE MANIPULATION</p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="pane">
+            <label>Raw JWT Token</label>
+            <textarea id="raw-token" placeholder="Paste eyJhbG..."></textarea>
+            
+            <div class="controls">
+                <div class="input-group">
+                    <label>HMAC Secret Key</label>
+                    <input type="text" id="secret" placeholder="Enter key for signing...">
+                </div>
+                <div class="input-group">
+                    <label>Algorithm</label>
+                    <select id="alg-select">
+                        <option value="HS256">HS256</option>
+                        <option value="HS384">HS384</option>
+                        <option value="HS512">HS512</option>
+                        <option value="none">none (Attack)</option>
+                    </select>
+                </div>
+            </div>
+            <div id="status" class="status-badge">READY_FOR_INPUT</div>
+        </div>
+
+        <!-- Output Section -->
+        <div class="pane">
+            <label>Header (JSON)</label>
+            <textarea id="header-out" style="flex-grow: 0; height: 100px;"></textarea>
+            
+            <label style="margin-top:20px">Payload (Modified Claims)</label>
+            <textarea id="payload-out"></textarea>
+
+            <div style="margin-top:20px">
+                <label>Forged Token Preview</label>
+                <input type="text" id="forged-token" readonly style="cursor: pointer;" onclick="this.select(); document.execCommand('copy');">
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const rawInput = document.getElementById('raw-token');
+        const headerOut = document.getElementById('header-out');
+        const payloadOut = document.getElementById('payload-out');
+        const secretIn = document.getElementById('secret');
+        const algSelect = document.getElementById('alg-select');
+        const forgedOut = document.getElementById('forged-token');
+        const status = document.getElementById('status');
+
+        function base64Url(source) {
+            let encodedSource = CryptoJS.enc.Base64.stringify(source);
+            encodedSource = encodedSource.replace(/=+$/, '');
+            encodedSource = encodedSource.replace(/\+/g, '-');
+            encodedSource = encodedSource.replace(/\//g, '_');
+            return encodedSource;
+        }
+
+        function decodeToken() {
+            const token = rawInput.value.trim();
+            if (!token) return;
+
+            const parts = token.split('.');
+            if (parts.length < 2) return;
+
+            try {
+                headerOut.value = JSON.stringify(JSON.parse(atob(parts[0].replace(/-/g, '+').replace(/_/g, '/'))), null, 4);
+                payloadOut.value = JSON.stringify(JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))), null, 4);
+                updateForgedToken();
+            } catch (e) {
+                status.innerText = "DECODE_ERROR";
+                status.className = "status-badge invalid";
+            }
+        }
+
+        function updateForgedToken() {
+            try {
+                const header = JSON.parse(headerOut.value);
+                const payload = JSON.parse(payloadOut.value);
+                const alg = algSelect.value;
+                const secret = secretIn.value;
+
+                header.alg = alg;
+                
+                const headerB64 = base64Url(CryptoJS.enc.Utf8.parse(JSON.stringify(header)));
+                const payloadB64 = base64Url(CryptoJS.enc.Utf8.parse(JSON.stringify(payload)));
+                
+                let signature = "";
+                if (alg !== "none") {
+                    const unsignedToken = headerB64 + "." + payloadB64;
+                    let hashType = CryptoJS.HmacSHA256;
+                    if(alg === "HS384") hashType = CryptoJS.HmacSHA384;
+                    if(alg === "HS512") hashType = CryptoJS.HmacSHA512;
+                    
+                    signature = base64Url(hashType(unsignedToken, secret));
+                }
+
+                const finalToken = `${headerB64}.${payloadB64}.${signature}`;
+                forgedOut.value = finalToken;
+                
+                status.innerText = "TOKEN_GENERATED_SUCCESSFUL";
+                status.className = "status-badge valid";
+            } catch (e) {
+                status.innerText = "REGEN_ERROR";
+                status.className = "status-badge invalid";
+            }
+        }
+
+        rawInput.addEventListener('input', decodeToken);
+        [headerOut, payloadOut, secretIn, algSelect].forEach(el => {
+            el.addEventListener('input', updateForgedToken);
+        });
+    </script>
+</body>
+</html>

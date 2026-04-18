@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LPR & Vehicle Log Generator v195</title>
+<style>
+  body {
+    margin: 0; padding: 0;
+    background-color: #000; 
+    color: #00ff41;
+    font-family: 'Consolas', monospace;
+    display: flex; flex-direction: column; height: 100vh;
+  }
+
+  #bgVideo {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+    z-index: -1;
+    object-fit: cover;
+    filter: brightness(0.3) contrast(1.3);
+  }
+
+  header {
+    padding: 15px 25px;
+    background: rgba(0,20,0,0.9);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    border-bottom: 2px solid #00ff41;
+    box-shadow: 0 0 30px rgba(0,255,65,0.4);
+  }
+  
+  .title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00ffff;
+    text-shadow: 0 0 5px #00ffff;
+  }
+  
+  label {
+    font-weight: bold;
+    font-size: 14px;
+    color: #ffaa00;
+    text-shadow: 0 0 3px #ffaa00;
+  }
+  
+  select, input[type=button] {
+    font-family: monospace;
+    font-size: 14px;
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: 1px solid #00ff41;
+    outline: none;
+    cursor: pointer;
+    background: rgba(0,0,0,0.8);
+    color: #00ff41;
+    transition: all 0.3s;
+  }
+  
+  select {
+    min-width: 160px;
+  }
+  
+  input[type=button] {
+    background: #00ff41;
+    color: #000;
+    font-weight: bold;
+  }
+  
+  input[type=button]:hover {
+    background: #ff1493;
+    color: #fff;
+    box-shadow: 0 0 15px #ff1493;
+    transform: scale(1.05);
+  }
+  
+  input[type=text] {
+    flex-grow: 1;
+    min-width: 200px;
+    font-family: monospace;
+    font-size: 14px;
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: 1px solid #00ff41;
+    outline: none;
+    background: rgba(0,0,0,0.8);
+    color: #00ff41;
+  }
+  
+  input[type=text]:focus {
+    border-color: #ff1493;
+    box-shadow: 0 0 10px #ff1493;
+  }
+  
+  #totalCount {
+    background: rgba(0,0,0,0.9);
+    color: #00ff41;
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: 2px solid #00ff41;
+    font-weight: bold;
+    min-width: 140px;
+    text-align: center;
+    font-size: 14px;
+    box-shadow: 0 0 15px rgba(0,255,65,0.5);
+  }
+  
+  #logContainer {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.85);
+    position: relative;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  
+  thead tr {
+    background: rgba(0,50,0,0.95);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    border-bottom: 2px solid #00ff41;
+  }
+  
+  th, td {
+    padding: 10px 15px;
+    border-bottom: 1px solid rgba(0,255,65,0.3);
+    white-space: nowrap;
+    text-align: left;
+    font-family: monospace;
+  }
+  
+  th {
+    color: #00ffff;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  
+  tbody tr {
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  tbody tr:hover {
+    background: rgba(255,20,147,0.2);
+    transform: scale(1.01);
+  }
+  
+  .plate-number {
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    font-weight: bold;
+    color: #ff1493;
+    background: rgba(255,255,255,0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,20,147,0.3);
+    letter-spacing: 1px;
+  }
+  
+  .country-flag {
+    font-size: 16px;
+    margin-right: 5px;
+  }
+  
+  .highlight {
+    background: rgba(0,255,65,0.2);
+    padding: 2px 5px;
+    border-radius: 3px;
+  }
+  
+  #loadingIndicator {
+    padding: 15px 0;
+    text-align: center;
+    color: #00ff41;
+    font-size: 15px;
+    font-weight: bold;
+  }
+
+  #logContainer::-webkit-scrollbar {
+    width: 10px;
+  }
+  #logContainer::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.5);
+  }
+  #logContainer::-webkit-scrollbar-thumb {
+    background: #00ff41;
+    border-radius: 5px;
+  }
+  #logContainer::-webkit-scrollbar-thumb:hover {
+    background: #ff1493;
+  }
+
+  @media (max-width: 600px) {
+    th, td { padding: 8px 10px; font-size: 11px; }
+    .plate-number { font-size: 11px; }
+    input[type=text] { font-size: 13px; min-width: auto; }
+  }
+</style>
+</head>
+<body>
+
+<video autoplay muted loop id="bgVideo">
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+
+<header>
+  <div class="title">🚗 Global Vehicle LPR Log v195</div>
+  <label for="regionMode">Region Mode:</label>
+  <select id="regionMode" aria-label="Region selection mode">
+    <option value="random">🔀 Random Global</option>
+    <option value="europe">🇪🇺 Europe (EU)</option>
+    <option value="usa">🇺🇸 USA (North America)</option>
+    <option value="asia">🇯🇵 Asia Pacific</option>
+    <option value="manual">✏️ Manual Region</option>
+  </select>
+  
+  <input type="button" id="generateBtn" value="🚀 GENERATE LOGS" />
+  <input type="text" id="searchInput" placeholder="🔍 Filter Plate/VIN/Make..." />
+  <span id="totalCount">Total: 0</span>
+  <input type="button" id="downloadBtn" value="💾 DOWNLOAD" />
+</header>
+
+<div id="logContainer" tabindex="0" aria-live="polite">
+  <table role="grid" aria-rowcount="0" aria-colcount="7">
+    <thead>
+      <tr>
+        <th>License Plate</th>
+        <th>VIN</th>
+        <th>Region</th>
+        <th>Make / Model</th>
+        <th>Color</th>
+        <th>Timestamp</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+  <div id="loadingIndicator" hidden>🔄 Scanning global traffic feeds...</div>
+</div>
+
+<script>
+(() => {
+  const regionModeEl = document.getElementById('regionMode');
+  const generateBtn = document.getElementById('generateBtn');
+  const searchInput = document.getElementById('searchInput');
+  const logBody = document.getElementById('logBody');
+  const logContainer = document.getElementById('logContainer');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const totalCount = document.getElementById('totalCount');
+
+  const BATCH_SIZE = 400;
+  const MAX_LOGS = 20000;
+
+  // 195 Countries with Flag and Plate Patterns
+const COUNTRIES = {
+  'AF': {name: 'Afghanistan', flag: '🇦🇫', style: 'numeric'},
+  'AL': {name: 'Albania', flag: '🇦🇱', style: 'alpha-numeric'},
+  'DZ': {name: 'Algeria', flag: '🇩🇿', style: 'numeric'},
+  'AS': {name: 'American Samoa', flag: '🇦🇸', style: 'usa'},
+  'AD': {name: 'Andorra', flag: '🇦🇩', style: 'alpha'},
+  'AO': {name: 'Angola', flag: '🇦🇴', style: 'numeric'},
+  'AI': {name: 'Anguilla', flag: '🇦🇮', style: 'alpha'},
+  'AQ': {name: 'Antarctica', flag: '🇦🇶', style: 'alpha'},
+  'AG': {name: 'Antigua and Barbuda', flag: '🇦🇬', style: 'alpha'},
+  'AR': {name: 'Argentina', flag: '🇦🇷', style: 'alpha-numeric'},
+  'AM': {name: 'Armenia', flag: '🇦🇲', style: 'numeric'},
+  'AW': {name: 'Aruba', flag: '🇦🇼', style: 'alpha'},
+  'AU': {name: 'Australia', flag: '🇦🇺', style: 'alpha-numeric'},
+  'AT': {name: 'Austria', flag: '🇦🇹', style: 'alpha'},
+  'AZ': {name: 'Azerbaijan', flag: '🇦🇿', style: 'numeric'},
+  'BS': {name: 'Bahamas', flag: '🇧🇸', style: 'alpha'},
+  'BH': {name: 'Bahrain', flag: '🇧🇭', style: 'alpha'},
+  'BD': {name: 'Bangladesh', flag: '🇧🇩', style: 'alpha'},
+  'BB': {name: 'Barbados', flag: '🇧🇧', style: 'alpha'},
+  'BY': {name: 'Belarus', flag: '🇧🇾', style: 'numeric'},
+  'BE': {name: 'Belgium', flag: '🇧🇪', style: 'alpha'},
+  'BZ': {name: 'Belize', flag: '🇧🇿', style: 'alpha'},
+  'BJ': {name: 'Benin', flag: '🇧🇯', style: 'alpha'},
+  'BM': {name: 'Bermuda', flag: '🇧🇲', style: 'alpha'},
+  'BT': {name: 'Bhutan', flag: '🇧🇹', style: 'alpha'},
+  'BO': {name: 'Bolivia', flag: '🇧🇴', style: 'alpha'},
+  'BA': {name: 'Bosnia and Herzegovina', flag: '🇧🇦', style: 'alpha'},
+  'BW': {name: 'Botswana', flag: '🇧🇼', style: 'alpha'},
+  'BR': {name: 'Brazil', flag: '🇧🇷', style: 'alpha-numeric'},
+  'IO': {name: 'British Indian Ocean Territory', flag: '🇮🇴', style: 'uk'},
+  'BN': {name: 'Brunei Darussalam', flag: '🇧🇳', style: 'alpha'},
+  'BG': {name: 'Bulgaria', flag: '🇧🇬', style: 'alpha'},
+  'BF': {name: 'Burkina Faso', flag: '🇧🇫', style: 'alpha'},
+  'BI': {name: 'Burundi', flag: '🇧🇮', style: 'alpha'},
+  'CV': {name: 'Cabo Verde', flag: '🇨🇻', style: 'numeric'},
+  'KH': {name: 'Cambodia', flag: '🇰🇭', style: 'numeric'},
+  'CM': {name: 'Cameroon', flag: '🇨🇲', style: 'alpha'},
+  'CA': {name: 'Canada', flag: '🇨🇦', style: 'alpha-numeric'},
+  'KY': {name: 'Cayman Islands', flag: '🇰🇾', style: 'alpha'},
+  'CF': {name: 'Central African Republic', flag: '🇨🇫', style: 'alpha'},
+  'TD': {name: 'Chad', flag: '🇹🇩', style: 'alpha'},
+  'CL': {name: 'Chile', flag: '🇨🇱', style: 'alpha-numeric'},
+  'CN': {name: 'China', flag: '🇨🇳', style: 'china'},
+  'CX': {name: 'Christmas Island', flag: '🇨🇽', style: 'australia'},
+  'CC': {name: 'Cocos (Keeling) Islands', flag: '🇨🇨', style: 'australia'},
+  'CO': {name: 'Colombia', flag: '🇨🇴', style: 'alpha-numeric'},
+  'KM': {name: 'Comoros', flag: '🇰🇲', style: 'alpha'},
+  'CG': {name: 'Congo', flag: '🇨🇬', style: 'alpha'},
+  'CD': {name: 'Congo, Democratic Republic of the', flag: '🇨🇩', style: 'alpha'},
+  'CK': {name: 'Cook Islands', flag: '🇨🇰', style: 'alpha'},
+  'CR': {name: 'Costa Rica', flag: '🇨🇷', style: 'alpha'},
+  'CI': {name: 'Côte d\'Ivoire', flag: '🇨🇮', style: 'alpha'},
+  'HR': {name: 'Croatia', flag: '🇭🇷', style: 'alpha'},
+  'CU': {name: 'Cuba', flag: '🇨🇺', style: 'alpha'},
+  'CW': {name: 'Curaçao', flag: '🇨🇼', style: 'alpha'},
+  'CY': {name: 'Cyprus', flag: '🇨🇾', style: 'alpha'},
+  'CZ': {name: 'Czechia', flag: '🇨🇿', style: 'alpha'},
+  'DK': {name: 'Denmark', flag: '🇩🇰', style: 'alpha'},
+  'DJ': {name: 'Djibouti', flag: '🇩🇯', style: 'alpha'},
+  'DM': {name: 'Dominica', flag: '🇩🇲', style: 'alpha'},
+  'DO': {name: 'Dominican Republic', flag: '🇩🇴', style: 'alpha'},
+  'EC': {name: 'Ecuador', flag: '🇪🇨', style: 'alpha'},
+  'EG': {name: 'Egypt', flag: '🇪🇬', style: 'numeric'},
+  'SV': {name: 'El Salvador', flag: '🇸🇻', style: 'alpha'},
+  'GQ': {name: 'Equatorial Guinea', flag: '🇬🇶', style: 'alpha'},
+  'ER': {name: 'Eritrea', flag: '🇪🇷', style: 'alpha'},
+  'EE': {name: 'Estonia', flag: '🇪🇪', style: 'alpha'},
+  'SZ': {name: 'Eswatini', flag: '🇸🇿', style: 'alpha'},
+  'ET': {name: 'Ethiopia', flag: '🇪🇹', style: 'alpha'},
+  'FK': {name: 'Falkland Islands (Malvinas)', flag: '🇫🇰', style: 'uk'},
+  'FO': {name: 'Faroe Islands', flag: '🇫🇴', style: 'alpha'},
+  'FJ': {name: 'Fiji', flag: '🇫🇯', style: 'alpha'},
+  'FI': {name: 'Finland', flag: '🇫🇮', style: 'alpha'},
+  'FR': {name: 'France', flag: '🇫🇷', style: 'alpha'},
+  'GF': {name: 'French Guiana', flag: '🇬🇫', style: 'france'},
+  'PF': {name: 'French Polynesia', flag: '🇵🇫', style: 'alpha'},
+  'TF': {name: 'French Southern Territories', flag: '🇹🇫', style: 'france'},
+  'GA': {name: 'Gabon', flag: '🇬🇦', style: 'alpha'},
+  'GM': {name: 'Gambia', flag: '🇬🇲', style: 'alpha'},
+  'GE': {name: 'Georgia', flag: '🇬🇪', style: 'numeric'},
+  'DE': {name: 'Germany', flag: '🇩🇪', style: 'alpha'},
+  'GH': {name: 'Ghana', flag: '🇬🇭', style: 'alpha'},
+  'GI': {name: 'Gibraltar', flag: '🇬🇮', style: 'uk'},
+  'GR': {name: 'Greece', flag: '🇬🇷', style: 'alpha'},
+  'GL': {name: 'Greenland', flag: '🇬🇱', style: 'denmark'},
+  'GD': {name: 'Grenada', flag: '🇬🇩', style: 'alpha'},
+  'GP': {name: 'Guadeloupe', flag: '🇬🇵', style: 'france'},
+  'GU': {name: 'Guam', flag: '🇬🇺', style: 'usa'},
+  'GT': {name: 'Guatemala', flag: '🇬🇹', style: 'alpha'},
+  'GG': {name: 'Guernsey', flag: '🇬🇬', style: 'uk'},
+  'GN': {name: 'Guinea', flag: '🇬🇳', style: 'alpha'},
+  'GW': {name: 'Guinea-Bissau', flag: '🇬🇼', style: 'alpha'},
+  'GY': {name: 'Guyana', flag: '🇬🇾', style: 'alpha'},
+  'HT': {name: 'Haiti', flag: '🇭🇹', style: 'alpha'},
+  'HM': {name: 'Heard Island and McDonald Islands', flag: '🇭🇲', style: 'australia'},
+  'VA': {name: 'Holy See', flag: '🇻🇦', style: 'italy'},
+  'HN': {name: 'Honduras', flag: '🇭🇳', style: 'alpha'},
+  'HK': {name: 'Hong Kong', flag: '🇭🇰', style: 'china'},
+  'HU': {name: 'Hungary', flag: '🇭🇺', style: 'alpha'},
+  'IS': {name: 'Iceland', flag: '🇮🇸', style: 'alpha'},
+  'IN': {name: 'India', flag: '🇮🇳', style: 'india'},
+  'ID': {name: 'Indonesia', flag: '🇮🇩', style: 'alpha'},
+  'IR': {name: 'Iran', flag: '🇮🇷', style: 'numeric'},
+  'IQ': {name: 'Iraq', flag: '🇮🇶', style: 'numeric'},
+  'IE': {name: 'Ireland', flag: '🇮🇪', style: 'alpha'},
+  'IM': {name: 'Isle of Man', flag: '🇮🇲', style: 'uk'},
+  'IL': {name: 'Israel', flag: '🇮🇱', style: 'numeric'},
+  'IT': {name: 'Italy', flag: '🇮🇹', style: 'alpha'},
+  'JM': {name: 'Jamaica', flag: '🇯🇲', style: 'alpha'},
+  'JP': {name: 'Japan', flag: '🇯🇵', style: 'japan'},
+  'JE': {name: 'Jersey', flag: '🇯🇪', style: 'uk'},
+  'JO': {name: 'Jordan', flag: '🇯🇴', style: 'numeric'},
+  'KZ': {name: 'Kazakhstan', flag: '🇰🇿', style: 'numeric'},
+  'KE': {name: 'Kenya', flag: '🇰🇪', style: 'alpha'},
+  'KI': {name: 'Kiribati', flag: '🇰🇮', style: 'alpha'},
+  'KP': {name: 'North Korea', flag: '🇰🇵', style: 'japan'},
+  'KR': {name: 'South Korea', flag: '🇰🇷', style: 'korea'},
+  'KW': {name: 'Kuwait', flag: '🇰🇼', style: 'numeric'},
+  'KG': {name: 'Kyrgyzstan', flag: '🇰🇬', style: 'numeric'},
+  'LA': {name: 'Lao People\'s Democratic Republic', flag: '🇱🇦', style: 'alpha'},
+  'LV': {name: 'Latvia', flag: '🇱🇻', style: 'alpha'},
+  'LB': {name: 'Lebanon', flag: '🇱🇧', style: 'numeric'},
+  'LS': {name: 'Lesotho', flag: '🇱🇸', style: 'alpha'},
+  'LR': {name: 'Liberia', flag: '🇱🇷', style: 'alpha'},
+  'LY': {name: 'Libya', flag: '🇱🇾', style: 'numeric'},
+  'LI': {name: 'Liechtenstein', flag: '🇱🇮', style: 'alpha'},
+  'LT': {name: 'Lithuania', flag: '🇱🇹', style: 'alpha'},
+  'LU': {name: 'Luxembourg', flag: '🇱🇺', style: 'alpha'},
+  'MO': {name: 'Macao', flag: '🇲🇴', style: 'china'},
+  'MG': {name: 'Madagascar', flag: '🇲🇬', style: 'numeric'},
+  'MW': {name: 'Malawi', flag: '🇲🇼', style: 'alpha'},
+  'MY': {name: 'Malaysia', flag: '🇲🇾', style: 'alpha'},
+  'MV': {name: 'Maldives', flag: '🇲🇻', style: 'alpha'},
+  'ML': {name: 'Mali', flag: '🇲🇱', style: 'alpha'},
+  'MT': {name: 'Malta', flag: '🇲🇹', style: 'alpha'},
+  'MH': {name: 'Marshall Islands', flag: '🇲🇭', style: 'alpha'},
+  'MQ': {name: 'Martinique', flag: '🇲🇶', style: 'france'},
+  'MR': {name: 'Mauritania', flag: '🇲🇷', style: 'numeric'},
+  'MU': {name: 'Mauritius', flag: '🇲🇺', style: 'alpha'},
+  'YT': {name: 'Mayotte', flag: '🇾🇹', style: 'france'},
+  'MX': {name: 'Mexico', flag: '🇲🇽', style: 'alpha-numeric'},
+  'FM': {name: 'Micronesia, Federated States of', flag: '🇫🇲', style: 'alpha'},
+  'MD': {name: 'Moldova, Republic of', flag: '🇲🇩', style: 'alpha'},
+  'MC': {name: 'Monaco', flag: '🇲🇨', style: 'alpha'},
+  'MN': {name: 'Mongolia', flag: '🇲🇳', style: 'alpha'},
+  'ME': {name: 'Montenegro', flag: '🇲🇪', style: 'alpha'},
+  'MS': {name: 'Montserrat', flag: '🇲🇸', style: 'alpha'},
+  'MA': {name: 'Morocco', flag: '🇲🇦', style: 'numeric'},
+  'MZ': {name: 'Mozambique', flag: '🇲🇿', style: 'alpha'},
+  'MM': {name: 'Myanmar', flag: '🇲🇲', style: 'alpha'},
+  'NA': {name: 'Namibia', flag: '🇳🇦', style: 'alpha'},
+  'NR': {name: 'Nauru', flag: '🇳🇷', style: 'alpha'},
+  'NP': {name: 'Nepal', flag: '🇳🇵', style: 'alpha'},
+  'NL': {name: 'Netherlands', flag: '🇳🇱', style: 'alpha'},
+  'NC': {name: 'New Caledonia', flag: '🇳🇨', style: 'france'},
+  'NZ': {name: 'New Zealand', flag: '🇳🇿', style: 'alpha'},
+  'NI': {name: 'Nicaragua', flag: '🇳🇮', style: 'alpha'},
+  'NE': {name: 'Niger', flag: '🇳🇪', style: 'alpha'},
+  'NG': {name: 'Nigeria', flag: '🇳🇬', style: 'alpha'},
+  'NU': {name: 'Niue', flag: '🇳🇺', style: 'alpha'},
+  'NF': {name: 'Norfolk Island', flag: '🇳🇫', style: 'australia'},
+  'MK': {name: 'North Macedonia', flag: '🇲🇰', style: 'alpha'},
+  'MP': {name: 'Northern Mariana Islands', flag: '🇲🇵', style: 'usa'},
+  'NO': {name: 'Norway', flag: '🇳🇴', style: 'alpha'},
+  'OM': {name: 'Oman', flag: '🇴🇲', style: 'numeric'},
+  'PK': {name: 'Pakistan', flag: '🇵🇰', style: 'numeric'},
+  'PW': {name: 'Palau', flag: '🇵🇼', style: 'alpha'},
+  'PS': {name: 'Palestine, State of', flag: '🇵🇸', style: 'numeric'},
+  'PA': {name: 'Panama', flag: '🇵🇦', style: 'alpha'},
+  'PG': {name: 'Papua New Guinea', flag: '🇵🇬', style: 'alpha'},
+  'PY': {name: 'Paraguay', flag: '🇵🇾', style: 'alpha'},
+  'PE': {name: 'Peru', flag: '🇵🇪', style: 'alpha'},
+  'PH': {name: 'Philippines', flag: '🇵🇭', style: 'alpha'},
+  'PN': {name: 'Pitcairn', flag: '🇵🇳', style: 'uk'},
+  'PL': {name: 'Poland', flag: '🇵🇱', style: 'alpha'},
+  'PT': {name: 'Portugal', flag: '🇵🇹', style: 'alpha'},
+  'PR': {name: 'Puerto Rico', flag: '🇵🇷', style: 'usa'},
+  'QA': {name: 'Qatar', flag: '🇶🇦', style: 'numeric'},
+  'RE': {name: 'Réunion', flag: '🇷🇪', style: 'france'},
+  'RO': {name: 'Romania', flag: '🇷🇴', style: 'alpha'},
+  'RU': {name: 'Russia', flag: '🇷🇺', style: 'alpha'},
+  'RW': {name: 'Rwanda', flag: '🇷🇼', style: 'alpha'},
+  'BL': {name: 'Saint Barthélemy', flag: '🇧🇱', style: 'france'},
+  'SH': {name: 'Saint Helena, Ascension and Tristan da Cunha', flag: '🇸🇭', style: 'uk'},
+  'KN': {name: 'Saint Kitts and Nevis', flag: '🇰🇳', style: 'alpha'},
+  'LC': {name: 'Saint Lucia', flag: '🇱🇨', style: 'alpha'},
+  'MF': {name: 'Saint Martin (French part)', flag: '🇲🇫', style: 'france'},
+  'PM': {name: 'Saint Pierre and Miquelon', flag: '🇵🇲', style: 'france'},
+  'VC': {name: 'Saint Vincent and the Grenadines', flag: '🇻🇨', style: 'alpha'},
+  'WS': {name: 'Samoa', flag: '🇼🇸', style: 'alpha'},
+  'SM': {name: 'San Marino', flag: '🇸🇲', style: 'italy'},
+  'ST': {name: 'Sao Tome and Principe', flag: '🇸🇹', style: 'alpha'},
+  'SA': {name: 'Saudi Arabia', flag: '🇸🇦', style: 'numeric'},
+  'SN': {name: 'Senegal', flag: '🇸🇳', style: 'alpha'},
+  'RS': {name: 'Serbia', flag: '🇷🇸', style: 'alpha'},
+  'SC': {name: 'Seychelles', flag: '🇸🇨', style: 'alpha'},
+  'SL': {name: 'Sierra Leone', flag: '🇸🇱', style: 'alpha'},
+  'SG': {name: 'Singapore', flag: '🇸🇬', style: 'alpha'},
+  'SX': {name: 'Sint Maarten (Dutch part)', flag: '🇸🇽', style: 'alpha'},
+  'SK': {name: 'Slovakia', flag: '🇸🇰', style: 'alpha'},
+  'SI': {name: 'Slovenia', flag: '🇸🇮', style: 'alpha'},
+  'SB': {name: 'Solomon Islands', flag: '🇸🇧', style: 'alpha'},
+  'SO': {name: 'Somalia', flag: '🇸🇴', style: 'alpha'},
+  'ZA': {name: 'South Africa', flag: '🇿🇦', style: 'alpha'},
+  'GS': {name: 'South Georgia and the South Sandwich Islands', flag: '🇬🇸', style: 'uk'},
+  'SS': {name: 'South Sudan', flag: '🇸🇸', style: 'alpha'},
+  'ES': {name: 'Spain', flag: '🇪🇸', style: 'alpha'},
+  'LK': {name: 'Sri Lanka', flag: '🇱🇰', style: 'alpha'},
+  'SD': {name: 'Sudan', flag: '🇸🇩', style: 'alpha'},
+  'SR': {name: 'Suriname', flag: '🇸🇷', style: 'alpha'},
+  'SJ': {name: 'Svalbard and Jan Mayen', flag: '🇸🇯', style: 'norway'},
+  'SE': {name: 'Sweden', flag: '🇸🇪', style: 'alpha'},
+  'CH': {name: 'Switzerland', flag: '🇨🇭', style: 'alpha'},
+  'SY': {name: 'Syrian Arab Republic', flag: '🇸🇾', style: 'numeric'},
+  'TW': {name: 'Taiwan', flag: '🇹🇼', style: 'alpha'},
+  'TJ': {name: 'Tajikistan', flag: '🇹🇯', style: 'numeric'},
+  'TZ': {name: 'Tanzania, United Republic of', flag: '🇹🇿', style: 'alpha'},
+  'TH': {name: 'Thailand', flag: '🇹🇭', style: 'alpha'},
+  'TL': {name: 'Timor-Leste', flag: '🇹🇱', style: 'alpha'},
+  'TG': {name: 'Togo', flag: '🇹🇬', style: 'alpha'},
+  'TK': {name: 'Tokelau', flag: '🇹🇰', style: 'alpha'},
+  'TO': {name: 'Tonga', flag: '🇹🇴', style: 'alpha'},
+  'TT': {name: 'Trinidad and Tobago', flag: '🇹🇹', style: 'alpha'},
+  'TN': {name: 'Tunisia', flag: '🇹🇳', style: 'numeric'},
+  'TR': {name: 'Turkey', flag: '🇹🇷', style: 'alpha'},
+  'TM': {name: 'Turkmenistan', flag: '🇹🇲', style: 'numeric'},
+  'TC': {name: 'Turks and Caicos Islands', flag: '🇹🇨', style: 'uk'},
+  'TV': {name: 'Tuvalu', flag: '🇹🇻', style: 'alpha'},
+  'UG': {name: 'Uganda', flag: '🇺🇬', style: 'alpha'},
+  'UA': {name: 'Ukraine', flag: '🇺🇦', style: 'alpha'},
+  'AE': {name: 'United Arab Emirates', flag: '🇦🇪', style: 'numeric'},
+  'GB': {name: 'United Kingdom', flag: '🇬🇧', style: 'uk'},
+  'US': {name: 'United States', flag: '🇺🇸', style: 'usa'},
+  'UM': {name: 'United States Minor Outlying Islands', flag: '🇺🇲', style: 'usa'},
+  'UY': {name: 'Uruguay', flag: '🇺🇾', style: 'alpha'},
+  'UZ': {name: 'Uzbekistan', flag: '🇺🇿', style: 'numeric'},
+  'VU': {name: 'Vanuatu', flag: '🇻🇺', style: 'alpha'},
+  'VE': {name: 'Venezuela', flag: '🇻🇪', style: 'alpha'},
+  'VN': {name: 'Viet Nam', flag: '🇻🇳', style: 'alpha'},
+  'VG': {name: 'Virgin Islands (British)', flag: '🇻🇬', style: 'uk'},
+  'VI': {name: 'Virgin Islands (U.S.)', flag: '🇻🇮', style: 'usa'},
+  'WF': {name: 'Wallis and Futuna', flag: '🇼🇫', style: 'france'},
+  'EH': {name: 'Western Sahara', flag: '🇪🇭', style: 'alpha'},
+  'YE': {name: 'Yemen', flag: '🇾🇪', style: 'numeric'},
+  'ZM': {name: 'Zambia', flag: '🇿🇲', style: 'alpha'},
+  'ZW': {name: 'Zimbabwe', flag: '🇿🇼', style: 'alpha'}
+};
+
+  const VEHICLE_MAKES = [
+    'Toyota', 'Ford', 'Honda', 'Chevrolet', 'Nissan', 'Hyundai', 'Kia', 'Volkswagen', 
+    'Mercedes-Benz', 'BMW', 'Audi', 'Tesla', 'Subaru', 'Mazda', 'Jeep', 'Ram', 
+    'GMC', 'Buick', 'Dodge', 'Chrysler', 'Lexus', 'Volvo', 'Land Rover', 'Jaguar',
+    'Porsche', 'Ferrari', 'Lamborghini', 'Maserati', 'Bentley', 'Rolls-Royce', 
+    'Aston Martin', 'McLaren', 'Bugatti', 'Pagani', 'Koenigsegg', 'Alfa Romeo', 
+    'Fiat', 'Renault', 'Peugeot', 'Citroen', 'Opel', 'Skoda', 'Seat', 'Mini',
+    'Smart', 'Suzuki', 'Mitsubishi', 'Daihatsu', 'Mahindra', 'Tata', 'Geely',
+    'Chery', 'BYD', 'Great Wall', 'Haval', 'Wuling', 'NIO', 'XPeng', 'Li Auto'
+  ];
+
+  const VEHICLE_MODELS = {
+    'Toyota': ['Camry', 'Corolla', 'RAV4', 'Highlander', 'Tacoma', 'Prius', 'Supra', 'Land Cruiser'],
+    'Ford': ['F-150', 'Mustang', 'Explorer', 'Escape', 'Focus', 'Ranger', 'Bronco'],
+    'Honda': ['Civic', 'Accord', 'CR-V', 'Pilot', 'Fit', 'Passport'],
+    'Chevrolet': ['Silverado', 'Equinox', 'Malibu', 'Tahoe', 'Suburban', 'Camaro'],
+    'Tesla': ['Model S', 'Model 3', 'Model X', 'Model Y', 'Cybertruck'],
+    'BMW': ['3 Series', '5 Series', 'X3', 'X5', 'M3', 'M5', 'i8'],
+    'Mercedes-Benz': ['C-Class', 'E-Class', 'S-Class', 'GLC', 'GLE', 'G-Wagon'],
+    'Audi': ['A4', 'A6', 'Q5', 'Q7', 'R8', 'e-tron'],
+    'Volkswagen': ['Golf', 'Passat', 'Tiguan', 'Atlas', 'ID.4'],
+    'Nissan': ['Altima', 'Sentra', 'Rogue', 'Pathfinder', '370Z', 'GT-R'],
+    'Hyundai': ['Elantra', 'Sonata', 'Tucson', 'Santa Fe', 'Ioniq 5'],
+    'Kia': ['Forte', 'K5', 'Sportage', 'Sorento', 'Telluride', 'EV6'],
+    'Subaru': ['Outback', 'Forester', 'Impreza', 'WRX', 'Crosstrek'],
+    'Mazda': ['Mazda3', 'Mazda6', 'CX-5', 'CX-9', 'MX-5 Miata'],
+    'Jeep': ['Wrangler', 'Grand Cherokee', 'Cherokee', 'Gladiator'],
+    'Ram': ['1500', '2500', '3500'],
+    'Lexus': ['ES', 'RX', 'NX', 'GX', 'LS'],
+    'Volvo': ['XC40', 'XC60', 'XC90', 'S60', 'V90'],
+    'Land Rover': ['Range Rover', 'Discovery', 'Defender', 'Evoque'],
+    'Porsche': ['911', 'Cayenne', 'Macan', 'Taycan', 'Panamera'],
+    'Ferrari': ['488', 'F8', 'Roma', 'SF90 Stradale'],
+    'Lamborghini': ['Huracan', 'Urus', 'Aventador'],
+    'Generic': ['Sedan', 'SUV', 'Truck', 'Hatchback', 'Coupe', 'Van', 'Wagon']
+  };
+
+  const VEHICLE_COLORS = [
+    'White', 'Black', 'Silver', 'Gray', 'Blue', 'Red', 'Brown', 'Green', 
+    'Beige', 'Orange', 'Yellow', 'Gold', 'Purple', 'Bronze'
+  ];
+
+  let totalLogsGenerated = 0;
+  let currentRegionMode = 'random';
+  let allEntries = [];
+  let countryList = Object.keys(COUNTRIES);
+
+  function shuffleArray(array) {
+    return array.sort(() => Math.random() - 0.5);
+  }
+
+  function getRegionCode() {
+    switch(currentRegionMode) {
+      case 'manual':
+        const manualInput = searchInput.value.toUpperCase().slice(0,2);
+        return COUNTRIES[manualInput] ? manualInput : 'US';
+      case 'usa': return 'US';
+      case 'europe': 
+        const euCountries = ['DE','FR','IT','ES','GB','NL','BE','SE','DK','FI','NO','PL','CZ','AT','CH'];
+        return euCountries[Math.floor(Math.random() * euCountries.length)];
+      case 'asia':
+        const asiaCountries = ['JP','CN','IN','KR','SG','HK','MY','TH','VN','ID','PH','TW','AU'];
+        return asiaCountries[Math.floor(Math.random() * asiaCountries.length)];
+      default: // random global
+        return countryList[Math.floor(Math.random() * countryList.length)];
+    }
+  }
+
+  function generateRandomString(len, charset) {
+    charset = charset || 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < len; i++) result += charset.charAt(Math.floor(Math.random() * charset.length));
+    return result;
+  }
+
+  function generateLicensePlate(regionCode) {
+    const style = COUNTRIES[regionCode] ? COUNTRIES[regionCode].style : 'alpha';
+    
+    switch(style) {
+      case 'usa':
+        // US Format: ABC-1234 or 123-ABC
+        return Math.random() > 0.5 
+          ? `${generateRandomString(3, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')}-${generateRandomString(4, '0123456789')}`
+          : `${generateRandomString(3, '0123456789')}-${generateRandomString(3, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')}`;
+      case 'uk':
+        // UK Format: AB12 CDE
+        return `${generateRandomString(2, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')}${generateRandomString(2, '0123456789')} ${generateRandomString(3, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')}`;
+      case 'china':
+        // CN Format:京A·12345
+        const cnCities = ['京','沪','津','渝','冀','豫','云','辽','黑','湘','皖','鲁','新','苏','浙','赣','鄂','桂','甘','晋','蒙','陕','吉','闽','贵','粤','青','藏','川','宁','琼'];
+        return `${cnCities[Math.floor(Math.random() * cnCities.length)]}${generateRandomString(1, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')}·${generateRandomString(5, '0123456789')}`;
+      case 'japan':
+        // JP Format: 品川330あ 10-34
+        const jpAreas = ['品川','足立','練馬','世田谷','大田','横浜','大阪','名古屋','福岡','札幌','仙台'];
+        const jpKana = ['あ','い','う','え','か','き','く','け','こ','さ','し','す','せ','そ','た','ち','つ','て','と','な','に','ぬ','ね','の','は','ひ','ふ','へ','ほ','ま','み','む','め','も','や','ゆ','よ','ら','り','る','れ','ろ','わ','を','ん'];
+        return `${jpAreas[Math.floor(Math.random() * jpAreas.length)]}${generateRandomString(3, '0123456789')}${jpKana[Math.floor(Math.random() * jpKana.length)]}`;
+      case 'korea':
+        // KR Format: 12가 1234
+        const krSyllables = ['가','나','다','라','마','바','사','아','자','차','카','타','파','하'];
+        return `${generateRandomString(2, '0123456789')}${krSyllables[Math.floor(Math.random() * krSyllables.length)]} ${generateRandomString(4, '0123456789')}`;
+      case 'india':
+        // IN Format: MH-01-AB-1234
+        const inStates = ['MH','DL','KA','TN','UP','GJ','RJ','WB','KL','PB','HR','CH','MP','BR'];
+        return `${inStates[Math.floor(Math.random() * inStates.length)]}-${generateRandomString(2, '0123456789')}-${generateRandomString(2, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')}-${generateRandomString(4, '0123456789')}`;
+      case 'numeric':
+        // Simple numeric for many Middle Eastern/African countries
+        return generateRandomString(Math.floor(Math.random() * 3) + 4, '0123456789');
+      default: // Alpha-Numeric (Generic EU/LatAm)
+        // e.g. AB-123-CD or 123-AB-45
+        return Math.random() > 0.5 
+          ? `${generateRandomString(2, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')}-${generateRandomString(3, '0123456789')}-${generateRandomString(2, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')}`
+          : `${generateRandomString(3, '0123456789')}-${generateRandomString(3, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')}-${generateRandomString(2, '0123456789')}`;
+    }
+  }
+
+  function generateVIN() {
+    // VINs are 17 chars, avoiding I, O, Q
+    const chars = 'ABCDEFGHJKLMNPRSTUVWXYZ0123456789';
+    let vin = generateRandomString(17, chars);
+    // Ensure it doesn't start with a number (WMI standard)
+    return 'A' + vin.substring(1);
+  }
+
+  function getVehicleMakeModel() {
+    const make = VEHICLE_MAKES[Math.floor(Math.random() * VEHICLE_MAKES.length)];
+    const models = VEHICLE_MODELS[make] || VEHICLE_MODELS['Generic'];
+    const model = models[Math.floor(Math.random() * models.length)];
+    const year = 2000 + Math.floor(Math.random() * 25);
+    return `${year} ${make} ${model}`;
+  }
+
+  function getTimestamp() {
+    return new Date().toISOString().slice(0,19).replace('T',' ');
+  }
+
+  function createRow(entry) {
+    const tr = document.createElement('tr');
+    const vinShort = entry.vin.slice(0,8) + '...';
+    
+    tr.innerHTML = `
+      <td class="plate-number" title="Click to copy plate">${entry.plate}</td>
+      <td style="font-family: monospace; color: #aaa;">${vinShort}</td>
+      <td><span class="country-flag">${entry.flag}</span>${entry.country}</td>
+      <td class="highlight">${entry.makeModel}</td>
+      <td>${entry.color}</td>
+      <td style="font-size: 11px;">${entry.timestamp}</td>
+      <td style="color: #00ff41; font-weight: bold;">${entry.status}</td>
+    `;
+    
+    tr.onclick = (e) => {
+      if (e.target.closest('td')) {
+        navigator.clipboard.writeText(entry.plate);
+        e.target.style.background = '#ff1493';
+        setTimeout(() => e.target.style.background = '', 500);
+      }
+    };
+    
+    return tr;
+  }
+
+  function generateEntry() {
+    const regionCode = getRegionCode();
+    const regionData = COUNTRIES[regionCode] || COUNTRIES['US'];
+    const plate = generateLicensePlate(regionCode);
+    
+    return {
+      plate: plate,
+      vin: generateVIN(),
+      country: regionData.name,
+      flag: regionData.flag,
+      makeModel: getVehicleMakeModel(),
+      color: VEHICLE_COLORS[Math.floor(Math.random() * VEHICLE_COLORS.length)],
+      timestamp: getTimestamp(),
+      status: 'DETECTED' // Can be 'WANTED', 'STOLEN', 'CLEAN' etc.
+    };
+  }
+
+  function updateTotalCount() {
+    totalCount.textContent = `Total: ${totalLogsGenerated.toLocaleString()}`;
+  }
+
+  function loadMoreLogs() {
+    if (totalLogsGenerated >= MAX_LOGS) {
+      loadingIndicator.textContent = `⚠️ Max ${MAX_LOGS.toLocaleString()} records reached`;
+      loadingIndicator.hidden = false;
+      return;
+    }
+    loadingIndicator.hidden = false;
+    
+    requestAnimationFrame(() => {
+      const fragment = document.createDocumentFragment();
+      for (let i = 0; i < BATCH_SIZE && totalLogsGenerated < MAX_LOGS; i++, totalLogsGenerated++) {
+        const entry = generateEntry();
+        allEntries.push(entry);
+        fragment.appendChild(createRow(entry));
+      }
+      logBody.appendChild(fragment);
+      loadingIndicator.hidden = true;
+      updateTotalCount();
+      updateAriaRowCount();
+    });
+  }
+
+  function resetLogs() {
+    totalLogsGenerated = 0;
+    allEntries = [];
+    logBody.innerHTML = '';
+    loadingIndicator.hidden = true;
+    updateTotalCount();
+    updateAriaRowCount();
+  }
+
+  function filterLogs() {
+    const filter = searchInput.value.toLowerCase();
+    if (!filter) {
+      [...logBody.children].forEach(tr => tr.style.display = "");
+      return;
+    }
+    [...logBody.children].forEach(tr => {
+      const haystack = tr.textContent.toLowerCase();
+      tr.style.display = haystack.includes(filter) ? "" : "none";
+    });
+  }
+
+  function updateAriaRowCount() {
+    logBody.parentElement.setAttribute('aria-rowcount', logBody.children.length);
+  }
+
+  // Event Listeners
+  logContainer.addEventListener('scroll', () => {
+    if (loadingIndicator.hidden &&
+        logContainer.scrollTop + logContainer.clientHeight >= logContainer.scrollHeight - 100 &&
+        !searchInput.value.trim()) {
+      loadMoreLogs();
+    }
+  });
+
+  generateBtn.addEventListener('click', () => {
+    currentRegionMode = regionModeEl.value;
+    if (currentRegionMode === 'manual' && !searchInput.value.trim()) {
+      currentRegionMode = 'random';
+    }
+    resetLogs();
+    loadMoreLogs();
+    searchInput.value = '';
+  });
+
+  searchInput.addEventListener('input', () => {
+    filterLogs();
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const csvData = allEntries.map(e => 
+      `"${e.plate}","${e.vin}","${e.country}","${e.makeModel}","${e.color}","${e.timestamp}","${e.status}"`
+    ).join('\n');
+    
+    const csvBlob = new Blob([`Plate,VIN,Region,Make/Model,Color,Timestamp,Status\n${csvData}`], 
+      {type: 'text/csv;charset=utf-8;'});
+    
+    const csvLink = document.createElement('a');
+    csvLink.href = URL.createObjectURL(csvBlob);
+    csvLink.download = `lpr_global_${currentRegionMode}_${Date.now()}.csv`;
+    csvLink.style.display = 'none';
+    document.body.appendChild(csvLink);
+    csvLink.click();
+    document.body.removeChild(csvLink);
+  });
+
+  // Initialize
+  updateTotalCount();
+  loadMoreLogs();
+  
+  // Update country list for random mode
+  setInterval(() => {
+    if (currentRegionMode === 'random') {
+      countryList = shuffleArray(Object.keys(COUNTRIES));
+    }
+  }, 5000);
+
+})();
+</script>
+
+</body>
+</html>

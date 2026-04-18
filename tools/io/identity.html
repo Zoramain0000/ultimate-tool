@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays • Identity Generator Pro Advanced</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:Segoe UI,Arial,sans-serif;color:#e5e7eb;overflow:hidden}
+
+/* Background video */
+.bg-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;filter:brightness(.45);}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:-1}
+
+/* Header */
+header{padding:14px;text-align:center;background:rgba(15,23,42,.3);backdrop-filter:blur(12px)}
+header h1{color:#7dd3fc;letter-spacing:2px;margin-bottom:10px}
+header button{padding:10px 14px;border-radius:8px;border:none;background:#38bdf8;color:white;cursor:pointer;}
+
+/* Container */
+.container{max-width:900px;margin:30px auto;padding:20px;background:rgba(2,6,23,.35);
+  backdrop-filter:blur(10px);border-radius:12px;box-shadow:0 0 30px rgba(0,0,0,.9);}
+.section{margin-bottom:20px}
+.section button{width:100%;padding:12px;background:#38bdf8;border:none;border-radius:8px;color:white;font-size:14px;cursor:pointer}
+.section button:hover{background:#0ea5e9}
+
+/* Identity Display */
+#identity{background:rgba(2,6,23,.45);padding:14px;border-radius:10px;font-family:monospace;overflow:auto;max-height:450px}
+.entry{margin-bottom:8px;display:flex;align-items:center}
+.key{color:#7dd3fc;font-weight:bold;width:140px}
+.value{color:#facc15;flex:1}
+.avatar{width:80px;height:80px;border-radius:50%;margin-right:12px;object-fit:cover}
+.flag{width:32px;height:20px;margin-left:10px;object-fit:cover;border-radius:4px}
+.controls{display:flex;gap:10px;margin-top:12px}
+.controls button{padding:8px 12px;background:#38bdf8;border:none;border-radius:6px;color:white;cursor:pointer}
+.controls button:hover{background:#0ea5e9}
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+<h1>ZERO DAYS • IDENTITY GENERATOR PRO ADVANCED</h1>
+</header>
+
+<div class="container">
+  <div class="section">
+    <button onclick="generateIdentity()">Generate New Identity</button>
+  </div>
+  <div class="section" id="identity">
+    Your generated identity will appear here...
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+// ----------------- GENERATE IDENTITY USING API -----------------
+function generateIdentity(){
+  var container = document.getElementById('identity');
+  container.innerHTML = "Generating...";
+  
+  // Call randomuser.me API
+  fetch("https://randomuser.me/api/")
+  .then(function(response){ return response.json(); })
+  .then(function(data){
+    var user = data.results[0];
+    
+    // Identity object
+    var identity = {
+      "Avatar": user.picture.large,
+      "Full Name": user.name.title + " " + user.name.first + " " + user.name.last,
+      "Gender": user.gender,
+      "Age": user.dob.age,
+      "Date of Birth": user.dob.date.split("T")[0],
+      "Country": user.location.country,
+      "State/Region": user.location.state,
+      "City": user.location.city,
+      "Street Address": user.location.street.number + " " + user.location.street.name,
+      "ZIP Code": user.location.postcode,
+      "Phone": user.phone,
+      "Email": user.email,
+      "Username": user.login.username,
+      "Password": user.login.password
+    };
+    
+    displayIdentity(identity);
+    generatePersonalitySummary(identity);
+  })
+  .catch(function(err){
+    container.innerHTML = "Error fetching identity: " + err;
+  });
+}
+
+// ----------------- DISPLAY -----------------
+function displayIdentity(obj){
+  var container = document.getElementById('identity');
+  container.innerHTML = "";
+  
+  // Avatar first
+  var avatar = document.createElement('img');
+  avatar.src = obj["Avatar"];
+  avatar.className = "avatar";
+  container.appendChild(avatar);
+  
+  for(var key in obj){
+    if(key==="Avatar") continue; // skip avatar
+    var div = document.createElement('div');
+    div.className = "entry";
+    div.innerHTML = "<span class='key'>" + key + ":</span> <span class='value'>" + obj[key] + "</span>";
+    container.appendChild(div);
+  }
+  
+  // Country flag
+  var flag = document.createElement('img');
+  flag.className = "flag";
+  flag.src = "https://flagcdn.com/48x36/" + getCountryCode(obj["Country"]) + ".png";
+  container.appendChild(flag);
+  
+  // Add controls for export
+  var controls = document.createElement('div');
+  controls.className = "controls";
+  controls.innerHTML = "<button onclick='exportPDF()'>📄 Export PDF</button><button onclick='exportJSON()'>💾 Export JSON</button>";
+  container.appendChild(controls);
+}
+
+// ----------------- MAP COUNTRY NAME TO FLAG CDN -----------------
+function getCountryCode(countryName){
+  var codes = {
+    "United States":"us","Canada":"ca","United Kingdom":"gb","Germany":"de","France":"fr",
+    "Spain":"es","Russia":"ru","China":"cn","Japan":"jp","Australia":"au"
+    // Add more as needed or expand
+  };
+  return (codes[countryName] || "us");
+}
+
+// ----------------- EXPORT PDF -----------------
+function exportPDF(){
+  var {jsPDF} = window.jspdf;
+  var doc = new jsPDF();
+  var container = document.getElementById('identity');
+  var text = container.innerText;
+  doc.text("ZeroDays Identity Report",10,10);
+  doc.text(text,10,20);
+  doc.save("identity.pdf");
+}
+
+// ----------------- EXPORT JSON -----------------
+function exportJSON(){
+  var container = document.getElementById('identity');
+  var text = container.innerText;
+  var obj = {};
+  container.querySelectorAll(".entry").forEach(function(e){
+    var key = e.querySelector(".key").innerText.replace(":", "");
+    var value = e.querySelector(".value").innerText;
+    obj[key] = value;
+  });
+  var blob = new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = "identity.json";
+  a.click();
+}
+
+// ----------------- AI PERSONALITY SUMMARY (HuggingFace) -----------------
+function generatePersonalitySummary(identity){
+  var summaryDiv = document.createElement('div');
+  summaryDiv.className = "entry";
+  summaryDiv.style.marginTop = "12px";
+  summaryDiv.innerHTML = "<span class='key'>AI Personality Summary:</span> <span class='value'>Analyzing...</span>";
+  document.getElementById('identity').appendChild(summaryDiv);
+  
+  var prompt = "Generate a short personality description for a person with the following details:\n" +
+               JSON.stringify(identity);
+  
+  // Using HuggingFace Inference API (no backend)
+  fetch("https://api-inference.huggingface.co/models/google/flan-t5-small",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({inputs:prompt})
+  }).then(function(res){return res.json()})
+  .then(function(data){
+    var text = data[0]?.generated_text || "No summary available";
+    summaryDiv.querySelector(".value").innerText = text;
+  }).catch(function(){
+    summaryDiv.querySelector(".value").innerText = "Failed to generate AI summary";
+  });
+}
+</script>
+
+</body>
+</html>

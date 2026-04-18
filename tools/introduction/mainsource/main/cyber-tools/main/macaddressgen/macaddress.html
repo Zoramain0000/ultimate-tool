@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAC Address Generator</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: #010201;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #00ff2a; /* Green color for the title */
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #ff0000; /* Green button */
+            color: rgb(0, 255, 42);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin: 5px; /* Add margin for spacing */
+        }
+
+        button:hover {
+            background-color: #0fae5b; /* Darker green on hover */
+        }
+
+        #macAddress {
+            margin-top: 20px;
+            font-size: 24px;
+            color: #00f870; /* Light text color */
+            background-color: #0e0303; /* Dark background for terminal effect */
+            padding: 10px;
+            border-radius: 5px;
+            display: inline-block;
+            word-wrap: break-word; /* Allow long text to wrap */
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MAC Address Generator</h1>
+        <label for="format">Select Format:</label>
+        <select id="format">
+            <option value="colon">Colon (:) - 00:00:00:00:00:00</option>
+            <option value="dash">Dash (-) - 00-00-00-00-00-00</option>
+            <option value="none">No Separator - 000000000000</option>
+        </select>
+        <label for="count">Number of MAC Addresses:</label>
+        <select id="count">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="5">5</option>
+            <option value="10">10</option>
+        </select>
+        <button id="generate">Generate MAC Address</button>
+        <button id="copy">Copy to Clipboard</button>
+        <div id="macAddress">00:00:00:00:00:00</div>
+    </div>
+    <script>
+        const generateMACAddress = (format, count) => {
+            const randomHex = () => Math.floor(Math.random() * 256).toString(16).padStart(2, '0');
+            let macAddresses = [];
+
+            for (let i = 0; i < count; i++) {
+                let macAddress = `${randomHex()}:${randomHex()}:${randomHex()}:${randomHex()}:${randomHex()}:${randomHex()}`;
+                if (format === 'dash') {
+                    macAddress = macAddress.replace(/:/g, '-');
+                } else if (format === 'none') {
+                    macAddress = macAddress.replace(/:/g, '');
+                }
+                macAddresses.push(macAddress.toUpperCase());
+            }
+
+            document.getElementById('macAddress').textContent = macAddresses.join(', ');
+        };
+
+        const copyToClipboard = () => {
+            const macAddressText = document.getElementById('macAddress').textContent;
+            navigator.clipboard.writeText(macAddressText).then(() => {
+                alert('MAC Address copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        };
+
+        document.getElementById('generate').addEventListener('click', () => {
+            const format = document.getElementById('format').value;
+            const count = parseInt(document.getElementById('count').value);
+            generateMACAddress(format, count);
+        });
+
+        document.getElementById('copy').addEventListener('click', copyToClipboard);
+    </script>
+</body>
+</html>

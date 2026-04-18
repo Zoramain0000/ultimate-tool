@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zero Days Notepad</title>
+  <style>
+    /* Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      align-items: ;
+      padding: 20px;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 1000px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      color: red;
+    }
+
+    #new-note-btn {
+      padding: 10px 20px;
+      background: red;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    #new-note-btn:hover {
+      background: green;
+    }
+
+    #search-bar {
+      width: 100%;
+      margin: 20px 0;
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: white;
+    }
+
+    .note-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .note {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      padding: 15px;
+      position: relative;
+    }
+
+    .note h3 {
+      font-size: 1rem;
+      margin-bottom: 10px;
+    }
+
+    .note p {
+      font-size: 0.95rem;
+      margin-bottom: 10px;
+      word-break: break-word;
+    }
+
+    .note-actions {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .note-actions button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: color 0.3s;
+    }
+
+    .note-actions button:hover {
+      color: #ff5e57;
+    }
+
+    /* Modal */
+    .note-modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: rgba(255,255,255,0.1);
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 500px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      color: white;
+    }
+
+    #note-content {
+      width: 100%;
+      height: 150px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      resize: none;
+      color: white;
+    }
+
+    #note-color {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.2);
+      cursor: pointer;
+    }
+
+    #save-note-btn {
+      padding: 10px;
+      background: linear-gradient(45deg, #36d1dc, #5b86e5);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    #save-note-btn:hover {
+      background: linear-gradient(45deg, #5b86e5, #36d1dc);
+    }
+
+    .close-btn {
+      align-self: flex-end;
+      font-size: 1.5rem;
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+
+    .close-btn:hover {
+      color: #ff5e57;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app-container">
+  <header>
+    <h1>Zero Days Notepad</h1>
+    <button id="new-note-btn">+ New Note</button>
+  </header>
+
+  <input type="text" id="search-bar" placeholder="Search notes...">
+
+  <div id="note-container" class="note-container">
+    <!-- Notes will be dynamically inserted here -->
+  </div>
+</div>
+
+<div id="note-modal" class="note-modal">
+  <div class="modal-content">
+    <button id="close-modal" class="close-btn">&times;</button>
+    <textarea id="note-content" placeholder="Write your note..."></textarea>
+    <input type="color" id="note-color" value="#36d1dc">
+    <button id="save-note-btn">Save Note</button>
+  </div>
+</div>
+
+<script>
+  const newNoteBtn = document.getElementById('new-note-btn');
+  const noteModal = document.getElementById('note-modal');
+  const closeModalBtn = document.getElementById('close-modal');
+  const saveNoteBtn = document.getElementById('save-note-btn');
+  const noteContent = document.getElementById('note-content');
+  const noteColor = document.getElementById('note-color');
+  const noteContainer = document.getElementById('note-container');
+  const searchBar = document.getElementById('search-bar');
+
+  let notes = JSON.parse(localStorage.getItem('notes')) || [];
+  let editId = null;
+
+  function openModal(content = '', color = '#36d1dc', id = null) {
+    noteContent.value = content;
+    noteColor.value = color;
+    editId = id;
+    noteModal.style.display = 'flex';
+  }
+
+  function closeModal() {
+    noteModal.style.display = 'none';
+    noteContent.value = '';
+    noteColor.value = '#36d1dc';
+    editId = null;
+  }
+
+  function saveNote() {
+    const content = noteContent.value.trim();
+    const color = noteColor.value;
+
+    if (!content) {
+      alert('Please write something!');
+      return;
+    }
+
+    if (editId) {
+      notes = notes.map(note => note.id === editId ? {...note, content, color, timestamp: new Date().toLocaleString()} : note);
+    } else {
+      notes.push({
+        id: Date.now(),
+        content,
+        color,
+        timestamp: new Date().toLocaleString()
+      });
+    }
+
+    localStorage.setItem('notes', JSON.stringify(notes));
+    renderNotes();
+    closeModal();
+  }
+
+  function renderNotes() {
+    const searchTerm = searchBar.value.toLowerCase();
+    noteContainer.innerHTML = '';
+
+    notes
+      .filter(note => note.content.toLowerCase().includes(searchTerm))
+      .forEach(note => {
+        const noteEl = document.createElement('div');
+        noteEl.className = 'note';
+        noteEl.style.background = note.color + '33'; // light transparent background
+        noteEl.innerHTML = `
+          <h3>${note.timestamp}</h3>
+          <p>${note.content}</p>
+          <div class="note-actions">
+            <button onclick="editNote(${note.id})">&#9998;</button>
+            <button onclick="deleteNote(${note.id})">&times;</button>
+          </div>
+        `;
+        noteContainer.appendChild(noteEl);
+      });
+  }
+
+  function editNote(id) {
+    const note = notes.find(n => n.id === id);
+    if (note) {
+      openModal(note.content, note.color, id);
+    }
+  }
+
+  function deleteNote(id) {
+    if (confirm('Are you sure you want to delete this note?')) {
+      notes = notes.filter(note => note.id !== id);
+      localStorage.setItem('notes', JSON.stringify(notes));
+      renderNotes();
+    }
+  }
+
+  newNoteBtn.addEventListener('click', () => openModal());
+  closeModalBtn.addEventListener('click', closeModal);
+  saveNoteBtn.addEventListener('click', saveNote);
+  searchBar.addEventListener('input', renderNotes);
+
+  renderNotes();
+</script>
+
+</body>
+</html>

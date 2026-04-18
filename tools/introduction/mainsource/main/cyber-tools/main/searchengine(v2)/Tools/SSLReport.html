@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Advanced SSL Labs Report Tool</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Fira Code', monospace;
+      background-color: #0e0e0e;
+      color: #e0e0e0;
+      padding: 20px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.light-mode {
+      background-color: #f4f4f4;
+      color: #1e1e1e;
+    }
+
+    h1 {
+      color: #00e6e6;
+      text-align: center;
+    }
+
+    #scanner {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"], select {
+      width: 320px;
+      padding: 10px;
+      font-size: 16px;
+      background: #1e1e1e;
+      color: #fff;
+      border: 1px solid #00e6e6;
+      border-radius: 6px;
+    }
+
+    body.light-mode input[type="text"], body.light-mode select {
+      background: #fff;
+      color: #000;
+    }
+
+    button {
+      background-color: #00e6e6;
+      color: #000;
+      border: none;
+      padding: 10px 16px;
+      font-size: 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    .tab-container {
+      display: flex;
+      margin-top: 20px;
+      border-bottom: 1px solid #00e6e6;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 10px 16px;
+      cursor: pointer;
+      color: #00e6e6;
+    }
+
+    .tab.active {
+      border-bottom: 3px solid #00e6e6;
+      font-weight: bold;
+    }
+
+    .tab-content {
+      display: none;
+      padding: 20px;
+      background-color: #1a1a1a;
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+
+    body.light-mode .tab-content {
+      background-color: #eaeaea;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #111;
+      padding: 10px;
+      border-radius: 6px;
+    }
+
+    body.light-mode pre {
+      background: #fff;
+    }
+
+    #loading {
+      text-align: center;
+      font-style: italic;
+      color: #ccc;
+      margin-top: 20px;
+    }
+
+    #actions {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    #toggleTheme {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #00e6e6;
+      color: #000;
+      padding: 10px 20px;
+      border-radius: 6px;
+      opacity: 0;
+      animation: fadein 0.3s forwards, fadeout 0.3s 2.7s forwards;
+    }
+
+    @keyframes fadein {
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeout {
+      to { opacity: 0; }
+    }
+
+    @media screen and (max-width: 600px) {
+      input[type="text"] {
+        width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🔒 Advanced SSL Labs Report Tool</h1>
+
+  <button id="toggleTheme" onclick="toggleTheme()">🌓 Toggle Theme</button>
+
+  <div id="scanner">
+    <input type="text" id="domainInput" placeholder="Enter domain, e.g. example.com">
+    <button onclick="generateReport()">Scan 🔍</button>
+    <br><br>
+    <select id="savedReports" onchange="loadReport()">
+      <option value="">📂 Load Saved Report</option>
+    </select>
+  </div>
+
+  <div id="loading" style="display:none;">
+    <img src="https://i.imgur.com/llF5iyg.gif" alt="Loading..." style="height: 20px; vertical-align: middle;" />
+    Scanning domain... Please wait ⏳
+  </div>
+
+  <div class="tab-container">
+    <div class="tab active" onclick="showTab('overview')">Overview</div>
+    <div class="tab" onclick="showTab('details')">Details</div>
+    <div class="tab" onclick="showTab('raw')">Raw JSON</div>
+  </div>
+
+  <div id="overview" class="tab-content active"><pre id="overviewContent">Scan results will appear here...</pre></div>
+  <div id="details" class="tab-content"><pre id="detailsContent">Detailed info will be shown here...</pre></div>
+  <div id="raw" class="tab-content"><pre id="rawContent">{ }</pre></div>
+
+  <div id="actions">
+    <button onclick="copyReport()">📋 Copy Report</button>
+    <button onclick="downloadPDF()">📥 Download PDF</button>
+  </div>
+
+  <script>
+    const toast = msg => {
+      const div = document.createElement('div');
+      div.className = 'toast';
+      div.textContent = msg;
+      document.body.appendChild(div);
+      setTimeout(() => div.remove(), 3000);
+    };
+
+    function toggleTheme() {
+      document.body.classList.toggle('light-mode');
+      localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+    }
+
+    function showTab(tabId) {
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    function simulateSSLCheck(domain) {
+      const now = new Date();
+      return {
+        domain,
+        validFrom: new Date(now.getFullYear(), now.getMonth() - 1, 1).toDateString(),
+        validTo: new Date(now.getFullYear(), now.getMonth() + 2, 1).toDateString(),
+        issuer: "Let's Encrypt",
+        status: "Valid",
+        checkedAt: now.toLocaleString()
+      };
+    }
+
+    function generateReport() {
+      let domain = document.getElementById('domainInput').value.trim();
+      if (!domain) return alert("Please enter a domain.");
+
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('overviewContent').innerText = '';
+      document.getElementById('detailsContent').innerText = '';
+      document.getElementById('rawContent').innerText = '';
+
+      const report = simulateSSLCheck(domain);
+      document.getElementById('loading').style.display = 'none';
+
+      const overview = `🔐 Domain: ${report.domain}\n📶 Status: ${report.status}`;
+      document.getElementById('overviewContent').innerText = overview;
+
+      const details = `🔒 Issuer: ${report.issuer}\n📅 Valid From: ${report.validFrom}\n📅 Valid To: ${report.validTo}\n🕒 Checked At: ${report.checkedAt}`;
+      document.getElementById('detailsContent').innerText = details;
+      document.getElementById('rawContent').innerText = JSON.stringify(report, null, 2);
+
+      localStorage.setItem(`report_${domain}`, JSON.stringify(report));
+      updateSavedReports();
+      toast("✅ Report Saved");
+    }
+
+    function copyReport() {
+      const text = `${document.getElementById('overviewContent').innerText}\n\n${document.getElementById('detailsContent').innerText}`;
+      navigator.clipboard.writeText(text)
+        .then(() => toast("📋 Report copied to clipboard!"))
+        .catch(() => toast("❌ Failed to copy report."));
+    }
+
+    function downloadPDF() {
+      const report = document.createElement('div');
+      report.style.background = "#fff";
+      report.style.color = "#000";
+      report.style.padding = "20px";
+      report.innerHTML = `
+        <h2>SSL Report</h2>
+        <pre>${document.getElementById('overviewContent').innerText}</pre>
+        <pre>${document.getElementById('detailsContent').innerText}</pre>
+      `;
+      html2pdf().from(report).save('SSL_Report.pdf');
+      toast("📥 Download started");
+    }
+
+    function updateSavedReports() {
+      const dropdown = document.getElementById('savedReports');
+      dropdown.innerHTML = `<option value="">📂 Load Saved Report</option>`;
+      Object.keys(localStorage).filter(k => k.startsWith('report_')).forEach(key => {
+        const domain = key.replace('report_', '');
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = domain;
+        dropdown.appendChild(option);
+      });
+    }
+
+    function loadReport() {
+      const key = document.getElementById('savedReports').value;
+      if (!key) return;
+      const data = JSON.parse(localStorage.getItem(key));
+      document.getElementById('overviewContent').innerText = `🔐 Domain: ${data.domain}\n📶 Status: ${data.status}`;
+      document.getElementById('detailsContent').innerText = `🔒 Issuer: ${data.issuer}\n📅 Valid From: ${data.validFrom}\n📅 Valid To: ${data.validTo}\n🕒 Checked At: ${data.checkedAt}`;
+      document.getElementById('rawContent').innerText = JSON.stringify(data, null, 2);
+      toast("📂 Report loaded");
+    }
+
+    window.onload = () => {
+      updateSavedReports();
+      document.getElementById('domainInput').focus();
+      if (localStorage.getItem('theme') === 'light') {
+        document.body.classList.add('light-mode');
+      }
+    };
+  </script>
+</body>
+</html>

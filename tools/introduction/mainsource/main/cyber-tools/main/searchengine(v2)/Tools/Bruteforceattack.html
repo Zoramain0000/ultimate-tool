@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Brute Force Simulator (Educational Only)</title>
+  <style>
+    body {
+      font-family: monospace;
+      background-color: #0d1117;
+      color: #c9d1d9;
+      padding: 2rem;
+      transition: background-color 0.4s, color 0.4s;
+    }
+    .light-mode {
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    .console {
+      background: #161b22;
+      border: 1px solid #30363d;
+      padding: 1rem;
+      border-radius: 10px;
+      height: 300px;
+      overflow-y: auto;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+    }
+    .light-mode .console {
+      background: #fff;
+      border-color: #ccc;
+    }
+    input, button, textarea, select {
+      background: #0d1117;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      width: 100%;
+    }
+    .light-mode input, 
+    .light-mode textarea, 
+    .light-mode select {
+      background: #fff;
+      color: #000;
+      border-color: #ccc;
+    }
+    label {
+      margin-top: 0.5rem;
+      display: block;
+    }
+    button {
+      cursor: pointer;
+      background: #238636;
+      border: none;
+      color: white;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #2ea043;
+    }
+    .notice {
+      font-size: 0.9rem;
+      color: #8b949e;
+      margin-bottom: 1rem;
+    }
+    .chart {
+      margin-top: 2rem;
+    }
+    canvas {
+      background: #161b22;
+      border: 1px solid #30363d;
+      padding: 10px;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 600px;
+    }
+    .light-mode canvas {
+      background: #fff;
+      border-color: #ccc;
+    }
+    .footer {
+      margin-top: 2rem;
+      font-size: 0.85rem;
+      color: #6e7681;
+      border-top: 1px solid #30363d;
+      padding-top: 1rem;
+    }
+    .light-mode .footer {
+      border-color: #ccc;
+      color: #666;
+    }
+    .toolbar {
+      margin-bottom: 1rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .toolbar button {
+      background-color: #484f58;
+    }
+    .toolbar button:hover {
+      background-color: #6e7681;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Legal Brute Force Simulator (Education Only)</h1>
+  <div class="notice">
+    ⚠️ Simulates password cracking logic (educational use only).<br>
+    🔧 Inspired by Hydra, John the Ripper, Hashcat<br>
+    📘 Certify: CEH, OSCP, etc.
+  </div>
+
+  <div class="toolbar">
+    <button onclick="toggleTheme()">🌙/☀️ Toggle Theme</button>
+    <button onclick="exportLog()">📁 Export Logs</button>
+    <button onclick="previewHash()">🧪 Show Real Password Hash</button>
+    <button onclick="toggleSound()">💻 Toggle Sound</button>
+  </div>
+
+  <label>Username:</label>
+  <input id="username" value="admin" />
+
+  <label>Target Password (hidden):</label>
+  <input id="realPassword" type="password" value="letmein" />
+
+  <label>Password Mode:</label>
+  <select id="mode">
+    <option value="plain">Plain Text</option>
+    <option value="md5">MD5 Hash</option>
+    <option value="sha1">SHA1 Hash</option>
+  </select>
+
+  <label>Simulate Protocol (Hydra-style):</label>
+  <select id="service">
+    <option value="ssh">SSH</option>
+    <option value="ftp">FTP</option>
+    <option value="http">HTTP Login</option>
+    <option value="mysql">MySQL</option>
+    <option value="smtp">SMTP</option>
+    <option value="rdp">RDP</option>
+  </select>
+
+  <label>Enable GPU Cracking:</label>
+  <input type="checkbox" id="gpuMode" />
+
+  <label>Use Rainbow Table:</label>
+  <input type="checkbox" id="rainbowTable" />
+
+  <label>Enable Hashcat-style Rules:</label>
+  <input type="checkbox" id="hashcatRules" />
+
+  <label>Simulate Shadow Hash Extraction:</label>
+  <input type="checkbox" id="shadowExtract" />
+
+  <label>Wordlist:</label>
+  <textarea id="wordlist" rows="6">123456
+admin
+password
+letmein
+qwerty
+guest
+root</textarea>
+
+  <label>Upload File:</label>
+  <input type="file" id="fileUpload" />
+
+  <button onclick="startBruteForce()">🚀 Start Brute Force</button>
+
+  <div class="console" id="console"></div>
+
+  <div class="chart">
+    <canvas id="statsChart" width="600" height="300"></canvas>
+  </div>
+
+  <div class="footer">
+    🛠️ Tool: <strong>BruteForceSim.html</strong><br>
+    👥 Group: Ethical Hack Sim Suite<br>
+    🧑‍💻 Built with HTML, CSS, JavaScript
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+ <script>
+    let soundEnabled = true;
+    let audio = new Audio('https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg');
+
+    function toggleTheme() {
+      document.body.classList.toggle('light-mode');
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      alert("Sound " + (soundEnabled ? "enabled 🔊" : "disabled 🔇"));
+    }
+
+    function playSound() {
+      if (soundEnabled) audio.play();
+    }
+
+    function exportLog() {
+      const content = document.getElementById("console").innerText;
+      const blob = new Blob([content], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "bruteforce-log.txt";
+      a.click();
+    }
+
+    async function previewHash() {
+      const password = document.getElementById("realPassword").value;
+      const mode = document.getElementById("mode").value;
+      const hashed = await hashPassword(password, mode);
+      alert(`🔐 ${mode.toUpperCase()} Hash:\n${hashed}`);
+    }
+
+    const rainbowDB = {
+      md5: {
+        "5d41402abc4b2a76b9719d911017c592": "hello",
+        "0d107d09f5bbe40cade3de5c71e9e9b7": "letmein"
+      },
+      sha1: {
+        "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d": "hello",
+        "b7a875fc1ea228b9061041b7cec4bd3c52ab3ce3": "letmein"
+      }
+    };
+
+    let failures = 0, successes = 0;
+
+    function applyHashcatRules(word) {
+      return [
+        word,
+        word.toUpperCase(),
+        word + "123",
+        word + "!",
+        word.charAt(0).toUpperCase() + word.slice(1),
+        word.split('').reverse().join('')
+      ];
+    }
+
+    async function startBruteForce() {
+      const username = document.getElementById('username').value;
+      const realPassword = document.getElementById('realPassword').value;
+      let wordlist = document.getElementById('wordlist').value.trim().split('\n');
+      const mode = document.getElementById('mode').value;
+      const service = document.getElementById('service').value;
+      const gpu = document.getElementById('gpuMode').checked;
+      const rainbow = document.getElementById('rainbowTable').checked;
+      const rules = document.getElementById('hashcatRules').checked;
+      const shadow = document.getElementById('shadowExtract').checked;
+
+      failures = 0;
+      successes = 0;
+      const consoleDiv = document.getElementById('console');
+      consoleDiv.innerHTML = "";
+
+      logAnimated(`🔐 Target: ${username}@${service.toUpperCase()}`);
+      if (shadow && mode !== "plain") {
+        const fakeShadow = `$${mode === "md5" ? "1" : "sha1"}$...$HASHED`;
+        logAnimated(`📁 Simulated /etc/shadow entry: ${username}:${fakeShadow}`);
+      }
+
+      const targetHash = await hashPassword(realPassword, mode);
+
+      if (rainbow && mode !== "plain") {
+        logAnimated(`🌈 Searching Rainbow Table (${mode.toUpperCase()})...`);
+        await sleep(800);
+        if (rainbowDB[mode][targetHash]) {
+          logAnimated(`✅ Rainbow Match Found: "${rainbowDB[mode][targetHash]}"`);
+          successes++;
+          updateChart();
+          return;
+        } else {
+          logAnimated("❌ Rainbow Table: No match found.");
+        }
+      }
+
+      for (let word of wordlist) {
+        const guesses = rules ? applyHashcatRules(word) : [word];
+
+        for (let guess of guesses) {
+          const speed = gpu ? 40 : 150;
+          const guessHash = await hashPassword(guess, mode);
+          await logAnimated(`⚡ Trying "${guess}" via ${service.toUpperCase()}...`);
+          await sleep(speed);
+          playSound();
+
+          if (guessHash === targetHash) {
+            await logAnimated(`✅ Cracked: "${guess}"`);
+            successes++;
+            updateChart();
+            return;
+          } else {
+            await logAnimated(`❌ Wrong: "${guess}"`);
+            failures++;
+            updateChart();
+          }
+        }
+      }
+
+      logAnimated("📁 Brute Force Simulation Complete.");
+    }
+
+    async function hashPassword(input, mode) {
+      if (mode === "plain") return input;
+      const encoder = new TextEncoder();
+      const data = encoder.encode(input);
+      const algo = mode === "md5" ? "MD5" : "SHA-1";
+      const buffer = await crypto.subtle.digest(algo, data);
+      return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function logAnimated(msg) {
+      const c = document.getElementById('console');
+      const line = document.createElement("div");
+      c.appendChild(line);
+      for (let i = 0; i <= msg.length; i++) {
+        line.innerHTML = msg.slice(0, i);
+        await sleep(15);
+      }
+      c.scrollTop = c.scrollHeight;
+    }
+
+    const ctx = document.getElementById("statsChart").getContext("2d");
+    const chart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: ["Failures", "Successes"],
+        datasets: [{
+          label: "Attempts",
+          data: [0, 0],
+          backgroundColor: ["#f85149", "#2ea043"]
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { color: "#c9d1d9" }
+          },  
+          x: {
+            ticks: { color: "#c9d1d9" }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: { color: "#c9d1d9" }
+          }
+        }
+      }
+    });
+
+    function updateChart() {
+      chart.data.datasets[0].data = [failures, successes];
+      chart.update();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>UDP Log Generator v195</title>
+<style>
+  body {
+    margin: 0; padding: 0;
+    background-color: #000; 
+    color: #00ff41;
+    font-family: 'Consolas', monospace;
+    display: flex; flex-direction: column; height: 100vh;
+  }
+
+  #bgVideo {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+    z-index: -1;
+    object-fit: cover;
+    filter: brightness(0.3) contrast(1.3);
+  }
+
+  header {
+    padding: 15px 25px;
+    background: rgba(0,20,0,0.9);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    border-bottom: 2px solid #00ff41;
+    box-shadow: 0 0 30px rgba(0,255,65,0.4);
+  }
+  
+  .title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00ffff;
+    text-shadow: 0 0 5px #00ffff;
+  }
+  
+  label {
+    font-weight: bold;
+    font-size: 14px;
+    color: #ffaa00;
+    text-shadow: 0 0 3px #ffaa00;
+  }
+  
+  select, input[type=button] {
+    font-family: monospace;
+    font-size: 14px;
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: 1px solid #00ff41;
+    outline: none;
+    cursor: pointer;
+    background: rgba(0,0,0,0.8);
+    color: #00ff41;
+    transition: all 0.3s;
+  }
+  
+  select {
+    min-width: 160px;
+  }
+  
+  input[type=button] {
+    background: #00ff41;
+    color: #000;
+    font-weight: bold;
+  }
+  
+  input[type=button]:hover {
+    background: #ff1493;
+    color: #fff;
+    box-shadow: 0 0 15px #ff1493;
+    transform: scale(1.05);
+  }
+  
+  input[type=text] {
+    flex-grow: 1;
+    min-width: 200px;
+    font-family: monospace;
+    font-size: 14px;
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: 1px solid #00ff41;
+    outline: none;
+    background: rgba(0,0,0,0.8);
+    color: #00ff41;
+  }
+  
+  input[type=text]:focus {
+    border-color: #ff1493;
+    box-shadow: 0 0 10px #ff1493;
+  }
+  
+  #totalCount {
+    background: rgba(0,0,0,0.9);
+    color: #00ff41;
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: 2px solid #00ff41;
+    font-weight: bold;
+    min-width: 140px;
+    text-align: center;
+    font-size: 14px;
+    box-shadow: 0 0 15px rgba(0,255,65,0.5);
+  }
+  
+  #logContainer {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.85);
+    position: relative;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  
+  thead tr {
+    background: rgba(0,50,0,0.95);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    border-bottom: 2px solid #00ff41;
+  }
+  
+  th, td {
+    padding: 10px 15px;
+    border-bottom: 1px solid rgba(0,255,65,0.3);
+    white-space: nowrap;
+    text-align: left;
+    font-family: monospace;
+  }
+  
+  th {
+    color: #00ffff;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  
+  tbody tr {
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  tbody tr:hover {
+    background: rgba(255,20,147,0.2);
+    transform: scale(1.01);
+  }
+  
+  .packet-type {
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    font-weight: bold;
+    color: #ff1493;
+    background: rgba(255,255,255,0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,20,147,0.3);
+    letter-spacing: 1px;
+  }
+  
+  .protocol-flag {
+    font-size: 16px;
+    margin-right: 5px;
+  }
+  
+  .highlight {
+    background: rgba(0,255,65,0.2);
+    padding: 2px 5px;
+    border-radius: 3px;
+  }
+  
+  #loadingIndicator {
+    padding: 15px 0;
+    text-align: center;
+    color: #00ff41;
+    font-size: 15px;
+    font-weight: bold;
+  }
+
+  #logContainer::-webkit-scrollbar {
+    width: 10px;
+  }
+  #logContainer::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.5);
+  }
+  #logContainer::-webkit-scrollbar-thumb {
+    background: #00ff41;
+    border-radius: 5px;
+  }
+  #logContainer::-webkit-scrollbar-thumb:hover {
+    background: #ff1493;
+  }
+
+  @media (max-width: 600px) {
+    th, td { padding: 8px 10px; font-size: 11px; }
+    .packet-type { font-size: 11px; }
+    input[type=text] { font-size: 13px; min-width: auto; }
+  }
+</style>
+</head>
+<body>
+
+<video autoplay muted loop id="bgVideo">
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+
+<header>
+  <div class="title">🌐 UDP Network Log Generator v195</div>
+  <label for="protocolMode">Protocol Mode:</label>
+  <select id="protocolMode" aria-label="Protocol selection mode">
+    <option value="random">🔀 Random Protocols</option>
+    <option value="dns">📡 DNS Traffic</option>
+    <option value="dhcp">🔧 DHCP Traffic</option>
+    <option value="ntp">⏱️ NTP Traffic</option>
+    <option value="snmp">📊 SNMP Traffic</option>
+    <option value="manual">✏️ Manual Port</option>
+  </select>
+  
+  <input type="button" id="generateBtn" value="🚀 GENERATE LOGS" />
+  <input type="text" id="searchInput" placeholder="🔍 Filter IP/Port/Protocol..." />
+  <span id="totalCount">Total: 0</span>
+  <input type="button" id="downloadBtn" value="💾 DOWNLOAD" />
+</header>
+
+<div id="logContainer" tabindex="0" aria-live="polite">
+  <table role="grid" aria-rowcount="0" aria-colcount="8">
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Source IP</th>
+        <th>Dest IP</th>
+        <th>Source Port</th>
+        <th>Dest Port</th>
+        <th>Protocol</th>
+        <th>Packet Size</th>
+        <th>Flags/Status</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+  <div id="loadingIndicator" hidden>🔄 Scanning network traffic feeds...</div>
+</div>
+
+<script>
+(() => {
+  const protocolModeEl = document.getElementById('protocolMode');
+  const generateBtn = document.getElementById('generateBtn');
+  const searchInput = document.getElementById('searchInput');
+  const logBody = document.getElementById('logBody');
+  const logContainer = document.getElementById('logContainer');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const totalCount = document.getElementById('totalCount');
+
+  const BATCH_SIZE = 400;
+  const MAX_LOGS = 20000;
+
+  // Common UDP ports and protocols
+  const UDP_PROTOCOLS = {
+    DNS: { ports: [53, 5353], color: '#00ffff' },
+    DHCP: { ports: [67, 68], color: '#00ff41' },
+    NTP: { ports: [123], color: '#ffaa00' },
+    SNMP: { ports: [161, 162], color: '#ff1493' },
+    TFTP: { ports: [69], color: '#ffff00' },
+    Syslog: { ports: [514], color: '#ff8800' },
+    RIP: { ports: [520], color: '#88ff00' },
+    QUIC: { ports: [443, 8443], color: '#00ff88' },
+    Custom: { ports: [1024, 65535], color: '#ff00ff' }
+  };
+
+  const PROTOCOL_SERVICES = {
+    DNS: ['Domain Name System', 'mDNS', 'DNS-over-UDP'],
+    DHCP: ['DHCP Discover', 'DHCP Offer', 'DHCP Request', 'DHCP ACK'],
+    NTP: ['NTP Request', 'NTP Response', 'NTP Broadcast'],
+    SNMP: ['SNMP Get', 'SNMP Set', 'SNMP Trap', 'SNMP Response'],
+    TFTP: ['TFTP Read', 'TFTP Write', 'TFTP Data'],
+    Syslog: ['Syslog UDP'],
+    RIP: ['RIP v1', 'RIP v2'],
+    QUIC: ['QUIC Handshake', 'QUIC Stream', 'QUIC Ping'],
+    Custom: ['Custom UDP Application']
+  };
+
+  // Generate random IPv4 address
+  function generateIPv4() {
+    return `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
+  }
+
+  // Generate random port
+  function generatePort(min = 1024, max = 65535) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  // Get protocol based on mode
+  function getProtocolInfo() {
+    const mode = protocolModeEl.value;
+    
+    switch(mode) {
+      case 'dns':
+        return { name: 'DNS', ...UDP_PROTOCOLS.DNS };
+      case 'dhcp':
+        return { name: 'DHCP', ...UDP_PROTOCOLS.DHCP };
+      case 'ntp':
+        return { name: 'NTP', ...UDP_PROTOCOLS.NTP };
+      case 'snmp':
+        return { name: 'SNMP', ...UDP_PROTOCOLS.SNMP };
+      case 'manual':
+        return { name: 'Custom', ...UDP_PROTOCOLS.Custom };
+      default: // random
+        const protocols = Object.keys(UDP_PROTOCOLS);
+        const randomProtocol = protocols[Math.floor(Math.random() * protocols.length)];
+        return { name: randomProtocol, ...UDP_PROTOCOLS[randomProtocol] };
+    }
+  }
+
+  function getServiceType(protocolName) {
+    const services = PROTOCOL_SERVICES[protocolName];
+    return services[Math.floor(Math.random() * services.length)];
+  }
+
+  function generatePacketFlags() {
+    const flags = ['NONE', 'DF', 'MF', 'CE', 'ACK', 'RST', 'SYN', 'FIN'];
+    const selected = [];
+    const count = Math.floor(Math.random() * 3) + 1;
+    for (let i = 0; i < count; i++) {
+      const flag = flags[Math.floor(Math.random() * flags.length)];
+      if (!selected.includes(flag)) selected.push(flag);
+    }
+    return selected.join(',');
+  }
+
+  function getTimestamp() {
+    return new Date().toISOString().slice(0,19).replace('T',' ');
+  }
+
+  function createRow(entry) {
+    const tr = document.createElement('tr');
+    
+    tr.innerHTML = `
+      <td style="font-size: 11px;">${entry.timestamp}</td>
+      <td style="color: #ff6666;">${entry.sourceIP}</td>
+      <td style="color: #66ff66;">${entry.destIP}</td>
+      <td><span class="packet-type" style="color: ${entry.protocolColor}">${entry.sourcePort}</span></td>
+      <td><span class="packet-type" style="color: ${entry.protocolColor}">${entry.destPort}</span></td>
+      <td><span class="protocol-flag">${entry.protocolFlag}</span>${entry.protocol}</td>
+      <td class="highlight">${entry.packetSize} bytes</td>
+      <td style="color: ${entry.protocolColor}; font-weight: bold;">${entry.flags}</td>
+    `;
+    
+    tr.onclick = (e) => {
+      if (e.target.closest('td')) {
+        const logData = `${entry.timestamp} ${entry.sourceIP}:${entry.sourcePort} -> ${entry.destIP}:${entry.destPort} ${entry.protocol} ${entry.packetSize}B ${entry.flags}`;
+        navigator.clipboard.writeText(logData);
+        e.target.style.background = '#ff1493';
+        setTimeout(() => e.target.style.background = '', 500);
+      }
+    };
+    
+    return tr;
+  }
+
+  function generateEntry() {
+    const protocolInfo = getProtocolInfo();
+    const srcPort = protocolInfo.ports[0] === 53 ? generatePort(5000, 55000) : generatePort();
+    const destPort = protocolInfo.ports[Math.floor(Math.random() * protocolInfo.ports.length)];
+    
+    return {
+      timestamp: getTimestamp(),
+      sourceIP: generateIPv4(),
+      destIP: generateIPv4(),
+      sourcePort: srcPort,
+      destPort: destPort,
+      protocol: getServiceType(protocolInfo.name),
+      protocolFlag: protocolInfo.name.charAt(0),
+      protocolColor: protocolInfo.color,
+      packetSize: Math.floor(Math.random() * 1400) + 64,
+      flags: generatePacketFlags()
+    };
+  }
+
+  function updateTotalCount() {
+    totalCount.textContent = `Total: ${totalLogsGenerated.toLocaleString()}`;
+  }
+
+  function loadMoreLogs() {
+    if (totalLogsGenerated >= MAX_LOGS) {
+      loadingIndicator.textContent = `⚠️ Max ${MAX_LOGS.toLocaleString()} records reached`;
+      loadingIndicator.hidden = false;
+      return;
+    }
+    loadingIndicator.hidden = false;
+    
+    requestAnimationFrame(() => {
+      const fragment = document.createDocumentFragment();
+      for (let i = 0; i < BATCH_SIZE && totalLogsGenerated < MAX_LOGS; i++, totalLogsGenerated++) {
+        const entry = generateEntry();
+        allEntries.push(entry);
+        fragment.appendChild(createRow(entry));
+      }
+      logBody.appendChild(fragment);
+      loadingIndicator.hidden = true;
+      updateTotalCount();
+      updateAriaRowCount();
+    });
+  }
+
+  function resetLogs() {
+    totalLogsGenerated = 0;
+    allEntries = [];
+    logBody.innerHTML = '';
+    loadingIndicator.hidden = true;
+    updateTotalCount();
+    updateAriaRowCount();
+  }
+
+  function filterLogs() {
+    const filter = searchInput.value.toLowerCase();
+    if (!filter) {
+      [...logBody.children].forEach(tr => tr.style.display = "");
+      return;
+    }
+    [...logBody.children].forEach(tr => {
+      const haystack = tr.textContent.toLowerCase();
+      tr.style.display = haystack.includes(filter) ? "" : "none";
+    });
+  }
+
+  function updateAriaRowCount() {
+    logBody.parentElement.setAttribute('aria-rowcount', logBody.children.length);
+  }
+
+  // Event Listeners
+  logContainer.addEventListener('scroll', () => {
+    if (loadingIndicator.hidden &&
+        logContainer.scrollTop + logContainer.clientHeight >= logContainer.scrollHeight - 100 &&
+        !searchInput.value.trim()) {
+      loadMoreLogs();
+    }
+  });
+
+  generateBtn.addEventListener('click', () => {
+    resetLogs();
+    loadMoreLogs();
+    searchInput.value = '';
+  });
+
+  searchInput.addEventListener('input', () => {
+    filterLogs();
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const csvData = allEntries.map(e => 
+      `"${e.timestamp}","${e.sourceIP}","${e.destIP}","${e.sourcePort}","${e.destPort}","${e.protocol}","${e.packetSize}","${e.flags}"`
+    ).join('\n');
+    
+    const csvBlob = new Blob([`Timestamp,SourceIP,DestIP,SourcePort,DestPort,Protocol,PacketSize,Flags\n${csvData}`], 
+      {type: 'text/csv;charset=utf-8;'});
+    
+    const csvLink = document.createElement('a');
+    csvLink.href = URL.createObjectURL(csvBlob);
+    csvLink.download = `udp_logs_${Date.now()}.csv`;
+    csvLink.style.display = 'none';
+    document.body.appendChild(csvLink);
+    csvLink.click();
+    document.body.removeChild(csvLink);
+  });
+
+  // Initialize
+  let totalLogsGenerated = 0;
+  let allEntries = [];
+  
+  updateTotalCount();
+  loadMoreLogs();
+
+})();
+</script>
+
+</body>
+</html>

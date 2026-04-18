@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Phone Lookup Tool</title>
+    <style>
+        /* --- CSS Variables & Reset --- */
+        :root {
+            --primary: #6366f1; /* Indigo */
+            --primary-hover: #4f46e5;
+            --accent: #ec4899; /* Pink */
+            --glass-bg: rgba(15, 23, 42, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #0f172a;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* --- Background Video --- */
+        .bg-video {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            min-width: 100%;
+            min-height: 100%;
+            z-index: -1;
+            object-fit: cover;
+            filter: brightness(0.4); /* Darken video for readability */
+        }
+
+        /* --- Main Container (Glassmorphism) --- */
+        .container {
+            width: 100%;
+            max-width: 550px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            margin: 20px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #818cf8, #e879f9);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* --- Form Elements --- */
+        .input-group {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.5);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-msg {
+            color: var(--error);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            display: none;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* --- Loading Spinner --- */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            margin-left: -10px;
+            margin-top: -10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn-text {
+            transition: opacity 0.2s;
+        }
+        
+        button.loading .btn-text {
+            opacity: 0;
+        }
+        
+        button.loading .spinner {
+            display: block;
+        }
+
+        /* --- Results Section --- */
+        .results {
+            margin-top: 2rem;
+            display: none; /* Hidden by default */
+            border-top: 1px solid var(--glass-border);
+            padding-top: 1.5rem;
+            animation: slideDown 0.4s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .value {
+            font-weight: 600;
+            text-align: right;
+            color: var(--text-main);
+            max-width: 60%;
+            word-wrap: break-word;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .badge.valid {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge.invalid {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .flag-icon {
+            font-size: 1.5rem;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Video -->
+    <video class="bg-video" autoplay muted loop playsinline poster="https://via.placeholder.com/1920x1080/0f172a/000000?text=Video+Loading">
+        <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <div class="container">
+        <header>
+            <h1>Phone Number Lookup</h1>
+            <p>Validate carrier, region & timezone without API.</p>
+        </header>
+
+        <form id="lookupForm">
+            <div class="input-group">
+                <label for="phoneInput">Enter Phone Number (with Country Code)</label>
+                <input type="text" id="phoneInput" placeholder="+1 415 555 2671" autocomplete="off">
+                <div id="errorMsg" class="error-msg">
+                    <span>⚠️</span> <span id="errorText"></span>
+                </div>
+            </div>
+            <button type="submit" id="submitBtn">
+                <span class="btn-text">Analyze Number</span>
+                <div class="spinner"></div>
+            </button>
+        </form>
+
+        <div id="resultsArea" class="results">
+            <div class="result-item">
+                <span class="label">Status</span>
+                <span id="resValid" class="badge">Unknown</span>
+            </div>
+            <div class="result-item">
+                <span class="label">International Format</span>
+                <span class="value" id="resInternational">-</span>
+            </div>
+            <div class="result-item">
+                <span class="label">Region</span>
+                <span class="value" id="resRegion">-</span>
+            </div>
+            <div class="result-item">
+                <span class="label">Carrier</span>
+                <span class="value" id="resCarrier">-</span>
+            </div>
+            <div class="result-item">
+                <span class="label">Timezone</span>
+                <span class="value" id="resTimezone">-</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Mini Phone Lookup Library
+         * Mimics 'phonenumbers' python library functionality locally.
+         */
+        const PHONE_DATA = {
+            // North America
+            '1': { country: 'USA/Canada', region: 'North America', tz: ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles'], carrier: 'Varied (AT&T, Verizon, T-Mobile, Rogers, etc.)' },
+            // Europe
+            '7': { country: 'Russia', region: 'Europe/Asia', tz: ['Europe/Moscow', 'Asia/Vladivostok'], carrier: 'Varied (MTS, Beeline, Megafon)' },
+            '20': { country: 'Egypt', region: 'Africa', tz: ['Africa/Cairo'], carrier: 'Varied (Vodafone, Orange, Etisalat)' },
+            '27': { country: 'South Africa', region: 'Africa', tz: ['Africa/Johannesburg'], carrier: 'Varied (Vodacom, MTN)' },
+            '30': { country: 'Greece', region: 'Europe', tz: ['Europe/Athens'], carrier: 'Varied (Cosmote, Vodafone, Wind)' },
+            '31': { country: 'Netherlands', region: 'Europe', tz: ['Europe/Amsterdam'], carrier: 'Varied (KPN, Vodafone, T-Mobile)' },
+            '32': { country: 'Belgium', region: 'Europe', tz: ['Europe/Brussels'], carrier: 'Varied (Proximus, Orange, Telenet)' },
+            '33': { country: 'France', region: 'Europe', tz: ['Europe/Paris'], carrier: 'Varied (Orange, SFR, Bouygues)' },
+            '34': { country: 'Spain', region: 'Europe', tz: ['Europe/Madrid'], carrier: 'Varied (Movistar, Vodafone, Orange)' },
+            '36': { country: 'Hungary', region: 'Europe', tz: ['Europe/Budapest'], carrier: 'Varied (Telenor, Vodafone, Yettel)' },
+            '39': { country: 'Italy', region: 'Europe', tz: ['Europe/Rome'], carrier: 'Varied (TIM, Vodafone, Wind)' },
+            '40': { country: 'Romania', region: 'Europe', tz: ['Europe/Bucharest'], carrier: 'Varied (Orange, Vodafone, Digi)' },
+            '41': { country: 'Switzerland', region: 'Europe', tz: ['Europe/Zurich'], carrier: 'Varied (Swisscom, Sunrise, Salt)' },
+            '43': { country: 'Austria', region: 'Europe', tz: ['Europe/Vienna'], carrier: 'Varied (A1, T-Mobile, Drei)' },
+            '44': { country: 'United Kingdom', region: 'Europe', tz: ['Europe/London'], carrier: 'Varied (EE, O2, Vodafone, Three)' },
+            '45': { country: 'Denmark', region: 'Europe', tz: ['Europe/Copenhagen'], carrier: 'Varied (TDC, Telia, Norlys)' },
+            '46': { country: 'Sweden', region: 'Europe', tz: ['Europe/Stockholm'], carrier: 'Varied (Telia, Telenor, Three)' },
+            '47': { country: 'Norway', region: 'Europe', tz: ['Europe/Oslo'], carrier: 'Varied (Telenor, Telia, Ice)' },
+            '48': { country: 'Poland', region: 'Europe', tz: ['Europe/Warsaw'], carrier: 'Varied (Orange, Play, Plus)' },
+            '49': { country: 'Germany', region: 'Europe', tz: ['Europe/Berlin'], carrier: 'Varied (Telekom, Vodafone, O2)' },
+            // Asia
+            '52': { country: 'Mexico', region: 'North America', tz: ['America/Mexico_City'], carrier: 'Varied (Telcel, Movistar, AT&T)' },
+            '53': { country: 'Cuba', region: 'Caribbean', tz: ['America/Havana'], carrier: 'Cubacel' },
+            '54': { country: 'Argentina', region: 'South America', tz: ['America/Argentina/Buenos_Aires'], carrier: 'Varied (Personal, Claro, Movistar)' },
+            '55': { country: 'Brazil', region: 'South America', tz: ['America/Sao_Paulo'], carrier: 'Varied (Vivo, Claro, TIM)' },
+            '56': { country: 'Chile', region: 'South America', tz: ['America/Santiago'], carrier: 'Varied (Entel, Movistar, Claro)' },
+            '57': { country: 'Colombia', region: 'South America', tz: ['America/Bogota'], carrier: 'Varied (Claro, Movistar, Tigo)' },
+            '58': { country: 'Venezuela', region: 'South America', tz: ['America/Caracas'], carrier: 'Varied (Movistar, Digitel)' },
+            '60': { country: 'Malaysia', region: 'Asia', tz: ['Asia/Kuala_Lumpur'], carrier: 'Varied (Maxis, Celcom, Digi)' },
+            '61': { country: 'Australia', region: 'Oceania', tz: ['Australia/Sydney', 'Australia/Melbourne'], carrier: 'Varied (Telstra, Optus, Vodafone)' },
+            '62': { country: 'Indonesia', region: 'Asia', tz: ['Asia/Jakarta'], carrier: 'Varied (Telkomsel, Indosat, XL)' },
+            '63': { country: 'Philippines', region: 'Asia', tz: ['Asia/Manila'], carrier: 'Varied (Globe, Smart, Sun)' },
+            '64': { country: 'New Zealand', region: 'Oceania', tz: ['Pacific/Auckland'], carrier: 'Varied (Spark, Vodafone, 2degrees)' },
+            '65': { country: 'Singapore', region: 'Asia', tz: ['Asia/Singapore'], carrier: 'Varied (Singtel, StarHub, M1)' },
+            '66': { country: 'Thailand', region: 'Asia', tz: ['Asia/Bangkok'], carrier: 'Varied (AIS, DTAC, TrueMove)' },
+            '81': { country: 'Japan', region: 'Asia', tz: ['Asia/Tokyo'], carrier: 'Varied (NTT Docomo, au, SoftBank)' },
+            '82': { country: 'South Korea', region: 'Asia', tz: ['Asia/Seoul'], carrier: 'Varied (SK Telecom, KT, LG U+)' },
+            '84': { country: 'Vietnam', region: 'Asia', tz: ['Asia/Ho_Chi_Minh'], carrier: 'Varied (Viettel, Vinaphone, Mobifone)' },
+            '86': { country: 'China', region: 'Asia', tz: ['Asia/Shanghai'], carrier: 'Varied (China Mobile, Unicom, Telecom)' },
+            '90': { country: 'Turkey', region: 'Europe/Asia', tz: ['Europe/Istanbul'], carrier: 'Varied (Turkcell, Vodafone, Turk Telekom)' },
+            '91': { country: 'India', region: 'Asia', tz: ['Asia/Kolkata'], carrier: 'Varied (Jio, Airtel, Vi)' },
+            '92': { country: 'Pakistan', region: 'Asia', tz: ['Asia/Karachi'], carrier: 'Varied (Jazz, Telenor, Zong)' },
+            '93': { country: 'Afghanistan', region: 'Asia', tz: ['Asia/Kabul'], carrier: 'Varied (Afghan Wireless, Roshan)' },
+            '94': { country: 'Sri Lanka', region: 'Asia', tz: ['Asia/Colombo'], carrier: 'Varied (Dialog, Mobitel)' },
+            '95': { country: 'Myanmar', region: 'Asia', tz: ['Asia/Yangon'], carrier: 'Varied (MPT, Telenor, Ooredoo)' },
+            '98': { country: 'Iran', region: 'Asia', tz: ['Asia/Tehran'], carrier: 'Varied (MCI, Irancell, Rightel)' },
+            '212': { country: 'Morocco', region: 'Africa', tz: ['Africa/Casablanca'], carrier: 'Varied (Maroc Telecom, Orange, INWI)' },
+            '213': { country: 'Algeria', region: 'Africa', tz: ['Africa/Algiers'], carrier: 'Varied (Mobilis, Djezzy, Ooredoo)' },
+            '216': { country: 'Tunisia', region: 'Africa', tz: ['Africa/Tunis'], carrier: 'Varied (Ooredoo, Orange, Tunisie Telecom)' },
+            '233': { country: 'Ghana', region: 'Africa', tz: ['Africa/Accra'], carrier: 'Varied (MTN, Vodafone, AirtelTigo)' },
+            '234': { country: 'Nigeria', region: 'Africa', tz: ['Africa/Lagos'], carrier: 'Varied (MTN, Airtel, Glo, 9mobile)' },
+            '254': { country: 'Kenya', region: 'Africa', tz: ['Africa/Nairobi'], carrier: 'Varied (Safaricom, Airtel, Telkom)' },
+            '255': { country: 'Tanzania', region: 'Africa', tz: ['Africa/Dar_es_Salaam'], carrier: 'Varied (Vodacom, Airtel, Tigo)' },
+            '351': { country: 'Portugal', region: 'Europe', tz: ['Europe/Lisbon'], carrier: 'Varied (NOS, MEO, Vodafone)' },
+            '352': { country: 'Luxembourg', region: 'Europe', tz: ['Europe/Luxembourg'], carrier: 'Varied (Orange, POST, Tango)' },
+            '353': { country: 'Ireland', region: 'Europe', tz: ['Europe/Dublin'], carrier: 'Varied (Vodafone, Three, Eir)' },
+            '354': { country: 'Iceland', region: 'Europe', tz: ['Atlantic/Reykjavik'], carrier: 'Varied (Siminn, Vodafone, Nova)' },
+            '358': { country: 'Finland', region: 'Europe', tz: ['Europe/Helsinki'], carrier: 'Varied (Elisa, Telia, DNA)' },
+            '370': { country: 'Lithuania', region: 'Europe', tz: ['Europe/Vilnius'], carrier: 'Varied (Telia, Bitė, Tele2)' },
+            '371': { country: 'Latvia', region: 'Europe', tz: ['Europe/Riga'], carrier: 'Varied (LMT, Tele2, Bite)' },
+            '372': { country: 'Estonia', region: 'Europe', tz: ['Europe/Tallinn'], carrier: 'Varied (Elisa, Telia, Tele2)' },
+            '373': { country: 'Moldova', region: 'Europe', tz: ['Europe/Chisinau'], carrier: 'Varied (Orange, Moldcell)' },
+            '374': { country: 'Armenia', region: 'Asia', tz: ['Asia/Yerevan'], carrier: 'Varied (Beeline, Ucom, Viva-MTS)' },
+            '375': { country: 'Belarus', region: 'Europe', tz: ['Europe/Minsk'], carrier: 'Varied (MTS, A1, life:)' },
+            '380': { country: 'Ukraine', region: 'Europe', tz: ['Europe/Kiev'], carrier: 'Varied (Kyivstar, Vodafone UA, Lifecell)' },
+            '381': { country: 'Serbia', region: 'Europe', tz: ['Europe/Belgrade'], carrier: 'Varied (MTS, Yettel, A1)' },
+            '385': { country: 'Croatia', region: 'Europe', tz: ['Europe/Zagreb'], carrier: 'Varied (HT, A1, Tele2)' },
+            '386': { country: 'Slovenia', region: 'Europe', tz: ['Europe/Ljubljana'], carrier: 'Varied (A1, Tele2, Telemach)' },
+            '420': { country: 'Czech Republic', region: 'Europe', tz: ['Europe/Prague'], carrier: 'Varied (O2, T-Mobile, Vodafone)' },
+            '421': { country: 'Slovakia', region: 'Europe', tz: ['Europe/Bratislava'], carrier: 'Varied (Orange, Slovak Telecom, O2)' },
+            '44': { country: 'United Kingdom', region: 'Europe', tz: ['Europe/London'], carrier: 'Varied (EE, O2, Vodafone)' },
+            '850': { country: 'North Korea', region: 'Asia', tz: ['Asia/Pyongyang'], carrier: 'Koryolink' },
+            '852': { country: 'Hong Kong', region: 'Asia', tz: ['Asia/Hong_Kong'], carrier: 'Varied (CSL, SmarTone, 3HK)' },
+            '853': { country: 'Macau', region: 'Asia', tz: ['Asia/Macau'], carrier: 'Varied (CTM, SmarTone, Three)' },
+            '855': { country: 'Cambodia', region: 'Asia', tz: ['Asia/Phnom_Penh'], carrier: 'Varied (Cellcard, Smart, Metfone)' },
+            '856': { country: 'Laos', region: 'Asia', tz: ['Asia/Vientiane'], carrier: 'Varied (Lao Telecom, Unitel)' },
+            '880': { country: 'Bangladesh', region: 'Asia', tz: ['Asia/Dhaka'], carrier: 'Varied (Grameenphone, Robi, Banglalink)' },
+            '886': { country: 'Taiwan', region: 'Asia', tz: ['Asia/Taipei'], carrier: 'Varied (Chunghwa, Far EasTone, Taiwan Star)' },
+            '960': { name: 'Maldives', country: 'Maldives', region: 'Asia', tz: ['Indian/Maldives'], carrier: 'Varied (Dhiraagu, Ooredoo)' },
+            '961': { country: 'Lebanon', region: 'Asia', tz: ['Asia/Beirut'], carrier: 'Varied (Alfa, Touch)' },
+            '962': { country: 'Jordan', region: 'Asia', tz: ['Asia/Amman'], carrier: 'Varied (Zain, Orange, Umniah)' },
+            '963': { country: 'Syria', region: 'Asia', tz: ['Asia/Damascus'], carrier: 'Varied (MTN Syriatel)' },
+            '964': { country: 'Iraq', region: 'Asia', tz: ['Asia/Baghdad'], carrier: 'Varied (Zain, AsiaCell, Korek)' },
+            '965': { country: 'Kuwait', region: 'Asia', tz: ['Asia/Kuwait'], carrier: 'Varied (Ooredoo, Zain, Viva)' },
+            '966': { country: 'Saudi Arabia', region: 'Asia', tz: ['Asia/Riyadh'], carrier: 'Varied (STC, Mobily, Zain)' },
+            '967': { country: 'Yemen', region: 'Asia', tz: ['Asia/Aden'], carrier: 'Varied (Yemen Mobile, Sabafon, MTN)' },
+            '968': { country: 'Oman', region: 'Asia', tz: ['Asia/Muscat'], carrier: 'Varied (Omantel, Ooredoo, Vodafone)' },
+            '970': { country: 'Palestine', region: 'Asia', tz: ['Asia/Gaza'], carrier: 'Varied (Jawwal, Cellcom)' },
+            '971': { country: 'United Arab Emirates', region: 'Asia', tz: ['Asia/Dubai'], carrier: 'Varied (Etisalat, du, Virgin)' },
+            '972': { country: 'Israel', region: 'Asia', tz: ['Asia/Jerusalem'], carrier: 'Varied (Cellcom, Partner, Pelephone)' },
+            '973': { country: 'Bahrain', region: 'Asia', tz: ['Asia/Bahrain'], carrier: 'Varied (Batelco, Zain, STC)' },
+            '974': { country: 'Qatar', region: 'Asia', tz: ['Asia/Qatar'], carrier: 'Varied (Ooredoo, Vodafone)' },
+            '975': { country: 'Bhutan', region: 'Asia', tz: ['Asia/Thimphu'], carrier: 'Varied (Bhutan Telecom, TashiCell)' },
+            '976': { country: 'Mongolia', region: 'Asia', tz: ['Asia/Ulaanbaatar'], carrier: 'Varied (Mobicom, Unitel, G-Mobile)' },
+            '977': { country: 'Nepal', region: 'Asia', tz: ['Asia/Kathmandu'], carrier: 'Varied (NTC, Ncell)' },
+            '992': { country: 'Tajikistan', region: 'Asia', tz: ['Asia/Dushanbe'], carrier: 'Varied (Tcell, Babilon)' },
+            '993': { country: 'Turkmenistan', region: 'Asia', tz: ['Asia/Ashgabat'], carrier: 'Varied (Altyn Asyr, MTS)' },
+            '994': { country: 'Azerbaijan', region: 'Asia', tz: ['Asia/Baku'], carrier: 'Varied (Azercell, Bakcell, Nar)' },
+            '995': { country: 'Georgia', region: 'Asia', tz: ['Asia/Tbilisi'], carrier: 'Varied (Magti, Geocell, Silknet)' },
+            '996': { country: 'Kyrgyzstan', region: 'Asia', tz: ['Asia/Bishkek'], carrier: 'Varied (Beeline, MegaCom, O!' },
+            '998': { country: 'Uzbekistan', region: 'Asia', tz: ['Asia/Tashkent'], carrier: 'Varied (Ucell, Beeline, Uzmobile)' }
+        };
+
+        class Lookup {
+            constructor(phoneNo) {
+                this.rawInput = phoneNo;
+                this.isValid = false;
+                this.data = null;
+                this.internationalFormat = '';
+                this.parse_phoneNo();
+            }
+
+            parse_phoneNo() {
+                try {
+                    // Normalize input: remove spaces, dashes, parentheses
+                    let cleanNumber = this.rawInput.replace(/[\s\-\(\)]/g, '');
+
+                    // Ensure it starts with +
+                    if (!cleanNumber.startsWith('+')) {
+                        if (cleanNumber.startsWith('00')) {
+                            cleanNumber = '+' + cleanNumber.substring(2);
+                        } else {
+                            // If no prefix provided, we can't reliably look up country
+                            throw new Error("Missing Country Code");
+                        }
+                    }
+
+                    // Extract Country Code (1 to 3 digits usually, max 4 in DB)
+                    // Sort keys by length descending to match longest first
+                    const sortedCodes = Object.keys(PHONE_DATA).sort((a, b) => b.length - a.length);
+                    let matchedCode = null;
+
+                    for (const code of sortedCodes) {
+                        if (cleanNumber.substring(1).startsWith(code)) {
+                            matchedCode = code;
+                            break;
+                        }
+                    }
+
+                    if (!matchedCode) {
+                        throw new Error("Country Code not supported in DB");
+                    }
+
+                    this.data = PHONE_DATA[matchedCode];
+                    
+                    // Basic validation: check length of national number
+                    const nationalNumber = cleanNumber.substring(1 + matchedCode.length);
+                    if (nationalNumber.length < 4 || nationalNumber.length > 15) {
+                         throw new Error("Invalid number length");
+                    }
+
+                    this.isValid = true;
+                    this.internationalFormat = `+${matchedCode} ${nationalNumber}`;
+
+                } catch (e) {
+                    console.error(e);
+                    this.isValid = false;
+                }
+            }
+
+            getResults() {
+                if (!this.isValid || !this.data) return null;
+                return {
+                    valid: true,
+                    international: this.internationalFormat,
+                    region: this.data.region,
+                    country: this.data.country,
+                    carrier: this.data.carrier,
+                    timezone: this.data.tz.join(', ')
+                };
+            }
+        }
+
+        // --- UI Logic ---
+        const form = document.getElementById('lookupForm');
+        const phoneInput = document.getElementById('phoneInput');
+        const resultsArea = document.getElementById('resultsArea');
+        const errorMsg = document.getElementById('errorMsg');
+        const errorText = document.getElementById('errorText');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Helper: Get Flag Emoji from Country Name (Approximation)
+        function getFlagEmoji(countryName) {
+            // Simple mapping for major countries for visual flair
+            const map = {
+                'USA/Canada': '🇺🇸', 'Russia': '🇷🇺', 'United Kingdom': '🇬🇧',
+                'Germany': '🇩🇪', 'France': '🇫🇷', 'Spain': '🇪🇸', 'Italy': '🇮🇹',
+                'India': '🇮🇳', 'China': '🇨🇳', 'Japan': '🇯🇵', 'Brazil': '🇧🇷',
+                'Australia': '🇦🇺', 'South Korea': '🇰🇷', 'Mexico': '🇲🇽', 'South Africa': '🇿🇦',
+                'Egypt': '🇪🇬', 'Turkey': '🇹🇷', 'Thailand': '🇹🇭', 'Vietnam': '🇻🇳'
+            };
+            return map[countryName] || '🌍'; 
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // UI Reset
+            errorMsg.style.display = 'none';
+            resultsArea.style.display = 'none';
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+
+            const inputVal = phoneInput.value.trim();
+
+            if (!inputVal) {
+                showError("Please enter a number");
+                stopLoading();
+                return;
+            }
+
+            // Simulate processing time for "Analysis" feel
+            setTimeout(() => {
+                const lookup = new Lookup(inputVal);
+                
+                if (lookup.isValid) {
+                    const data = lookup.getResults();
+                    displayData(data);
+                } else {
+                    showError("Invalid number or unsupported country code.");
+                }
+                stopLoading();
+            }, 800);
+        });
+
+        function showError(msg) {
+            errorText.textContent = msg;
+            errorMsg.style.display = 'flex';
+        }
+
+        function stopLoading() {
+            submitBtn.classList.remove('loading');
+            submitBtn.disabled = false;
+        }
+
+        function displayData(data) {
+            const resValid = document.getElementById('resValid');
+            const resIntl = document.getElementById('resInternational');
+            const resRegion = document.getElementById('resRegion');
+            const resCarrier = document.getElementById('resCarrier');
+            const resTimezone = document.getElementById('resTimezone');
+
+            // Set Status
+            resValid.textContent = "Valid Number";
+            resValid.className = "badge valid";
+
+            // Set Details
+            resIntl.textContent = data.international;
+            
+            // Region + Flag
+            const flag = getFlagEmoji(data.country);
+            resRegion.innerHTML = `${data.country} <span class="flag-icon">${flag}</span>`;
+            
+            resCarrier.textContent = data.carrier;
+            resTimezone.textContent = data.timezone;
+
+            // Show results
+            resultsArea.style.display = 'block';
+        }
+
+    </script>
+</body>
+</html>

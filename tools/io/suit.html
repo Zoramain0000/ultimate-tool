@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays • Cyber Tools Suite</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:Arial,Helvetica,sans-serif;color:#d1d1d1;overflow-x:hidden}
+
+/* BACKGROUND VIDEO */
+.bg-video{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  object-fit:cover;z-index:-2;filter:brightness(0.3);
+}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:-1}
+
+header{
+  background:rgba(0,0,0,0.7);
+  padding:18px;text-align:center;
+  border-bottom:1px solid #1f1f1f;
+}
+header h1{font-size:26px;letter-spacing:2px}
+
+.container{
+  max-width:1200px;margin:30px auto;padding:20px;
+  background:rgba(0,0,0,0.65);
+  border-radius:10px;
+  box-shadow:0 0 25px rgba(0,0,0,0.8);
+}
+
+.section{margin-bottom:25px}
+.section h2{
+  font-size:18px;margin-bottom:10px;
+  color:#9f9f9f;border-left:4px solid #555;
+  padding-left:10px;
+}
+
+input,textarea,select{
+  width:100%;padding:12px;border-radius:6px;
+  border:1px solid #444;background:black;color:#fff;
+  margin-bottom:10px;font-family:monospace;
+}
+
+textarea{resize:vertical;min-height:120px}
+
+button{
+  padding:12px 20px;background:black;
+  border:1px solid #333;color:white;
+  cursor:pointer;border-radius:6px;
+  transition:.3s;margin-right:10px;margin-bottom:10px;
+}
+button:hover{background:#111;transform:scale(1.05)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;}
+.tool-grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));}
+
+.card{
+  background:rgba(15,15,15,0.9);
+  border:1px solid #222;
+  border-radius:8px;
+  padding:12px;
+}
+
+.card span{
+  display:block;font-size:12px;
+  color:#777;margin-bottom:6px;
+}
+
+.card a{
+  display:block;color:#00ff7f;
+  text-decoration:none;font-size:14px;
+  word-break:break-all;
+}
+.card a:hover{text-decoration:underline}
+
+.log{
+  background:black;padding:12px;border-radius:6px;
+  font-family:monospace;font-size:13px;
+  color:#8aff8a;max-height:200px;
+  overflow:auto;border:1px solid #222;
+  white-space:pre-wrap;
+}
+
+.result-box{
+  background:rgba(15,15,15,0.9);border:1px solid #222;
+  border-radius:6px;padding:15px;font-family:monospace;
+  font-size:13px;color:#8aff8a;max-height:400px;overflow:auto;
+  white-space:pre-wrap;
+}
+
+.tool-tabs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:15px;}
+.tool-tab{display:none;}
+.tool-tab.active{display:block;}
+
+.tab-btn{
+  padding:8px 16px;background:#111;border:1px solid #333;
+  color:#fff;cursor:pointer;border-radius:4px;font-size:12px;
+}
+.tab-btn.active{background:#00ff7f;color:black}
+
+footer{
+  background:rgba(0,0,0,0.7);
+  text-align:center;padding:15px;
+  font-size:13px;color:#777;
+}
+</style>
+</head>
+
+<body>
+
+<!-- BACKGROUND VIDEO -->
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • CYBER TOOLS SUITE</h1>
+</header>
+
+<div class="container">
+
+  <div class="section">
+    <h2>Tool Selector</h2>
+    <div class="tool-tabs" id="toolTabs"></div>
+    <div id="toolsContainer"></div>
+  </div>
+
+  <div class="section">
+    <h2>Activity Log</h2>
+    <div class="log" id="log"></div>
+  </div>
+
+</div>
+
+<footer>
+  Technology information system tools for cyber‑security<br>
+  Educational & ethical use only
+</footer>
+
+<script>
+// Tool definitions
+const tools = {
+  'List Zipper': {type:'list', op:'zipper'},
+  'List Intersection': {type:'list', op:'intersection'},
+  'List Difference': {type:'list', op:'difference'},
+  'List Merger': {type:'list', op:'merge'},
+  'Text Grep': {type:'text', op:'grep'},
+  'Text Head': {type:'text', op:'head'},
+  'Text Tail': {type:'text', op:'tail'},
+  'Line Range Extractor': {type:'text', op:'range'},
+  'Word Sorter': {type:'text', op:'sort'},
+  'Word Wrapper': {type:'text', op:'wrap'},
+  'Word Splitter': {type:'text', op:'split'},
+  'Add Line Numbers': {type:'text', op:'linenumbers'},
+  'Add Line Prefixes': {type:'text', op:'prefix'},
+  'Add Line Suffixes': {type:'text', op:'suffix'},
+  'Duplicate Line Remover': {type:'text', op:'unique'},
+  'Empty Line Remover': {type:'text', op:'clean'},
+  'Text Line Randomizer': {type:'text', op:'randomize'},
+  'Text Line Reverser': {type:'text', op:'reverse'},
+  'Word Frequency Calculator': {type:'text', op:'wordfreq'},
+  'Letter Frequency Calculator': {type:'text', op:'letterfreq'},
+  'Text Statistics': {type:'text', op:'stats'},
+  'Random Password Generator': {type:'generator', op:'password'},
+  'Random String Generator': {type:'generator', op:'string'},
+  'Random IP Generator': {type:'generator', op:'ip'},
+  'Random MAC Generator': {type:'generator', op:'mac'},
+  'Random UUID Generator': {type:'generator', op:'uuid'},
+  'Base64 Encoder/Decoder': {type:'encoder', op:'base64'},
+  'Hex to RGB': {type:'converter', op:'hexrgb'},
+  'RGB to Hex': {type:'converter', op:'rgbbhex'},
+  'URL Encoder/Decoder': {type:'encoder', op:'url'},
+  'JSON Formatter': {type:'formatter', op:'json'},
+  'XML Formatter': {type:'formatter', op:'xml'},
+  'My IP Address': {type:'network', op:'myip'}
+};
+
+const log = msg=>{
+  const l=document.getElementById("log");
+  l.innerHTML+=`[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+  l.scrollTop=l.scrollHeight;
+};
+
+function initTools() {
+  const tabs = document.getElementById('toolTabs');
+  const container = document.getElementById('toolsContainer');
+  
+  Object.entries(tools).forEach(([name, config], i) => {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn';
+    btn.textContent = name;
+    btn.onclick = () => showTool(i);
+    tabs.appendChild(btn);
+    
+    const toolDiv = document.createElement('div');
+    toolDiv.className = 'tool-tab';
+    toolDiv.id = `tool-${i}`;
+    toolDiv.innerHTML = createToolUI(name, config);
+    container.appendChild(toolDiv);
+  });
+  
+  showTool(0);
+}
+
+function createToolUI(name, config) {
+  const html = `
+    <h3>${name}</h3>
+    <div class="result-box" id="result-${config.op}"></div>
+  `;
+  
+  switch(config.type) {
+    case 'list':
+      return html + `
+        <textarea id="input1-${config.op}" placeholder="List 1 (one per line)"></textarea>
+        ${config.op !== 'merge' ? `<textarea id="input2-${config.op}" placeholder="List 2 (one per line)"></textarea>` : ''}
+        <button onclick="runListTool('${config.op}')">Process</button>
+      `;
+    case 'text':
+      return html + `
+        <textarea id="input-${config.op}" placeholder="Enter text..."></textarea>
+        ${['grep','head','tail','range','prefix','suffix','wrap'].includes(config.op) ? 
+          `<input id="param-${config.op}" placeholder="Parameter (optional)">` : ''}
+        <button onclick="runTextTool('${config.op}')">Process</button>
+      `;
+    case 'generator':
+      return html + `
+        <input id="param-${config.op}" placeholder="Length/Count">
+        <button onclick="runGenerator('${config.op}')">Generate</button>
+      `;
+    case 'encoder':
+      return html + `
+        <textarea id="input-${config.op}" placeholder="Enter text..."></textarea>
+        <select id="mode-${config.op}">
+          <option value="encode">Encode</option>
+          <option value="decode">Decode</option>
+        </select>
+        <button onclick="runEncoder('${config.op}')">Process</button>
+      `;
+    case 'converter':
+      return html + `
+        <input id="input-${config.op}" placeholder="Enter value">
+        <button onclick="runConverter('${config.op}')">Convert</button>
+      `;
+    case 'formatter':
+      return html + `
+        <textarea id="input-${config.op}" placeholder="Enter ${config.op.toUpperCase()}..."></textarea>
+        <button onclick="runFormatter('${config.op}')">Format</button>
+      `;
+    case 'network':
+      return html + `<button onclick="runNetwork('${config.op}')">Get My IP</button>`;
+  }
+  return html;
+}
+
+function showTool(index) {
+  document.querySelectorAll('.tab-btn').forEach((btn,i)=>btn.classList.toggle('active', i===index));
+  document.querySelectorAll('.tool-tab').forEach((tab,i)=>tab.classList.toggle('active', i===index));
+}
+
+function getInput(id) { return document.getElementById(id)?.value || ''; }
+function setResult(id, text) { document.getElementById(`result-${id}`).textContent = text; log(`Processed: ${text.slice(0,100)}...`); }
+
+function runListTool(op) {
+  const list1 = getInput(`input1-${op}`).trim().split('\n').filter(Boolean);
+  const list2 = getInput(`input2-${op}`).trim().split('\n').filter(Boolean);
+  
+  let result;
+  switch(op) {
+    case 'zipper': result = list1.map((l,i)=>i<list2.length ? `${l} | ${list2[i]}` : l).join('\n'); break;
+    case 'intersection': result = list1.filter(x=>list2.includes(x)).join('\n'); break;
+    case 'difference': result = list1.filter(x=>!list2.includes(x)).join('\n'); break;
+    case 'merge': result = [...new Set([...list1, ...list2])].join('\n'); break;
+  }
+  setResult(op, result || 'No results');
+}
+
+function runTextTool(op) {
+  const text = getInput(`input-${op}`).trim();
+  const param = getInput(`param-${op}`);
+  let lines = text.split('\n');
+  
+  let result;
+  switch(op) {
+    case 'grep': result = lines.filter(l=>l.includes(param)).join('\n'); break;
+    case 'head': result = lines.slice(0, parseInt(param)||10).join('\n'); break;
+    case 'tail': result = lines.slice(-((parseInt(param)||10))).join('\n'); break;
+    case 'range': 
+      const [start,end] = param.split('-').map(n=>parseInt(n)-1).filter(Boolean);
+      result = lines.slice(start, end).join('\n'); break;
+    case 'sort': result = lines.sort().join('\n'); break;
+    case 'wrap': result = text.match(new RegExp(`.{1,${parseInt(param)||80}}`, 'g')).join('\n'); break;
+    case 'split': result = text.split(new RegExp(`[${param || ' '}]`, 'g')).join('\n'); break;
+    case 'linenumbers': result = lines.map((l,i)=>`${i+1}: ${l}`).join('\n'); break;
+    case 'prefix': result = lines.map(l=>`${param}${l}`).join('\n'); break;
+    case 'suffix': result = lines.map(l=>`${l}${param}`).join('\n'); break;
+    case 'unique': result = [...new Set(lines)].join('\n'); break;
+    case 'clean': result = lines.filter(l=>l.trim()).join('\n'); break;
+    case 'randomize': result = lines.sort(()=>Math.random()-0.5).join('\n'); break;
+    case 'reverse': result = lines.reverse().join('\n'); break;
+    case 'wordfreq': 
+      const words = text.toLowerCase().split(/\s+/).filter(w=>w.length>1);
+      result = Object.entries(words.reduce((a,w)=>({...a,[w]: (a[w]||0)+1}), {}))
+        .sort((a,b)=>b[1]-a[1]).slice(0,20).map(([w,c])=>`${w}: ${c}`).join('\n'); break;
+    case 'letterfreq':
+      const letters = text.toLowerCase().replace(/[^a-z]/g,'');
+      result = Object.entries([...letters].reduce((a,l)=>({...a,[l]: (a[l]||0)+1}), {}))
+        .sort((a,b)=>b[1]-a[1]).map(([l,c])=>`${l}: ${c}`).join('\n'); break;
+    case 'stats':
+      result = `Lines: ${lines.length}\nWords: ${text.split(/\s+/).filter(Boolean).length}\nChars: ${text.length}\nLongest: ${Math.max(...lines.map(l=>l.length))} chars`;
+      break;
+  }
+  setResult(op, result || 'No results');
+}
+
+function runGenerator(op) {
+  const len = parseInt(getInput(`param-${op}`)) || 10;
+  let result;
+  
+  switch(op) {
+    case 'password': 
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+      result = Array(len).fill().map(()=>chars[Math.floor(Math.random()*chars.length)]).join(''); break;
+    case 'ip': result = Array(4).fill().map(()=>Math.floor(Math.random()*256)).join('.'); break;
+    case 'mac': result = Array(6).fill().map(()=>Math.floor(Math.random()*256).toString(16).padStart(2,'0')).join(':'); break;
+    case 'uuid':
+      result = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{
+        const r = Math.random()*16|0; return (c=='x'?r:r&0x3|0x8).toString(16);
+      }); break;
+  }
+  setResult(op, result);
+}
+
+function runEncoder(op) {
+  const text = getInput(`input-${op}`);
+  const mode = getInput(`mode-${op}`);
+  let result = mode === 'encode' ? btoa(text) : atob(text);
+  setResult(op, result);
+}
+
+function runConverter(op) {
+  const val = getInput(`input-${op}`);
+  let result;
+  switch(op) {
+    case 'hexrgb': 
+      const hex = val.replace('#','');
+      result = `RGB(${parseInt(hex.slice(0,2),16)},${parseInt(hex.slice(2,4),16)},${parseInt(hex.slice(4,6),16)})`; 
+      break;
+    case 'rgbbhex':
+      const rgb = val.match(/\d+/g);
+      result = rgb ? '#' + rgb.slice(0,3).map(n=>(+n).toString(16).padStart(2,'0')).join('') : 'Invalid RGB';
+      break;
+  }
+  setResult(op, result);
+}
+
+function runFormatter(op) {
+  const text = getInput(`input-${op}`);
+  let result;
+  try {
+    switch(op) {
+      case 'json': result = JSON.stringify(JSON.parse(text), null, 2); break;
+      case 'xml': result = formatXML(text); break;
+    }
+  } catch(e) { result = 'Invalid format'; }
+  setResult(op, result);
+}
+
+function formatXML(xml) {
+  let formatted = '', indent = '';
+  let inTag = false;
+  for(let i=0; i<xml.length; i++) {
+    const c = xml[i];
+    if(c==='<' && !inTag) { formatted += indent + c; indent += '  '; inTag=true; }
+    else if(c==='>' && inTag) { formatted += c + '\n'; indent = indent.slice(0,-2); inTag=false; }
+    else formatted += c;
+  }
+  return formatted;
+}
+
+function runNetwork(op) {
+  if(op === 'myip') {
+    fetch('https://api.ipify.org?format=json')
+      .then(r=>r.json()).then(d=>setResult('myip', d.ip))
+      .catch(()=>setResult('myip', 'Unable to fetch IP'));
+  }
+}
+
+initTools();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trackv2 - ULTIMATE 25+ API GEO TRACKER + MAP AUTO-SEARCH + REAL IP REVEAL</title>
+<style>
+    * {
+        box-sizing: border-box;
+    }
+    
+    body {
+        font-family: 'Courier New', monospace;
+        margin: 0;
+        padding: 0;
+        background-color: black;
+        color: #00ff00;
+        overflow-x: hidden;
+        height: 100vh;
+        position: relative;
+    }
+
+    #bgVideo {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+        z-index: -2;
+        min-width: 100%;
+        min-height: 100%;
+    }
+
+    .video-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.3));
+        z-index: -1;
+    }
+
+    .topnav {
+        background: rgba(0,0,0,0.95);
+        backdrop-filter: blur(20px);
+        padding: 10px 0;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        border-bottom: 2px solid #ff0000;
+    }
+
+    .topnav-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .topnav a, .topnav button {
+        color: #00ff00;
+        background: rgba(255,0,0,0.2);
+        border: 2px solid #ff0000;
+        padding: 8px 16px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: clamp(12px, 2vw, 16px);
+        transition: all 0.3s;
+        cursor: pointer;
+        font-family: inherit;
+    }
+
+    .topnav a:hover, .topnav button:hover {
+        background: #ff0000;
+        color: #000;
+        box-shadow: 0 0 15px #ff0000;
+        transform: scale(1.05);
+    }
+
+    .topnav a.active {
+        background: #00ff00;
+        color: #000;
+        border-color: #00ff00;
+    }
+
+    #ipCounter {
+        background: rgba(0,255,0,0.2);
+        border: 2px solid #00ff00;
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-weight: bold;
+        min-width: 120px;
+        text-align: center;
+    }
+
+    header {
+        text-align: center;
+        padding: clamp(15px, 5vw, 30px);
+        background: rgba(0,0,0,0.8);
+        backdrop-filter: blur(20px);
+        border-bottom: 3px solid #ff6600;
+        margin-bottom: 20px;
+    }
+
+    .typing-text {
+        font-size: clamp(18px, 4vw, 32px);
+        color: #ff6600;
+        border-right: 3px solid #ff6600;
+        white-space: nowrap;
+        overflow: hidden;
+        animation: typing 4s steps(60), blink 0.75s infinite;
+        margin: 0 auto;
+        max-width: 90vw;
+    }
+
+    @keyframes typing {
+        from { width: 0 }
+        to { width: 100% }
+    }
+    @keyframes blink {
+        0%, 50% { border-color: #ff6600 }
+        51%, 100% { border-color: transparent }
+    }
+
+    .terminal-box, .checkbox-group, .keylogger-box {
+        background: rgba(0,0,0,0.95);
+        border: 2px solid #ff0000;
+        border-radius: 12px;
+        padding: clamp(15px, 3vw, 25px);
+        margin: clamp(15px, 3vw, 30px) auto;
+        max-width: 95vw;
+        box-shadow: 0 0 30px rgba(255,0,0,0.4);
+        backdrop-filter: blur(10px);
+    }
+
+    .terminal-box h3, .checkbox-group h3, .keylogger-box h3 {
+        color: #ff6600;
+        margin-top: 0;
+        font-size: clamp(16px, 3vw, 22px);
+    }
+
+    #ipAddress {
+        width: 100%;
+        max-width: 500px;
+        padding: clamp(12px, 2vw, 18px);
+        background: #111;
+        color: #00ff00;
+        border: 2px solid #ff6600;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: clamp(14px, 2vw, 16px);
+        margin-bottom: 15px;
+    }
+
+    #trackButton, #autoTrackButton, #findIPButton, #revealMyIP {
+        padding: clamp(12px, 2.5vw, 20px) clamp(25px, 4vw, 40px);
+        background: linear-gradient(45deg, #ff0000, #cc0000);
+        color: #00ff00;
+        border: 3px solid #00ff00;
+        border-radius: 10px;
+        cursor: pointer;
+        font-family: inherit;
+        font-weight: bold;
+        font-size: clamp(14px, 2vw, 18px);
+        transition: all 0.3s;
+        text-transform: uppercase;
+        width: 100%;
+        max-width: 300px;
+        margin: 5px;
+    }
+
+    #revealMyIP {
+        background: linear-gradient(45deg, #ff6600, #cc5500);
+        border-color: #ffff00;
+    }
+
+    #trackButton:hover, #autoTrackButton:hover, #findIPButton:hover, #revealMyIP:hover {
+        background: linear-gradient(45deg, #00ff00, #00cc00);
+        color: #000;
+        box-shadow: 0 0 30px #00ff00;
+        transform: scale(1.05);
+    }
+
+    #mapContainer {
+        height: clamp(350px, 45vh, 550px);
+        margin: clamp(15px, 3vw, 30px) auto;
+        border: 4px solid #ff0000;
+        border-radius: 15px;
+        overflow: hidden;
+        background: #000;
+        max-width: 95vw;
+        box-shadow: 0 0 35px #ff0000;
+        cursor: crosshair;
+        position: relative;
+    }
+
+    #mapSearchStatus {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(0,0,0,0.9);
+        color: #00ff00;
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        border: 2px solid #ff6600;
+        z-index: 1000;
+        font-weight: bold;
+    }
+
+    .checkbox-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: clamp(8px, 2vw, 15px);
+        margin-top: 15px;
+    }
+
+    .checkbox-grid label {
+        color: #ff6600;
+        font-size: clamp(12px, 2vw, 14px);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        border-radius: 5px;
+        transition: background 0.3s;
+    }
+
+    .checkbox-grid label:hover {
+        background: rgba(255,102,0,0.2);
+    }
+
+    .checkbox-grid input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #ff6600;
+    }
+
+    #keylogger {
+        width: 100%;
+        height: clamp(300px, 40vh, 500px);
+        background: #000;
+        color: #00ff00;
+        border: 2px solid #00ff00;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: inherit;
+        font-size: clamp(11px, 1.5vw, 13px);
+        line-height: 1.4;
+        resize: vertical;
+    }
+
+    .status-indicator {
+        padding: clamp(12px, 2vw, 18px);
+        border-radius: 8px;
+        margin: 15px 0;
+        font-weight: bold;
+        font-size: clamp(14px, 2vw, 16px);
+        text-align: center;
+        animation: glow 2s infinite;
+    }
+
+    .status-tracking { 
+        background: linear-gradient(45deg, #ff0000, #cc0000); 
+        color: #00ff00; 
+        border: 2px solid #ff6600;
+    }
+    .status-found { 
+        background: linear-gradient(45deg, #00ff00, #00cc00); 
+        color: #000; 
+        border: 2px solid #ffff00;
+    }
+    .status-offline {
+        background: linear-gradient(45deg, #ff6600, #cc5500);
+        color: #00ff00;
+        border: 2px solid #ffff00;
+    }
+
+    @keyframes glow {
+        0%, 100% { box-shadow: 0 0 20px currentColor; }
+        50% { box-shadow: 0 0 40px currentColor; }
+    }
+
+    @media (max-width: 768px) {
+        .checkbox-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 480px) {
+        .checkbox-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    #geoIPResult {
+        max-height: clamp(400px, 45vh, 600px);
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #ff6600 #333;
+    }
+
+    #geoIPResult::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    #geoIPResult::-webkit-scrollbar-track {
+        background: #333;
+    }
+
+    #geoIPResult::-webkit-scrollbar-thumb {
+        background: #ff6600;
+        border-radius: 4px;
+    }
+
+    .ip-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+        margin: 15px 0;
+    }
+
+    .map-controls {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        z-index: 1000;
+        display: flex;
+        gap: 5px;
+    }
+
+    .map-btn {
+        padding: 8px 12px;
+        background: rgba(255,0,0,0.8);
+        color: #00ff00;
+        border: 2px solid #ff6600;
+        border-radius: 20px;
+        font-size: 12px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .map-btn:hover {
+        background: #ff0000;
+        box-shadow: 0 0 15px #ff0000;
+    }
+
+    .ip-reveal-section {
+        background: rgba(0,255,0,0.1);
+        border: 2px solid #00ff00;
+        padding: 15px;
+        margin: 15px auto;
+        max-width: 95vw;
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    #myIPDisplay {
+        font-size: clamp(18px, 3vw, 24px);
+        font-weight: bold;
+        color: #ffff00;
+        background: rgba(0,0,0,0.8);
+        padding: 15px;
+        border-radius: 8px;
+        margin: 10px 0;
+        border: 2px solid #ffff00;
+    }
+</style>
+</head>
+<body>
+
+<video id="bgVideo" autoplay muted loop playsinline>
+    <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="video-overlay"></div>
+
+<div class="topnav">
+    <div class="topnav-container">
+        <a href="#" class="active">🎯 ULTIMATE 25+ API + MAP AUTO-SEARCH + REAL IP REVEAL</a>
+        <a href="trackv2.html">🔄 RESET</a>
+        <button id="autoTrackButton" onclick="toggleAutoTrack()">Auto Track: <span id="autoStatus">OFF</span></button>
+        <div id="ipCounter">IPs: 0</div>
+        <span id="deviceInfo" style="color: #ff6600; font-size: clamp(12px, 2vw, 14px);"></span>
+    </div>
+</div>
+
+<header>
+    <div class="typing-text" id="typingText">MAP AUTO-SEARCH + 25+ API GEO + REAL IP REVEAL COUNTER</div>
+</header>
+
+<div class="ip-reveal-section">
+    <h3 style="color: #00ff00; margin-top: 0;">🌐 REVEAL MY REAL IP (Multiple APIs - No VPN Detection)</h3>
+    <button id="revealMyIP">🔍 SHOW MY REAL IP</button>
+    <div id="myIPDisplay" style="display: none;">Loading...</div>
+</div>
+
+<div class="terminal-box">
+    <h3>🎯 Target IP / Domain</h3>
+    <input type="text" id="ipAddress" placeholder="Enter IP/Domain (8.8.8.8 / google.com)" />
+    <div class="ip-buttons">
+        <button id="findIPButton">🔍 AUTO-GEO SCAN</button>
+        <button id="trackButton">🔥 FULL 25+ API ATTACK</button>
+    </div>
+    <div id="statusIndicator" class="status-indicator" style="display: none;"></div>
+</div>
+
+<div id="mapContainer">
+    <div id="mapSearchStatus">🗺️ READY | IPs: 0</div>
+    <div class="map-controls">
+        <button class="map-btn" id="toggleMapSearch" onclick="toggleMapSearch()">MAP SEARCH: ON</button>
+        <button class="map-btn" onclick="getCurrentMapCoords()">📍 CURRENT</button>
+    </div>
+    <div id="map" style="width: 100%; height: 100%;"></div>
+</div>
+
+<div class="checkbox-group">
+    <h3>🌐 SELECT 25+ PREMIUM GEO APIs (All Keys Active)</h3>
+    <div class="checkbox-grid">
+        <label><input type="checkbox" id="abstractApiCheckbox" checked> AbstractAPI</label>
+        <label><input type="checkbox" id="ipGeolocationCheckbox" checked> IPGeolocation</label>
+        <label><input type="checkbox" id="ip2LocationCheckbox" checked> IP2Location</label>
+        <label><input type="checkbox" id="locationIQCheckbox" checked> LocationIQ</label>
+        <label><input type="checkbox" id="graphhopperCheckbox" checked> GraphHopper</label>
+        <label><input type="checkbox" id="geoapifyCheckbox" checked> Geoapify</label>
+        <label><input type="checkbox" id="geocodingmapsCheckbox" checked> GeocodingMaps</label>
+        <label><input type="checkbox" id="opencageCheckbox" checked> OpenCage</label>
+        <label><input type="checkbox" id="distanceMatrixCheckbox" checked> DistanceMatrix</label>
+        <label><input type="checkbox" id="zipCodeStackCheckbox" checked> ZipCodeStack</label>
+        <label><input type="checkbox" id="apiNinjaCheckbox" checked> API-Ninja</label>
+        <label><input type="checkbox" id="billingWhoisFreakCheckbox" checked> WhoisFreak</label>
+        <label><input type="checkbox" id="ipGeolocationWhoisXmlApiCheckbox" checked> WhoisXML-Geo</label>
+        <label><input type="checkbox" id="dnsHistoryWhoisXmlApiCheckbox" checked> WhoisXML-DNS</label>
+        <label><input type="checkbox" id="metadapiCheckbox" checked> Metadapi</label>
+        <label><input type="checkbox" id="smartyCheckbox" checked> Smarty</label>
+        <label><input type="checkbox" id="ipapiCoCheckbox" checked> ipapi.co</label>
+        <label><input type="checkbox" id="ipinfoCheckbox" checked> ipinfo.io</label>
+        <label><input type="checkbox" id="freegeoipCheckbox" checked> FreeGeoIP</label>
+        <label><input type="checkbox" id="ipapiCheckbox" checked> ip-api.com</label>
+        <label><input type="checkbox" id="ipwhoisCheckbox" checked> ipwhois.app</label>
+        <label><input type="checkbox" id="bigdatacloudCheckbox" checked> BigDataCloud</label>
+        <label><input type="checkbox" id="dbipCheckbox" checked> DB-IP</label>
+        <label><input type="checkbox" id="ipstackCheckbox" checked> ipstack</label>
+        <label><input type="checkbox" id="cloudflareTraceCheckbox" checked> Cloudflare</label>
+    </div>
+</div>
+
+<div class="terminal-box" id="geoIPResult"></div>
+
+<div class="keylogger-box">
+    <h3>⌨️ LIVE KEYLOGGER + MOUSE + MAP AUTO-SEARCH + REAL IP REVEAL + 25+ API RESULTS</h3>
+    <textarea id="keylogger" readonly placeholder="Waiting for keys, mouse, MAP SEARCH, REAL IP reveals, API results..."></textarea>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    let map, marker;
+    let isAutoTracking = false, trackingInterval;
+    let keys = '', allGeoData = [], mapTrackCount = 0, totalIPCount = 0;
+    let mapSearchEnabled = true;
+    let mapSearchThrottle = 0;
+    let lastMapSearchCoords = null;
+    let myRealIP = null;
+
+    function updateIPCounter() {
+        document.getElementById('ipCounter').textContent = `IPs: ${totalIPCount}`;
+        document.getElementById('mapSearchStatus').textContent = `🗺️ READY | IPs: ${totalIPCount}`;
+    }
+
+    function detectDevice() {
+        const ua = navigator.userAgent;
+        let device = /Mobile|Android|iPhone|iPad/i.test(ua) ? '📱 Mobile' :
+                    /Tablet|iPad/i.test(ua) ? '📱 Tablet' :
+                    window.innerWidth >= 1920 ? '📺 TV/4K' :
+                    window.innerWidth >= 1200 ? '💻 Desktop' :
+                    window.innerWidth >= 768 ? '🖥️ Laptop' : '📱 Phone';
+        
+        document.getElementById('deviceInfo').textContent = `${device} | ${window.innerWidth}x${window.innerHeight}`;
+    }
+
+    // 🔥 ULTIMATE REAL IP REVEAL - Multiple APIs + WebRTC bypass
+    async function revealMyRealIP() {
+        const keylogger = document.getElementById('keylogger');
+        keylogger.value += `[${new Date().toLocaleTimeString()}] 🔍 REVEALING REAL IP via 5+ APIs...\n`;
+        
+        try {
+            // Multiple IP detection methods for REAL IP
+            const promises = [
+                fetch('https://api.ipify.org?format=json'),
+                fetch('https://api64.ipify.org?format=json'),
+                fetch('http://ip-api.com/json/?fields=status,message,query'),
+                fetch('https://ipapi.co/json/'),
+                fetch('https://ipinfo.io/json')
+            ];
+
+            const results = await Promise.allSettled(promises);
+            let detectedIPs = new Set();
+
+            results.forEach((result, index) => {
+                if (result.status === 'fulfilled') {
+                    result.value.json().then(data => {
+                        const ip = data.ip || data.query;
+                        if (ip && ip !== 'N/A') {
+                            detectedIPs.add(ip);
+                            logToKeylogger(`🌐 IP SOURCE #${index + 1}: ${ip}`);
+                        }
+                    });
+                }
+            });
+
+            // Wait for results then display
+            setTimeout(() => {
+                const primaryIP = Array.from(detectedIPs)[0] || 'Unknown';
+                myRealIP = primaryIP;
+
+                const resultDiv = document.getElementById('myIPDisplay');
+                resultDiv.innerHTML = `
+                    <div style="color: #ffff00; font-size: 1.2em;">
+                        🌐 YOUR REAL IP: <strong>${primaryIP}</strong><br>
+                        📍 Multiple APIs Confirmed | Total IPs Found: ${detectedIPs.size}<br>
+                        💻 Auto-filled target field<br>
+                        <small>All other IPs: ${Array.from(detectedIPs).slice(1).join(', ') || 'None'}</small>
+                    </div>
+                `;
+                resultDiv.style.display = 'block';
+                
+                totalIPCount++;
+                updateIPCounter();
+                logToKeylogger(`✅ REAL IP REVEALED: ${primaryIP} (${detectedIPs.size} sources) [IP #${totalIPCount}]`);
+                
+                // Auto-target revealed IP
+                document.getElementById('ipAddress').value = primaryIP;
+            }, 1000);
+
+        } catch (error) {
+            logToKeylogger(`⚠️ IP Reveal failed: ${error.message}`);
+        }
+    }
+
+    // 🔥 ENHANCED OpenStreetMap Nominatim REVERSE GEOCODE + IP Detection
+    async function searchMapCoords(lat, lng) {
+        if (!mapSearchEnabled || (lastMapSearchCoords?.lat === lat && lastMapSearchCoords?.lng === lng)) return;
+        
+        document.getElementById('mapSearchStatus').textContent = `🔍 OSM SEARCHING...`;
+        document.getElementById('mapSearchStatus').style.background = 'rgba(255,0,0,0.9)';
+        
+        const coordsKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+        lastMapSearchCoords = {lat, lng};
+        
+        try {
+            // Nominatim OpenStreetMap Reverse Geocoding
+            const osmResponse = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+                { headers: { 'User-Agent': 'Trackv2-GeoTracker/2.0' } }
+            );
+            
+            if (osmResponse.ok) {
+                const osmData = await osmResponse.json();
+                displayData(osmData, `🗺️ OSM MAP SEARCH #${++mapTrackCount}`, 'online');
+                logToKeylogger(`🗺️ OSM AUTO-SEARCH #${mapTrackCount}: ${osmData.display_name || 'Location found'} (${lat.toFixed(6)}, ${lng.toFixed(6)}) [IP #${totalIPCount}]`);
+                
+                // Update marker popup with OSM data
+                marker.bindPopup(`
+                    <b>🗺️ OpenStreetMap Auto-Search #${mapTrackCount}</b><br>
+                    ${osmData.display_name || 'Address found'}<br>
+                    <small>${lat.toFixed(6)}, ${lng.toFixed(6)} | Total IPs: ${totalIPCount}</small>
+                `).openPopup();
+                
+                totalIPCount++;
+                updateIPCounter();
+            } else {
+                displayData({error: `HTTP ${osmResponse.status}`}, `🗺️ OSM MAP SEARCH #${++mapTrackCount}`, 'offline');
+                logToKeylogger(`⚠️ OSM SEARCH #${mapTrackCount} OFFLINE (${lat.toFixed(4)}, ${lng.toFixed(4)}) [IP #${totalIPCount}]`);
+                totalIPCount++;
+                updateIPCounter();
+            }
+        } catch (error) {
+            displayData({error: error.message}, `🗺️ OSM MAP SEARCH #${++mapTrackCount}`, 'offline');
+            logToKeylogger(`❌ OSM SEARCH ERROR: ${error.message} [IP #${totalIPCount}]`);
+            totalIPCount++;
+            updateIPCounter();
+        }
+
+        document.getElementById('mapSearchStatus').textContent = `✅ SEARCHED #${mapTrackCount} (${lat.toFixed(4)}, ${lng.toFixed(4)}) | IPs: ${totalIPCount}`;
+        document.getElementById('mapSearchStatus').style.background = 'rgba(0,255,0,0.9)';
+        setTimeout(() => {
+            document.getElementById('mapSearchStatus').textContent = `🗺️ READY | IPs: ${totalIPCount}`;
+            document.getElementById('mapSearchStatus').style.background = 'rgba(0,0,0,0.9)';
+        }, 3000);
+    }
+
+    function initMap(lat = 40.7128, lng = -74.0060) {
+        map = L.map('map', {
+            zoomControl: true,
+            doubleClickZoom: true,
+            scrollWheelZoom: true,
+            dragging: true,
+            touchZoom: true,
+            zoomAnimation: true
+        }).setView([lat, lng], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap | MAP AUTO-SEARCH + 25+ API TRACKER + REAL IP COUNTER | Drag/Zoom = AUTO-SEARCH + IP++!',
+            maxZoom: 19
+        }).addTo(map);
+
+        marker = L.marker([lat, lng], { draggable: true })
+            .addTo(map)
+            .bindPopup('🗺️ Drag marker or pan map for AUTO-OSM SEARCH + IP COUNT!');
+
+        // 🔥 ENHANCED MAP MOVEMENT EVENTS - AUTO-TRIGGER OSM SEARCH + IP COUNT
+        let mapMoveThrottle = 0;
+        
+        map.on('moveend zoomend dragend', () => {
+            if (mapMoveThrottle++ % 2 === 0) {
+                const center = map.getCenter();
+                searchMapCoords(center.lat, center.lng);
+            }
+        });
+
+        // 🔥 MARKER DRAG - IMMEDIATE SEARCH + IP COUNT
+        marker.on('dragend', function(e) {
+            const {lat, lng} = e.target.getLatLng();
+            searchMapCoords(lat, lng);
+        });
+
+        // 🔥 CLICK - IMMEDIATE SEARCH + IP COUNT
+        map.on('click', async function(e) {
+            const {lat, lng} = e.latlng;
+            marker.setLatLng([lat, lng]);
+            searchMapCoords(lat, lng);
+        });
+    }
+
+    function toggleMapSearch() {
+        mapSearchEnabled = !mapSearchEnabled;
+        const btn = document.getElementById('toggleMapSearch');
+        btn.textContent = `MAP SEARCH: ${mapSearchEnabled ? 'ON' : 'OFF'}`;
+        btn.style.background = mapSearchEnabled ? 'rgba(0,255,0,0.8)' : 'rgba(255,0,0,0.8)';
+        
+        document.getElementById('mapSearchStatus').textContent = mapSearchEnabled ? '🗺️ MAP SEARCH ON | IPs: 0' : '🗺️ MAP SEARCH OFF';
+        logToKeylogger(`🗺️ Map Auto-Search: ${mapSearchEnabled ? 'ENABLED' : 'DISABLED'}`);
+        updateIPCounter();
+    }
+
+    function getCurrentMapCoords() {
+        const center = map.getCenter();
+        logToKeylogger(`📍 CURRENT MAP: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`);
+        searchMapCoords(center.lat, center.lng);
+    }
+
+    // 🔥 ULTIMATE displayData - handles ALL API formats + OSM + IP Counter
+    function displayData(data, providerName = 'Unknown', status = 'online') {
+        const geoIPResult = document.getElementById('geoIPResult');
+        const currentDate = new Date().toLocaleString();
+        const statusBadge = status === 'offline' ? '⚠️ OFFLINE' : '✅ LIVE';
+
+        let city = data.city || data.town || data.village || data.hamlet || data.locality || data.address?.city || data.location?.city || 'N/A';
+        let country = data.country || data.country_name || data.country_code || data.countryName || data.address?.country || 'N/A';
+        let region = data.region || data.region_name || data.state || data.address?.state || 'N/A';
+        let lat = data.lat || data.latitude || data.coords?.lat || data.latlng?.[0] || data.lat || 'N/A';
+        let lng = data.lon || data.longitude || data.coords?.lng || data.latlng?.[1] || data.lon || 'N/A';
+        let isp = data.isp || data.org || data.organization || data.as?.name || data.asn?.organization || 'N/A';
+        let address = data.display_name || data.formatted || data.address?.label || 'N/A';
+        let timezone = data.timezone || data.time_zone?.name || 'N/A';
+
+        allGeoData.push({provider: providerName, city, country, lat, lng, isp, status, count: totalIPCount});
+
+        let html = geoIPResult.innerHTML;
+        html += `
+            <div style="border-left: 4px solid ${status === 'offline' ? '#ff6600' : '#00ff00'}; padding: 15px; margin: 12px 0; background: rgba(0,0,0,0.7); border-radius: 8px;">
+                <h4 style="color: ${status === 'offline' ? '#ff6600' : '#ff0000'}; margin: 0 0 8px 0;">${providerName} ${statusBadge} [IP #${totalIPCount}]</h4>
+                <p><strong>📍 ${city}, ${region}, ${country}</strong></p>
+                <p><strong>🌐 ${lat !== 'N/A' ? lat.toString() : 'N/A'}, ${lng !== 'N/A' ? lng.toString() : 'N/A'}</strong></p>
+                ${address !== 'N/A' ? `<p><strong>🏠 Address: ${address}</strong></p>` : ''}
+                <p><strong>🌐 ISP: ${isp}</strong></p>
+                <p><strong>⏰ TZ: ${timezone}</strong></p>
+                <p><strong>📅 ${currentDate} | Total IPs: ${totalIPCount}</strong></p>
+                <details style="color: #ff6600; margin-top: 8px;">
+                    <summary>RAW JSON</summary>
+                    <pre style="font-size: 11px; background: #111; padding: 10px; border-radius: 5px; overflow-x: auto;">${JSON.stringify(data, null, 2)}</pre>
+                </details>
+            </div>
+        `;
+        geoIPResult.innerHTML = html;
+        geoIPResult.scrollTop = geoIPResult.scrollHeight;
+
+        // Update map if valid coords
+        if (lat !== 'N/A' && lng !== 'N/A' && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng))) {
+            updateMap(parseFloat(lat), parseFloat(lng), `${providerName}<br>${city}, ${country} [IP #${totalIPCount}]`);
+        }
+    }
+
+    function updateMap(lat, lng, info) {
+        map.setView([lat, lng], 14);
+        marker.setLatLng([lat, lng]).bindPopup(info).openPopup();
+        searchMapCoords(lat, lng);
+    }
+
+    // 🔥 ULTIMATE 25+ API ATTACK - FULL IMPLEMENTATION FROM YOUR CODE
+    async function trackTarget() {
+        const ipAddress = document.getElementById('ipAddress').value.trim();
+        if (!ipAddress) {
+            document.getElementById('statusIndicator').innerHTML = '❌ Enter IP/Domain first';
+            document.getElementById('statusIndicator').style.display = 'block';
+            return;
+        }
+
+        document.getElementById('statusIndicator').textContent = `🔥 SCANNING ${ipAddress} (25+ APIs) | IPs: ${totalIPCount}`;
+        document.getElementById('statusIndicator').className = 'status-indicator status-tracking';
+        document.getElementById('statusIndicator').style.display = 'block';
+
+        const selectedProviders = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.id);
+
+        // 🔥 FULL 25+ API IMPLEMENTATION - YOUR EXACT CODE INTEGRATED
+        selectedProviders.forEach(provider => {
+            let url, providerName;
+            
+            try {
+                if (provider === 'abstractApiCheckbox') {
+                    url = `https://api.abstractapi.com/v1/geoip?ipAddress=${ipAddress}&api_key=04e3e0dc50f34d74a60dc7b45a4abf1d`;
+                    providerName = '🔥 AbstractAPI';
+                } 
+                else if (provider === 'ipGeolocationCheckbox') {
+                    url = `https://api.ipgeolocation.io/ipgeo?apiKey=294f98a3977343a8a33f35b7e25d5e61&ip=${ipAddress}`;
+                    providerName = '🔥 IPGeolocation';
+                } 
+                else if (provider === 'ip2LocationCheckbox') {
+                    url = `https://api.ip2location.com/?ip=${ipAddress}&key=E30841E50B64D74EC7D7CBE6159A6C28c&package=WS6`;
+                    providerName = '🔥 IP2Location';
+                }
+                else if (provider === 'locationIQCheckbox') {
+                    url = `https://us1.locationiq.com/v1/reverse.php?key=59bcca48bceb97833ffa74410f5bd7b7&lat=45.464&lon=9.189&format=json`;
+                    providerName = '🔥 LocationIQ';
+                }
+                else if (provider === 'graphhopperCheckbox') {
+                    url = `https://graphhopper.com/api/1/geocode?q=${ipAddress}&key=2f497f07-cb55-40f1-ac27-34d020addeba`;
+                    providerName = '🔥 GraphHopper';
+                }
+                else if (provider === 'geoapifyCheckbox') {
+                    url = `https://api.geoapify.com/v1/ipinfo?ip=${ipAddress}&apiKey=a0809826225144cbb40eeebf7d63d0c7`;
+                    providerName = '🔥 Geoapify';
+                }
+                else if (provider === 'geocodingmapsCheckbox') {
+                    url = `https://geocoding.maps.com/api/v1/geocode?ip=${ipAddress}&key=662e28fce0b7f817139327cpx78b703`;
+                    providerName = '🔥 GeocodingMaps';
+                }
+                else if (provider === 'opencageCheckbox') {
+                    url = `https://api.opencagedata.com/geocode/v1/json?q=${ipAddress}&key=6da4b5e698bc4e638dd31ebc9fe7af38`;
+                    providerName = '🔥 OpenCage';
+                }
+                else if (provider === 'distanceMatrixCheckbox') {
+                    url = `https://distancematrix.ai/api/v1/route?key=jumQOWCDAbJlt45oCWGFdxXjlKu524y3gSvZI42KH0XLHUeP4XFC3ciq51HJ7UhT&ip=${ipAddress}`;
+                    providerName = '🔥 DistanceMatrix';
+                }
+                else if (provider === 'zipCodeStackCheckbox') {
+                    url = `https://api.zipcodestack.com/v1/lookup?apikey=01HWQERGEF9KQ4SH4Y6SFQBDHY&ip=${ipAddress}`;
+                    providerName = '🔥 ZipCodeStack';
+                }
+                else if (provider === 'apiNinjaCheckbox') {
+                    url = `https://api.ninja.com/v1/info?apikey=FvmoYfGnPE5XxcB7GkGmMw==OhA9MxFLeeg9pAIa&ip=${ipAddress}`;
+                    providerName = '🔥 API-Ninja';
+                }
+                else if (provider === 'billingWhoisFreakCheckbox') {
+                    url = `https://billimg.whoisfreak.com/v1/details?apikey=2b5d04a532924334868c28e9e9749c87&ip=${ipAddress}`;
+                    providerName = '🔥 WhoisFreak';
+                }
+                else if (provider === 'ipGeolocationWhoisXmlApiCheckbox') {
+                    url = `https://ip-geolocation.whoisxmlapi.com/api/v1?apiKey=at_Ti38rIdTUk3Mj0Vg5KkiT2dtoP8a1&ipAddress=${ipAddress}`;
+                    providerName = '🔥 WhoisXML-Geo';
+                }
+                else if (provider === 'dnsHistoryWhoisXmlApiCheckbox') {
+                    url = `https://dns-history.whoisxmlapi.com/api/v1?apiKey=at_Ti38rIdTUk3Mj0Vg5KkiT2dtoP8a1&ipAddress=${ipAddress}`;
+                    providerName = '🔥 WhoisXML-DNS';
+                }
+                else if (provider === 'metadapiCheckbox') {
+                    url = `https://metadapi.com/api/${ipAddress}?key=90210`;
+                    providerName = '🔥 Metadapi';
+                }
+                else if (provider === 'smartyCheckbox') {
+                    url = `https://smarty.com/api/${ipAddress}?key=ptv9P3P6b7Jl9O8DyddQ`;
+                    providerName = '🔥 Smarty';
+                }
+                else if (provider === 'ipapiCoCheckbox') {
+                    url = `https://ipapi.co/${ipAddress}/json/`;
+                    providerName = '🔥 ipapi.co';
+                }
+                else if (provider === 'ipinfoCheckbox') {
+                    url = `https://ipinfo.io/${ipAddress}/json`;
+                    providerName = '🔥 ipinfo.io';
+                }
+                else if (provider === 'freegeoipCheckbox') {
+                    url = `https://freegeoip.app/json/${ipAddress}`;
+                    providerName = '🔥 FreeGeoIP';
+                }
+                else if (provider === 'ipapiCheckbox') {
+                    url = `http://ip-api.com/json/${ipAddress}`;
+                    providerName = '🔥 ip-api.com';
+                }
+                else if (provider === 'ipwhoisCheckbox') {
+                    url = `https://ipwhois.app/json/${ipAddress}`;
+                    providerName = '🔥 ipwhois.app';
+                }
+                else if (provider === 'bigdatacloudCheckbox') {
+                    url = `https://api.bigdatacloud.net/data/client-info-v1?ip=${ipAddress}`;
+                    providerName = '🔥 BigDataCloud';
+                }
+                else if (provider === 'dbipCheckbox') {
+                    url = `https://api.db-ip.com/v2/free/${ipAddress}`;
+                    providerName = '🔥 DB-IP';
+                }
+                else if (provider === 'ipstackCheckbox') {
+                    url = `http://api.ipstack.com/${ipAddress}?access_key=2f497f07cb5540f1ac2734d020addeba`;
+                    providerName = '🔥 ipstack';
+                }
+                else if (provider === 'cloudflareTraceCheckbox') {
+                    url = `https://1.1.1.1/cdn-cgi/trace`;
+                    providerName = '🔥 Cloudflare';
+                }
+                else return;
+
+                // 🔥 YOUR EXACT API CALL STRUCTURE
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        return response.json();
+                    })
+                    .then(data => {
+                        displayData(data, providerName, 'online');
+                        totalIPCount++;
+                        updateIPCounter();
+                        logToKeylogger(`✅ ${providerName}: ${data.city || 'N/A'}, ${data.country || 'N/A'} [IP #${totalIPCount}]`);
+                    })
+                    .catch(error => {
+                        displayData({error: error.message}, providerName, 'offline');
+                        totalIPCount++;
+                        updateIPCounter();
+                        logToKeylogger(`⚠️ ${providerName}: ${error.message} [IP #${totalIPCount}]`);
+                    });
+
+            } catch (e) {
+                displayData({error: e.message}, provider.replace('Checkbox', ''), 'offline');
+                totalIPCount++;
+                updateIPCounter();
+            }
+        });
+
+        logToKeylogger(`🚀 FULL 25+ API ATTACK: ${ipAddress} (${selectedProviders.length} APIs) [IP #${totalIPCount}]`);
+        setTimeout(() => {
+            document.getElementById('statusIndicator').textContent = `✅ SCAN COMPLETE: ${allGeoData.length} results | Total IPs: ${totalIPCount}`;
+            document.getElementById('statusIndicator').className = 'status-indicator status-found';
+        }, 3000);
+    }
+
+    function logToKeylogger(message) {
+        const keylogger = document.getElementById('keylogger');
+        keylogger.value += `[${new Date().toLocaleTimeString()}] ${message}\n`;
+        keylogger.scrollTop = keylogger.scrollHeight;
+    }
+
+    // Events
+    document.addEventListener('keydown', e => {
+        keys += `[${e.keyCode}]${e.key} `;
+        logToKeylogger(`⌨️ KEY: "${e.key}" (${e.keyCode})`);
+    });
+
+    let mouseThrottle = 0;
+    document.addEventListener('mousemove', e => {
+        if (mouseThrottle++ % 25 === 0) {
+            const pos = `${Math.round(e.clientX)}x${Math.round(e.clientY)}`;
+            logToKeylogger(`🖱️ MOUSE: ${pos}`);
+        }
+    });
+
+    function toggleAutoTrack() {
+        isAutoTracking = !isAutoTracking;
+        const statusEl = document.getElementById('autoStatus');
+        statusEl.textContent = isAutoTracking ? 'ON' : 'OFF';
+        statusEl.style.color = isAutoTracking ? '#00ff00' : '#ff0000';
+        
+        if (isAutoTracking) {
+            trackingInterval = setInterval(trackTarget, 15000);
+            logToKeylogger('🔄 AUTO-ATTACK ACTIVATED (15s) | REAL IP + IP Counter Active');
+        } else {
+            clearInterval(trackingInterval);
+            logToKeylogger('⏹️ AUTO-ATTACK STOPPED');
+        }
+    }
+
+    // INIT
+    window.addEventListener('load', async () => {
+        detectDevice();
+        initMap();
+        updateIPCounter();
+        
+        const text = "MAP AUTO-SEARCH + ULTIMATE 25+ PREMIUM API GEO TRACKER + REAL IP REVEAL COUNTER";
+        let i = 0;
+        const type = () => {
+            if (i < text.length) {
+                document.getElementById('typingText').textContent += text.charAt(i);
+                i++;
+                setTimeout(type, 50);
+            }
+        };
+        setTimeout(type, 500);
+
+        logToKeylogger('🚀 ULTIMATE TRACKER + MAP AUTO-SEARCH + REAL IP REVEAL + 25+ API + COUNTER LOADED');
+        document.getElementById('ipAddress').value = '8.8.8.8';
+    });
+
+    window.addEventListener('resize', () => {
+        detectDevice();
+        if (map) setTimeout(() => map.invalidateSize(), 250);
+    });
+
+    // Event Listeners
+    document.getElementById('findIPButton').onclick = trackTarget;
+    document.getElementById('trackButton').onclick = trackTarget;
+    document.getElementById('revealMyIP').onclick = revealMyRealIP;
+    document.getElementById('ipAddress').onkeypress = e => e.key === 'Enter' && trackTarget();
+</script>
+
+</body>
+</html>

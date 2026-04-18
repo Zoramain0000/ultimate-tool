@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Network Inspector</title>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      margin: 0;
+      padding: 0;
+      
+      color: #333;
+    }
+
+    header, footer {
+      background: #000000;
+      color: rgb(0, 255, 42);
+      text-align: center;
+      padding: 20px 10px;
+    }
+
+    main {
+      display: flex;
+      flex-wrap: wrap;
+      padding: 20px;
+      gap: 20px;
+      justify-content: space-around;
+    }
+
+    section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      flex: 1 1 45%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    #network {
+      width: 100%;
+      height: 400px;
+      border: 1px solid #ddd;
+    }
+
+    #log-container {
+      height: 400px;
+      overflow-y: auto;
+      background: #000;
+      color: #0f0;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 14px;
+      border: 1px solid #333;
+    }
+
+    #device-list {
+      list-style: none;
+      padding-left: 0;
+      font-family: monospace;
+      font-size: 14px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .device {
+      margin: 4px 0;
+      border-bottom: 1px dashed #ccc;
+      padding: 5px;
+    }
+
+    .vuln {
+      color: red;
+      font-weight: bold;
+    }
+
+    button {
+      margin-bottom: 10px;
+      padding: 6px 12px;
+      background: #ff0000;
+      color: rgb(0, 255, 85);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Network Inspector Dashboard</h1>
+  </header>
+
+  <main>
+    <section>
+      <h2>Connected Devices</h2>
+      <button onclick="fetchDevices()">Scan Devices</button>
+      <ul id="device-list"></ul>
+    </section>
+
+    <section>
+      <h2>Live Network Activity</h2>
+      <div id="log-container"></div>
+    </section>
+
+    <section>
+      <h2>Network Topology</h2>
+      <div id="network"></div>
+    </section>
+
+    <section>
+      <h2>Current Wi-Fi Connection</h2>
+      <div id="wifi-info"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Network Inspector</p>
+  </footer>
+
+  <script>
+    const socket = io(); // Ensure the socket connection is established
+    const logContainer = document.getElementById("log-container");
+    const deviceList = document.getElementById("device-list");
+    const wifiInfo = document.getElementById("wifi-info");
+    let scanning = false;
+    const deviceRatings = {}; // Store ratings for devices
+    let totalPackets = 0; // Total packets received
+
+    // Live packet logging
+    socket.on("packet", (data) => {
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement("div");
+      entry.textContent = `[${time}] ${data}`;
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+
+      // Update device rating based on packet data
+      const ip = extractIPFromData(data); // Function to extract IP from packet data
+      if (deviceRatings[ip]) {
+        deviceRatings[ip].count += 1; // Increment packet count
+        totalPackets += 1; // Increment total packets
+        deviceRatings[ip].rating = (deviceRatings[ip].count / totalPackets) * 100; // Calculate percentage
+      }
+    });
+
+    // Function to extract IP from packet data
+    function extractIPFromData(data) {
+      const ipMatch = data.match(/(\d{1,3}\.){3}\d{1,3}/);
+      return ipMatch ? ipMatch[0] : null;
+    }
+
+    // Function to get local IP address using WebRTC
+    function getLocalIP(callback) {
+      const pc = new RTCPeerConnection({ iceServers: [] });
+      pc.createDataChannel('');
+      pc.createOffer().then(offer => pc.setLocalDescription(offer));
+      pc.onicecandidate = (event) => {
+        if (!event || !event.candidate) return;
+        const ipMatch = event.candidate.candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3})/);
+        if (ipMatch) callback(ipMatch[1]);
+        pc.close();
+      };
+    }
+
+    // Function to display current Wi-Fi connection details
+    function displayWifiInfo() {
+      if (navigator.connection) {
+        const connection = navigator.connection;
+        const type = connection.effectiveType;
+        const downlink = connection.downlink;
+        const rtt = connection.rtt;
+        const saveData = connection.saveData ? "Yes" : "No";
+
+        wifiInfo.innerHTML = `
+          <strong>Connection Type:</strong> ${type}<br>
+          <strong>Downlink Speed:</strong> ${downlink} Mbps<br>
+          <strong>Round Trip Time:</strong> ${rtt} ms<br>
+          <strong>Save Data Mode:</strong> ${saveData}<br>
+          <strong>Effective Type:</strong> ${connection.effectiveType}<br>
+          <strong>Network Type:</strong> ${connection.type}
+        `;
+      } else {
+        wifiInfo.textContent = "Network information is not available.";
+      }
+    }
+
+    // Simulate device scanning based on IP address
+    async function fetchDevices() {
+      if (scanning) return;
+      scanning = true;
+      deviceList.innerHTML = "<li>Scanning...</li>";
+
+      try {
+        getLocalIP((localIP) => {
+          const subnetBase = localIP.split('.').slice(0, 3).join('.');
+          const simulatedDevices = [];
+
+          // Simulate a maximum number of devices
+          for (let i = 1; i <= 254; i++) {
+            const ip = `${subnetBase}.${i}`;
+            deviceRatings[ip] = { count: 0, rating: 0 }; // Initialize rating
+            simulatedDevices.push({
+              ip,
+              mac: `00:14:22:01:23:${i.toString(16).padStart(2, '0')}`,
+              vendor: `Device ${i}`,
+              openPorts: Array.from({length: Math.floor(Math.random() * 1024)}, () => Math.floor(Math.random() * 1024) + 1),
+              isPublic: false
+            });
+          }
+
+          // Clear list and draw results
+          deviceList.innerHTML = "";
+          const nodes = [], edges = [];
+
+          simulatedDevices.forEach((dev, i) => {
+            const li = document.createElement("li");
+            li.className = "device";
+
+            const openPorts = dev.openPorts.length ? ` | ⚠️ Open Ports: ${dev.openPorts.join(', ')}` : "";
+            const rating = deviceRatings[dev.ip].rating.toFixed(2); // Get rating percentage
+            li.textContent = `${dev.ip} | ${dev.mac} | ${dev.vendor} | Rating: ${rating}%${openPorts}`;
+            deviceList.appendChild(li);
+
+            // Log device info to live network activity
+            logContainer.innerHTML += `<div>[Device Info] IP: ${dev.ip}, Port: ${dev.openPorts.join(', ')}, Device Name: ${dev.vendor}</div>`;
+
+            nodes.push({ id: i + 1, label: dev.ip, title: dev.vendor });
+            if (i !== 0) edges.push({ from: 1, to: i + 1 });
+          });
+
+          drawTopology(nodes, edges);
+          scanning = false;
+        });
+      } catch (err) {
+        console.error("Scan failed:", err);
+        deviceList.innerHTML = "<li>Failed to scan devices.</li>";
+        scanning = false;
+      }
+    }
+
+    function drawTopology(nodes, edges) {
+      const container = document.getElementById("network");
+      const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+      const options = {
+        nodes: {
+          shape: "box",
+          color: "#007bff",
+          font: { color: "white" }
+        },
+        edges: {
+          arrows: 'to',
+          color: "#888"
+        },
+        physics: { enabled: true }
+      };
+      new vis.Network(container, data, options);
+    }
+
+    // Enhanced live network activity logging
+    socket.on("enhancedPacket", (data) => {
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement("div");
+      entry.textContent = `[${time}] Enhanced Activity: ${data}`;
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+    });
+
+    // Call the function to display Wi-Fi connection details on page load
+    displayWifiInfo();
+  </script>
+</body>
+</html>
+  

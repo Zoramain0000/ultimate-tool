@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Log IP with Country Filter</title>
+<style>
+  /* Full-page video background */
+  body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Consolas', monospace;
+    color: red;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Video styling */
+  #bgVideo {
+    position: fixed;
+    top: 0;
+    left: 0;
+    min-width: 100%;
+    min-height: 100%;
+    z-index: -1;
+    object-fit: cover;
+    filter: brightness(0.3) contrast(1.2);
+  }
+
+  /* Header styling */
+  header {
+    padding: 12px 20px;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    backdrop-filter: blur(4px);
+  }
+
+  label {
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  select, input[type=button], input[type=text] {
+    font-family: monospace;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: none;
+    outline: none;
+  }
+
+  select {
+    background: rgba(0,0,0,0.6);
+    color: red;
+  }
+
+  input[type=button] {
+    background: red;
+    color: black;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  input[type=button]:hover {
+    background: rgba(0,0,0,0.6);
+    color: red;
+  }
+
+  input[type=text] {
+    flex-grow: 1;
+    min-width: 180px;
+    background: rgba(0,0,0,0.6);
+    color: red;
+  }
+
+  /* Log container */
+  #logContainer {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.4);
+    padding: 10px 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead tr {
+    background: rgba(0,0,0,0.6);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  th, td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #333;
+    white-space: nowrap;
+    text-align: left;
+  }
+
+  tbody tr:hover {
+    background: #222;
+  }
+
+  #loadingIndicator {
+    padding: 10px 0;
+    text-align: center;
+    color: red;
+    font-style: italic;
+  }
+
+  @media (max-width: 600px) {
+    th, td {
+      padding: 6px 8px;
+      font-size: 11px;
+    }
+    input[type=text], select, input[type=button] {
+      font-size: 12px;
+      padding: 5px 10px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Background Video -->
+<video autoplay muted loop id="bgVideo">
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+<header>
+  <label for="countrySelect">Select Country:</label>
+  <select id="countrySelect" aria-label="Select country for logs"></select>
+  <input type="button" id="generateBtn" value="Generate Logs" aria-label="Generate logs for selected country" />
+  <input type="text" id="searchInput" placeholder="Search logs..." aria-label="Search logs" />
+  <input type="button" id="downloadBtn" value="Download Logs" aria-label="Download generated logs" />
+</header>
+
+<div id="logContainer" tabindex="0" aria-live="polite" aria-relevant="additions">
+  <table role="grid" aria-rowcount="0" aria-colcount="5" aria-label="Generated logs">
+    <thead>
+      <tr>
+        <th scope="col">IP Address</th>
+        <th scope="col">Country</th>
+        <th scope="col">Date</th>
+        <th scope="col">Time</th>
+        <th scope="col">User-Agent</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+  <div id="loadingIndicator" hidden>Loading...</div>
+</div>
+
+<script>
+// Your existing JS code remains unchanged
+(() => {
+const countries = [
+    "United States", "Canada", "United Kingdom", "Germany", "France", "Australia", "India",
+    "Brazil", "Japan", "Russia", "China", "Mexico", "Italy", "South Korea", "Netherlands",
+    "Spain", "Sweden", "Norway", "Poland", "Turkey", "South Africa", "Argentina", "Belgium",
+    "Switzerland", "New Zealand", "Singapore", "Malaysia", "Thailand", "Indonesia", "Vietnam",
+    "Ireland", "Czech Republic", "Portugal", "Greece", "Finland", "Denmark", "Colombia",
+    "Chile", "Egypt", "United Arab Emirates", "Saudi Arabia", "Israel", "Philippines",
+    "Hungary", "Romania", "Ukraine", "Pakistan", "Bangladesh", "Morocco", "Algeria", "Angola",
+    "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain",
+    "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia",
+    "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso",
+    "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic",
+    "Chad", "Chile", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba",
+    "Cyprus", "Czech Republic", "Democratic Republic of the Congo", "Denmark", "Djibouti",
+    "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea",
+    "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon",
+    "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau",
+    "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran",
+    "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan",
+    "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho",
+    "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi",
+    "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius",
+    "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco",
+    "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand",
+    "Nicaragua", "Niger", "Nigeria", "North Macedonia", "Norway", "Oman", "Pakistan",
+    "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines",
+    "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis",
+    "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe",
+    "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia",
+    "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan",
+    "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Tajikistan",
+    "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia",
+    "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom",
+    "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
+    "Yemen", "Zambia", "Zimbabwe"
+  ];
+
+  const browsers = [
+    { name: "Chrome", versions: ["114.0", "115.0", "116.0", "117.0"] },
+    { name: "Firefox", versions: ["114.0", "115.0", "116.0"] },
+    { name: "Safari", versions: ["15.1", "16.0", "16.1"] },
+    { name: "Edge", versions: ["114.0", "115.0", "116.0"] },
+    { name: "Opera", versions: ["88.0", "89.0", "90.0"] }
+  ];
+
+  const osVersions = {
+    windows: ["10.0", "11.0", "8.1"],
+    mac: ["10_15_7", "11_6", "12_3", "13_0"],
+    linux: ["x86_64", "arm64"],
+    android: ["10","11","12","13"],
+    ios: ["14_4","15_0","15_1","16_0"]
+  };
+
+  const devices = ["Pixel 5","Pixel 6","Pixel 7","Samsung Galaxy S21","Samsung Galaxy S22","OnePlus 9","iPhone 11","iPhone 12","iPhone 13","iPhone 14","iPad Pro"];
+
+  const countrySelect = document.getElementById('countrySelect');
+  const generateBtn = document.getElementById('generateBtn');
+  const searchInput = document.getElementById('searchInput');
+  const logBody = document.getElementById('logBody');
+  const logContainer = document.getElementById('logContainer');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  function populateCountries() { countries.forEach(c=>{const o=document.createElement('option'); o.value=c; o.textContent=c; countrySelect.appendChild(o); }); }
+  function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+  function randomIP(){return `${randInt(1,255)}.${randInt(0,255)}.${randInt(0,255)}.${randInt(1,254)}`;}
+  function randomDate(){const y=2022,m=randInt(1,12),d=randInt(1,28); return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
+  function randomTime(){const h=randInt(0,23),m=randInt(0,59),s=randInt(0,59); return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;}
+  function generateUserAgent(){const osType=randInt(1,5);let osString="";switch(osType){case 1:osString=`Windows NT ${osVersions.windows[randInt(0,osVersions.windows.length-1)]}`;break;case 2:osString=`Macintosh; Intel Mac OS X ${osVersions.mac[randInt(0,osVersions.mac.length-1)]}`;break;case 3:osString=`X11; Linux ${osVersions.linux[randInt(0,osVersions.linux.length-1)]}`;break;case 4:osString=`Linux; Android ${osVersions.android[randInt(0,osVersions.android.length-1)]}; ${devices[randInt(0,devices.length-1)]}`;break;case 5:osString=`iPhone; CPU iPhone OS ${osVersions.ios[randInt(0,osVersions.ios.length-1)]} like Mac OS X`;break;}const b=browsers[randInt(0,browsers.length-1)],bv=b.versions[randInt(0,b.versions.length-1)]; if(b.name==="Chrome"||b.name==="Edge"||b.name==="Opera"){return `Mozilla/5.0 (${osString}) AppleWebKit/537.36 (KHTML, like Gecko) ${b.name}/${bv} Safari/537.36`; }else if(b.name==="Firefox"){return `Mozilla/5.0 (${osString}; rv:${bv}) Gecko/20100101 Firefox/${bv}`;}else if(b.name==="Safari"){return `Mozilla/5.0 (${osString}) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/${bv} Safari/605.1.15`; } return `Mozilla/5.0 (${osString})`; }
+
+  const BATCH_SIZE=50, MAX_LOGS=10000000;
+  let totalLogsGenerated=0,currentCountry=null,allEntries=[];
+
+  function createRow(e){const tr=document.createElement('tr'); tr.innerHTML=`<td>${e.ip}</td><td>${e.country}</td><td>${e.date}</td><td>${e.time}</td><td>${e.userAgent}</td>`;return tr;}
+  function generateLogEntryForCountry(country){return{ip:randomIP(),country,date:randomDate(),time:randomTime(),userAgent:generateUserAgent()};}
+  function loadMoreLogs(){if(totalLogsGenerated>=MAX_LOGS){loadingIndicator.textContent="End of logs reached."; loadingIndicator.hidden=false; return;}loadingIndicator.hidden=false; setTimeout(()=>{const f=document.createDocumentFragment();for(let i=0;i<BATCH_SIZE&&totalLogsGenerated<MAX_LOGS;i++,totalLogsGenerated++){const e=generateLogEntryForCountry(currentCountry);allEntries.push(e); f.appendChild(createRow(e));} logBody.appendChild(f); loadingIndicator.hidden=true; updateAriaRowCount();},100);}
+  function resetLogs(){totalLogsGenerated=0; allEntries=[]; logBody.innerHTML=''; loadingIndicator.textContent='Loading...'; loadingIndicator.hidden=true; updateAriaRowCount();}
+  function filterLogs(){const f=searchInput.value.toLowerCase();[...logBody.children].forEach(tr=>{const h=tr.textContent.toLowerCase(); tr.style.display=h.includes(f)?"":"none";});}
+  function updateAriaRowCount(){logBody.parentElement.setAttribute('aria-rowcount',logBody.children.length);}
+
+  logContainer.addEventListener('scroll',()=>{if(loadingIndicator.hidden&&(logContainer.scrollTop+logContainer.clientHeight>=logContainer.scrollHeight-50)&&searchInput.value.trim()===''){loadMoreLogs();}});
+  generateBtn.addEventListener('click',()=>{const s=countrySelect.value; if(!s) return alert('Please select a country first.'); currentCountry=s; resetLogs(); loadMoreLogs(); searchInput.value='';});
+  searchInput.addEventListener('input',()=>{filterLogs();});
+  downloadBtn.addEventListener('click',()=>{const csvContent="data:text/csv;charset=utf-8,"+"IP Address,Country,Date,Time,User-Agent\n"+allEntries.map(e=>`${e.ip},${e.country},${e.date},${e.time},${e.userAgent}`).join("\n"); const link=document.createElement("a"); link.setAttribute("href",encodeURI(csvContent)); link.setAttribute("download","logs.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link);});
+
+  populateCountries();
+  if(countries.length>0){countrySelect.value=countries[0]; currentCountry=countries[0];}
+  loadMoreLogs();
+})();
+</script>
+
+</body>
+</html>

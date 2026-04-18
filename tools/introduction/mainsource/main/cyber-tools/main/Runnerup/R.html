@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>System Info Checker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body {
+      font-family: monospace;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      color: #00ffcc;
+      padding: 20px;
+      margin: 0;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+background: rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 12px #00ffcc;
+    }
+
+    h1, h2, {
+      text-align: center;
+      color: red;
+    }
+  div {
+    color: red;
+  }
+    button {
+      padding: 10px;
+      background: rgba(0,0,0,0.5);
+      border: none;
+      color: red;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    button:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    #log {
+background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 20px;
+      height: 600px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>System Info Tool</h1>
+    <div class="controls">
+      <button onclick="getSystemInfo()">Fetch System Info</button>
+    </div>
+
+    <h2>Log</h2>
+    <div id="log">Awaiting input...</div>
+  </div>
+
+  <script>
+    const log = document.getElementById('log');
+
+    function logMsg(msg) {
+      log.textContent += msg + '\n';
+      log.scrollTop = log.scrollHeight;
+    }
+
+    async function getSystemInfo() {
+      logMsg("Fetching system info...");
+
+      // Basic system information
+      const ua = navigator.userAgent;
+      const platform = navigator.platform;
+      const cores = navigator.hardwareConcurrency;
+      const memory = navigator.deviceMemory || "Not Available";
+      const screenWidth = window.screen.width;
+      const screenHeight = window.screen.height;
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const language = navigator.language || navigator.userLanguage; // User's language
+      const connectionType = navigator.connection ? navigator.connection.effectiveType : "Unknown"; // Connection type
+      const cookiesEnabled = navigator.cookieEnabled; // Cookies enabled
+      const pixelRatio = window.devicePixelRatio; // Screen pixel ratio
+      const localStorageAvailable = typeof(Storage) !== "undefined"; // Local storage availability
+      const sessionStorageAvailable = typeof(sessionStorage) !== "undefined"; // Session storage availability
+      const touchSupport = 'ontouchstart' in window ? "Supported" : "Not Supported"; // Touch support
+      const viewportWidth = window.innerWidth; // Viewport width
+      const viewportHeight = window.innerHeight; // Viewport height
+      const colorDepth = window.screen.colorDepth; // Color depth
+
+      // Extracting browser and OS version from user agent
+      const browserVersion = ua.match(/(Chrome|Firefox|Safari|Opera|MSIE|Trident)[\/\s]([\d.]+)/);
+      const deviceType = /Mobi|Android/i.test(ua) ? "Mobile" : "Desktop"; // Simple device type detection
+
+      // Browser engine detection
+      let browserEngine;
+      if (ua.includes("Chrome")) browserEngine = "Blink";
+      else if (ua.includes("Firefox")) browserEngine = "Gecko";
+      else if (ua.includes("Safari")) browserEngine = "WebKit";
+      else if (ua.includes("Opera")) browserEngine = "Presto";
+      else browserEngine = "Unknown";
+
+      // Additional system information
+      const battery = navigator.getBattery ? await navigator.getBattery() : null;
+      const batteryStatus = battery ? `${(battery.level * 100).toFixed(0)}% ${battery.charging ? "Charging" : "Not Charging"}` : "Battery info not available";
+      const isEmulator = /Android|iOS/.test(ua) && /emulator/i.test(ua) ? "Yes" : "No"; // Emulator detection
+      const screenOrientation = screen.orientation ? screen.orientation.type : "Not Available"; // Screen orientation
+      const hardwareConcurrency = navigator.hardwareConcurrency || "Not Available"; // Number of logical processors
+      const deviceMemory = navigator.deviceMemory || "Not Available"; // Device memory in GB
+      const appVersion = navigator.appVersion; // Browser app version
+      const vendor = navigator.vendor; // Browser vendor
+      const userAgentData = navigator.userAgentData ? await navigator.userAgentData.getHighEntropyValues(["platform", "platformVersion", "uaFullVersion"]) : {}; // User agent data
+
+      // Device information
+      const deviceManufacturer = "Not Available"; // Placeholder for device manufacturer
+      const deviceModel = "Not Available"; // Placeholder for device model
+      const deviceOSVersion = "Not Available"; // Placeholder for device OS version
+      const deviceID = "Not Available"; // Placeholder for device ID
+      const deviceName = "Not Available"; // Placeholder for device name
+      const deviceOrientation = screen.orientation ? screen.orientation.type : "Not Available"; // Device orientation
+
+      // Current date and time
+      const currentDateTime = new Date().toLocaleString();
+
+      // Memory information
+      const availableMemory = "Not Available"; // Placeholder for available memory
+      const totalMemory = "Not Available"; // Placeholder for total memory
+      const usedMemory = "Not Available"; // Placeholder for used memory
+      const freeMemory = "Not Available"; // Placeholder for free memory
+
+      // System uptime
+      const systemUptime = "Not Available"; // Placeholder for system uptime
+      const lastUpdateTime = "Not Available"; // Placeholder for last update time
+      const lastRestartTime = "Not Available"; // Placeholder for last restart time
+
+      // CPU information
+      const cpuArchitecture = "Not Available"; // Placeholder for CPU architecture
+      const cpuModel = "Not Available"; // Placeholder for CPU model
+      const cpuSpeed = "Not Available"; // Placeholder for CPU speed
+      const cpuCores = "Not Available"; // Placeholder for CPU cores
+      const cpuThreads = "Not Available"; // Placeholder for CPU threads
+
+      // GPU information
+      const gpuModel = "Not Available"; // Placeholder for GPU model
+      const gpuMemory = "Not Available"; // Placeholder for GPU memory
+      const gpuDriverVersion = "Not Available"; // Placeholder for GPU driver version
+      const gpuDriverDate = "Not Available"; // Placeholder for GPU driver date
+      const gpuVendor = "Not Available"; // Placeholder for GPU vendor
+      const gpuArchitecture = "Not Available"; // Placeholder for GPU architecture
+      const gpuComputeUnits = "Not Available"; // Placeholder for GPU compute units
+      const gpuClockSpeed = "Not Available"; // Placeholder for GPU clock speed
+      const gpuTemperature = "Not Available"; // Placeholder for GPU temperature
+      const gpuFanSpeed = "Not Available"; // Placeholder for GPU fan speed
+      const gpuLoad = "Not Available"; // Placeholder for GPU load
+      const gpuMemoryUsage = "Not Available"; // Placeholder for GPU memory usage
+      const gpuMemoryFree = "Not Available"; // Placeholder for GPU memory free
+      const gpuMemoryTotal = "Not Available"; // Placeholder for GPU memory total
+      const gpuMemoryUsed = "Not Available"; // Placeholder for GPU memory used
+      const gpuMemoryAllocated = "Not Available"; // Placeholder for GPU memory allocated
+
+      // Compiling all information
+      const systemInfo = {
+        "User   Agent": ua,
+        "Platform": platform,
+        "Device Type": deviceType,
+        "Cores": cores,
+        "Memory (GB)": memory,
+        "Screen Width": screenWidth,
+        "Screen Height": screenHeight,
+        "Timezone": timezone,
+        "Language": language,
+        "Connection Type": connectionType,
+        "Cookies Enabled": cookiesEnabled,
+        "Pixel Ratio": pixelRatio,
+        "Local Storage Available": localStorageAvailable,
+        "Session Storage Available": sessionStorageAvailable,
+        "Touch Support": touchSupport,
+        "Viewport Width": viewportWidth,
+        "Viewport Height": viewportHeight,
+        "Color Depth": colorDepth,
+        "Browser Version": browserVersion ? browserVersion[0] + " " + browserVersion[1] : "Unknown",
+        "Browser Engine": browserEngine,
+        "Battery Status": batteryStatus,
+        "Is Emulator": isEmulator,
+        "Screen Orientation": screenOrientation,
+        "Hardware Concurrency": hardwareConcurrency,
+        "Device Memory": deviceMemory,
+        "App Version": appVersion,
+        "Vendor": vendor,
+        "User   Agent Data": userAgentData.platform || "Not Available",
+        "Device Manufacturer": deviceManufacturer,
+        "Device Model": deviceModel,
+        "Device OS Version": deviceOSVersion,
+        "Device ID": deviceID,
+        "Device Name": deviceName,
+       "Device Orientation": deviceOrientation,
+        "Current Date and Time": currentDateTime,
+        "Available Memory": availableMemory,
+        "Total Memory": totalMemory,
+        "Used Memory": usedMemory,
+        "Free Memory": freeMemory,
+        "System Uptime": systemUptime,
+        "Last Update Time": lastUpdateTime,
+        "Last Restart Time": lastRestartTime,
+        "CPU Architecture": cpuArchitecture,
+        "CPU Model": cpuModel,
+        "CPU Speed": cpuSpeed,
+        "CPU Cores": cpuCores,
+        "CPU Threads": cpuThreads,
+        "GPU Model": gpuModel,
+        "GPU Memory": gpuMemory,
+        "GPU Driver Version": gpuDriverVersion,
+        "GPU Driver Date": gpuDriverDate,
+        "GPU Vendor": gpuVendor,
+        "GPU Architecture": gpuArchitecture,
+        "GPU Compute Units": gpuComputeUnits,
+        "GPU Clock Speed": gpuClockSpeed,
+        "GPU Temperature": gpuTemperature,
+        "GPU Fan Speed": gpuFanSpeed,
+        "GPU Load": gpuLoad,
+        "GPU Memory Usage": gpuMemoryUsage,
+        "GPU Memory Free": gpuMemoryFree,
+        "GPU Memory Total": gpuMemoryTotal,
+        "GPU Memory Used": gpuMemoryUsed,
+        "GPU Memory Allocated": gpuMemoryAllocated
+      };
+
+      // Network information
+      const connection = navigator.connection || {};
+      const networkInfo = {
+        "Network Type": connection.type || "Not Available",
+        "Network Speed": connection.downlink || "Not Available",
+        "Network Downlink Max": connection.downlinkMax || "Not Available",
+        "Network Effective Type": connection.effectiveType || "Not Available",
+        "Network RTT": connection.rtt || "Not Available",
+        "Network Connection Status": connection.saveData ? "Save Data Mode" : "Normal Mode",
+        "Network Connection Quality": connection.type === "wifi" ? "Good" : "Variable"
+      };
+
+      // Performance metrics
+      const performanceMetrics = {
+        "Time to First Byte (TTFB)": "Not Available", // Placeholder for TTFB
+        "Time to Interactive (TTI)": "Not Available", // Placeholder for TTI
+        "First Contentful Paint (FCP)": "Not Available", // Placeholder for FCP
+        "Largest Contentful Paint (LCP)": "Not Available", // Placeholder for LCP
+        "Cumulative Layout Shift (CLS)": "Not Available", // Placeholder for CLS
+        "Total Blocking Time (TBT)": "Not Available", // Placeholder for TBT
+        "First Input Delay (FID)": "Not Available", // Placeholder for FID
+        "Resource Load Times": "Not Available", // Placeholder for resource load times
+        "JavaScript Execution Time": "Not Available", // Placeholder for JS execution time
+        "CSS Parsing Time": "Not Available", // Placeholder for CSS parsing time
+        "Image Load Times": "Not Available", // Placeholder for image load times
+        "Video Load Times": "Not Available", // Placeholder for video load times
+        "Audio Load Times": "Not Available", // Placeholder for audio load times
+        "Time to First Paint (TFP)": "Not Available", // Placeholder for TFP
+        "Time to First Meaningful Paint (TFMP)": "Not Available" // Placeholder for TFMP
+      };
+
+      // Browser features support
+      const browserFeatures = {
+        "HTTPS Support": location.protocol === "https:" ? "Supported" : "Not Supported",
+        "Content Security Policy (CSP) Support": "Not Available", // Placeholder for CSP support
+        "Same Site Cookies Support": "Not Available", // Placeholder for SameSite cookies support
+        "Secure Cookies Support": "Not Available", // Placeholder for secure cookies support
+        "HSTS (HTTP Strict Transport Security) Support": "Not Available", // Placeholder for HSTS support
+        "Cross-Origin Resource Sharing (CORS) Support": "Not Available", // Placeholder for CORS support
+        "Mixed Content Support": "Not Available", // Placeholder for mixed content support
+        "Referrer Policy Support": "Not Available", // Placeholder for referrer policy support
+        "Feature Policy Support": "Not Available", // Placeholder for feature policy support
+        "Subresource Integrity (SRI) Support": "Not Available", // Placeholder for SRI support
+        "WebRTC Support": "Not Available", // Placeholder for WebRTC support
+        "WebSockets Support": "Not Available", // Placeholder for WebSockets support
+        "WebAssembly Support": "Not Available", // Placeholder for WebAssembly support
+        "Service Worker Support": "Not Available", // Placeholder for service worker support
+        "Push Notifications Support": "Not Available", // Placeholder for push notifications support
+        "Geolocation Support": "Not Available", // Placeholder for geolocation support
+        "Media Devices Support": "Not Available", // Placeholder for media devices support
+        "WebGL Support": "Not Available", // Placeholder for WebGL support
+        "Web Crypto API Support": "Not Available", // Placeholder for Web Crypto API support
+        "Web Bluetooth API Support": "Not Available", // Placeholder for Web Bluetooth API support
+        "Web USB API Support": "Not Available", // Placeholder for Web USB API support
+        "Web NFC API Support": "Not Available", // Placeholder for Web NFC API support
+        "Web Serial API Support": "Not Available", // Placeholder for Web Serial API support
+        "WebXR API Support": "Not Available", // Placeholder for WebXR API support
+        "Web Speech API Support": "Not Available", // Placeholder for Web Speech API support
+        "Web MIDI API Support": "Not Available", // Placeholder for Web MIDI API support
+        "Web App Manifest Support": "Not Available", // Placeholder for web app manifest support
+        "WebRTC Data Channels Support": "Not Available", // Placeholder for WebRTC data channels support
+        "WebRTC Peer Connection Support": "Not Available", // Placeholder for WebRTC peer connection support
+        "WebRTC Media Stream Support": "Not Available", // Placeholder for WebRTC media stream support
+        "WebRTC RTCPeerConnection Support": "Not Available", // Placeholder for WebRTC RTCPeerConnection support
+        "WebRTC RTCDataChannel Support": "Not Available", // Placeholder for WebRTC RTCDataChannel support
+        "WebRTC getUser  Media Support": "Not Available", // Placeholder for WebRTC getUser  Media support
+        "WebRTC RTCPeerConnection.getStats Support": "Not Available" // Placeholder for WebRTC getStats support
+      };
+
+      // Merging all information into a single object
+      const completeSystemInfo = { ...systemInfo, ...networkInfo, ...performanceMetrics, ...browserFeatures };
+
+      // Displaying the information
+      for (const [key, value] of Object.entries(completeSystemInfo)) {
+        logMsg(`${key}: ${value}`);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Live Link Status Scanner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+* {
+  box-sizing: border-box;
+  font-family: monospace;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: rgba(0,0,0,0.1);
+  color: #eaffff;
+  overflow: hidden;
+}
+
+/* Background video */
+video {
+  position: fixed;
+  top: 0;
+  left: 0;
+  min-width: 100%;
+  min-height: 100%;
+  object-fit: cover;
+  z-index: -1;
+}
+
+/* Overlay */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 0;
+}
+
+/* App */
+.app {
+  position: relative;
+  z-index: 1;
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+h1 {
+  color: #00ffee;
+  text-shadow: 0 0 10px #00ffee;
+  margin-bottom: 10px;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+input {
+  flex: 1;
+  padding: 12px;
+  background: #000;
+  border: 1px solid #00ffee;
+  color: #00ffee;
+  outline: none;
+}
+
+button {
+  padding: 12px 20px;
+  background: linear-gradient(135deg,#00ffee,#007777);
+  border: none;
+  color: #000;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button:hover {
+  filter: brightness(1.2);
+}
+
+/* Output */
+.output {
+  flex: 1;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid #00ffee;
+  padding: 10px;
+  overflow-y: auto;
+  font-size: 14px;
+}
+
+.line {
+  margin-bottom: 6px;
+}
+
+.ok {
+  color: #00ff7f;
+}
+
+.err {
+  color: #ff4c4c;
+}
+
+.warn {
+  color: #ffaa00;
+}
+</style>
+</head>
+
+<body>
+
+<video autoplay muted loop>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<div class="app">
+  <h1>LIVE LINK STATUS SCANNER</h1>
+
+  <div class="controls">
+    <input id="targetUrl" placeholder="https://example.com">
+    <button onclick="scan()">SCAN</button>
+  </div>
+
+  <div class="output" id="output"></div>
+</div>
+
+<script>
+const headers = {
+  "User-Agent": "Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X)"
+};
+
+function log(msg, cls="") {
+  const out = document.getElementById("output");
+  const div = document.createElement("div");
+  div.className = "line " + cls;
+  div.textContent = msg;
+  out.appendChild(div);
+  out.scrollTop = out.scrollHeight;
+}
+
+function validURL(url) {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function scan() {
+  const url = document.getElementById("targetUrl").value.trim();
+  document.getElementById("output").innerHTML = "";
+
+  if (!validURL(url)) {
+    log("Invalid URL", "err");
+    return;
+  }
+
+  log(`Fetching page: ${url}`, "warn");
+
+  try {
+    const res = await fetch(url);
+    const html = await res.text();
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    const links = [...doc.querySelectorAll("a[href^='http']")];
+
+    log(`Found ${links.length} links`, "warn");
+
+    for (const a of links) {
+      const link = a.href;
+      await checkLink(link);
+      await sleep(800);
+    }
+
+    log("Scan complete.", "ok");
+
+  } catch (e) {
+    log("Failed to fetch main page (CORS or network issue)", "err");
+  }
+}
+
+async function checkLink(link) {
+  try {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 8000);
+
+    const res = await fetch(link, {
+      method: "GET",
+      signal: controller.signal
+    });
+
+    log(`${link} → ${res.status}`, res.ok ? "ok" : "err");
+
+  } catch (e) {
+    log(`${link} → BLOCKED (CORS / TIMEOUT)`, "warn");
+  }
+}
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+</script>
+
+</body>
+</html>

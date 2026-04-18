@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>📟 Code Runner</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+    color: red;
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column; height: 100vh;
+  }
+  header {
+background: rgba(0, 0, 0, 0.5);
+    padding: 1rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    text-align: center;
+  }
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    gap: 1rem;
+  }
+  select, textarea, button {
+    font-size: 1rem;
+    border-radius: 6px;
+    border: none;
+    padding: 0.5rem;
+  }
+  select {
+    width: 150px;
+  }
+  textarea {
+    flex: 1;
+    width: 100%;
+background: rgba(0, 0, 0, 0.5);
+    color: red;
+    font-family: monospace;
+    resize: vertical;
+    min-height: 150px;
+  }
+  button {
+    background: red;
+    color: green;
+    cursor: pointer;
+    width: 120px;
+  }
+  button:hover{
+background: rgba(0, 0, 0, 0.5);
+  }
+  button:disabled {
+background: rgba(0, 0, 0, 0.5);
+    cursor: not-allowed;
+  }
+  #output {
+background: rgba(0, 0, 0, 0.5);
+    border: 1px solid red;
+    padding: 1rem;
+    font-family: monospace;
+    white-space: pre-wrap;
+    overflow-y: auto;
+    height: 200px;
+    color: red;
+  }
+  #iframeContainer {
+    flex: 1;
+    border: 1px solid red;
+    margin-top: 1rem;
+  }
+  iframe {
+    width: 100%;
+    height: 300px;
+    border: none;
+background: rgba(0, 0, 0, 0.5);
+  }
+</style>
+</head>
+<body>
+<header style="color:red;">Code Runner (HTML/CSS/JS + JS + Python)</header>
+<main>
+  <div>
+    <label for="languageSelect">Select Language: </label>
+    <select id="languageSelect">
+      <option value="html">HTML + CSS + JS</option>
+      <option value="js">JavaScript</option>
+      <option value="python">Python (Pyodide)</option>
+    </select>
+    <button id="runBtn">Run Code</button>
+  </div>
+  <textarea id="codeInput" placeholder="Write your code here..."></textarea>
+  <div id="output" aria-live="polite" aria-label="Output console"></div>
+  <div id="iframeContainer" style="display:none;">
+    <iframe id="outputFrame" sandbox="allow-scripts allow-same-origin"></iframe>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+<script>
+  const languageSelect = document.getElementById('languageSelect');
+  const codeInput = document.getElementById('codeInput');
+  const runBtn = document.getElementById('runBtn');
+  const outputDiv = document.getElementById('output');
+  const iframeContainer = document.getElementById('iframeContainer');
+  const outputFrame = document.getElementById('outputFrame');
+
+  let pyodide = null;
+  let pyodideReady = false;
+
+  async function loadPyodideAndPackages() {
+    outputDiv.textContent = 'Loading Python runtime...';
+    pyodide = await loadPyodide();
+    pyodideReady = true;
+    outputDiv.textContent = 'Python runtime loaded. Ready to run Python code.';
+  }
+
+  // Load Pyodide on page load but only if Python selected
+  languageSelect.addEventListener('change', () => {
+    outputDiv.textContent = '';
+    if (languageSelect.value === 'python' && !pyodideReady) {
+      loadPyodideAndPackages();
+    }
+    if (languageSelect.value === 'html') {
+      iframeContainer.style.display = 'block';
+      outputDiv.style.display = 'none';
+    } else {
+      iframeContainer.style.display = 'none';
+      outputDiv.style.display = 'block';
+    }
+  });
+
+  // Initialize UI state
+  if (languageSelect.value === 'python') {
+    loadPyodideAndPackages();
+    iframeContainer.style.display = 'none';
+    outputDiv.style.display = 'block';
+  } else if (languageSelect.value === 'html') {
+    iframeContainer.style.display = 'block';
+    outputDiv.style.display = 'none';
+  } else {
+    iframeContainer.style.display = 'none';
+    outputDiv.style.display = 'block';
+  }
+
+  function captureConsoleLogs() {
+    const logs = [];
+    const originalLog = console.log;
+    const originalError = console.error;
+
+    console.log = function(...args) {
+      logs.push(args.join(' ') + '\n');
+      originalLog.apply(console, args);
+    };
+    console.error = function(...args) {
+      logs.push('Error: ' + args.join(' ') + '\n');
+      originalError.apply(console, args);
+    };
+
+    return () => {
+      console.log = originalLog;
+      console.error = originalError;
+      return logs.join('');
+    };
+  }
+
+  runBtn.addEventListener('click', async () => {
+    const code = codeInput.value;
+    const lang = languageSelect.value;
+    outputDiv.textContent = '';
+    if (!code.trim()) {
+      outputDiv.textContent = 'Please enter some code to run.';
+      return;
+    }
+
+    if (lang === 'html') {
+      // Run HTML+CSS+JS in iframe
+      iframeContainer.style.display = 'block';
+      outputDiv.style.display = 'none';
+      const iframeDoc = outputFrame.contentDocument || outputFrame.contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write(code);
+      iframeDoc.close();
+    } else if (lang === 'js') {
+      // Run JS code and capture console output
+      iframeContainer.style.display = 'none';
+      outputDiv.style.display = 'block';
+
+      const restoreConsole = captureConsoleLogs();
+      try {
+        // eslint-disable-next-line no-eval
+        const result = eval(code);
+        if (result !== undefined) {
+          console.log(result);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      const logs = restoreConsole();
+      outputDiv.textContent = logs || 'No output.';
+    } else if (lang === 'python') {
+      iframeContainer.style.display = 'none';
+      outputDiv.style.display = 'block';
+
+      if (!pyodideReady) {
+        outputDiv.textContent = 'Python runtime is still loading, please wait...';
+        return;
+      }
+
+      try {
+        let output = '';
+        pyodide.setStdout({
+          batched: (s) => { output += s; }
+        });
+        pyodide.setStderr({
+          batched: (s) => { output += s; }
+        });
+        await pyodide.runPythonAsync(code);
+        outputDiv.textContent = output || 'Code executed successfully with no output.';
+      } catch (err) {
+        outputDiv.textContent = 'Error: ' + err.message;
+      }
+    }
+  });
+</script>
+</body>
+</html>

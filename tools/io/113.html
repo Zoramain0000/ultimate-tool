@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Instagram Profile Generator v195</title>
+<style>
+  body {
+    margin: 0; padding: 0;
+    background-color: #000; 
+    color: #00ff41;
+    font-family: 'Consolas', monospace;
+    display: flex; flex-direction: column; height: 100vh;
+  }
+
+  #bgVideo {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+    z-index: -1;
+    object-fit: cover;
+    filter: brightness(0.3) contrast(1.3);
+  }
+
+  header {
+    padding: 15px 25px;
+    background: rgba(0,20,0,0.9);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    border-bottom: 2px solid #00ff41;
+    box-shadow: 0 0 30px rgba(0,255,65,0.4);
+  }
+  
+  .title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00ffff;
+    text-shadow: 0 0 5px #00ffff;
+  }
+  
+  label {
+    font-weight: bold;
+    font-size: 14px;
+    color: #ffaa00;
+    text-shadow: 0 0 3px #ffaa00;
+  }
+  
+  select, input[type=button] {
+    font-family: monospace;
+    font-size: 14px;
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: 1px solid #00ff41;
+    outline: none;
+    cursor: pointer;
+    background: rgba(0,0,0,0.8);
+    color: #00ff41;
+    transition: all 0.3s;
+  }
+  
+  select {
+    min-width: 160px;
+  }
+  
+  input[type=button] {
+    background: #00ff41;
+    color: #000;
+    font-weight: bold;
+  }
+  
+  input[type=button]:hover {
+    background: #ff1493;
+    color: #fff;
+    box-shadow: 0 0 15px #ff1493;
+    transform: scale(1.05);
+  }
+  
+  input[type=text] {
+    flex-grow: 1;
+    min-width: 200px;
+    font-family: monospace;
+    font-size: 14px;
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: 1px solid #00ff41;
+    outline: none;
+    background: rgba(0,0,0,0.8);
+    color: #00ff41;
+  }
+  
+  input[type=text]:focus {
+    border-color: #ff1493;
+    box-shadow: 0 0 10px #ff1493;
+  }
+  
+  #totalCount {
+    background: rgba(0,0,0,0.9);
+    color: #00ff41;
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: 2px solid #00ff41;
+    font-weight: bold;
+    min-width: 140px;
+    text-align: center;
+    font-size: 14px;
+    box-shadow: 0 0 15px rgba(0,255,65,0.5);
+  }
+  
+  #logContainer {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.85);
+    position: relative;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  
+  thead tr {
+    background: rgba(0,50,0,0.95);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    border-bottom: 2px solid #00ff41;
+  }
+  
+  th, td {
+    padding: 10px 15px;
+    border-bottom: 1px solid rgba(0,255,65,0.3);
+    white-space: nowrap;
+    text-align: left;
+    font-family: monospace;
+  }
+  
+  th {
+    color: #00ffff;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  
+  tbody tr {
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  tbody tr:hover {
+    background: rgba(255,20,147,0.2);
+    transform: scale(1.01);
+  }
+  
+  .full-name {
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    font-weight: bold;
+    color: #ff1493;
+    background: rgba(255,255,255,0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,20,147,0.3);
+    letter-spacing: 1px;
+  }
+  
+  .username {
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    color: #00ffff;
+    background: rgba(0,255,255,0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,255,255,0.3);
+  }
+  
+  .country-flag {
+    font-size: 16px;
+    margin-right: 5px;
+  }
+  
+  .highlight {
+    background: rgba(0,255,65,0.2);
+    padding: 2px 5px;
+    border-radius: 3px;
+  }
+  
+  #loadingIndicator {
+    padding: 15px 0;
+    text-align: center;
+    color: #00ff41;
+    font-size: 15px;
+    font-weight: bold;
+  }
+
+  #logContainer::-webkit-scrollbar {
+    width: 10px;
+  }
+  #logContainer::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.5);
+  }
+  #logContainer::-webkit-scrollbar-thumb {
+    background: #00ff41;
+    border-radius: 5px;
+  }
+  #logContainer::-webkit-scrollbar-thumb:hover {
+    background: #ff1493;
+  }
+
+  @media (max-width: 600px) {
+    th, td { padding: 8px 10px; font-size: 11px; }
+    .full-name { font-size: 11px; }
+    input[type=text] { font-size: 13px; min-width: auto; }
+  }
+</style>
+</head>
+<body>
+
+<video autoplay muted loop id="bgVideo">
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+
+<header>
+  <div class="title">📱 Instagram Profile Log v195</div>
+  <label for="regionMode">Region Mode:</label>
+  <select id="regionMode" aria-label="Region selection mode">
+    <option value="random">🔀 Random Global</option>
+    <option value="europe">🇪🇺 Europe (EU)</option>
+    <option value="usa">🇺🇸 USA (North America)</option>
+    <option value="asia">🇯🇵 Asia Pacific</option>
+    <option value="manual">✏️ Manual Region</option>
+  </select>
+  
+  <input type="button" id="generateBtn" value="🚀 GENERATE PROFILES" />
+  <input type="text" id="searchInput" placeholder="🔍 Filter Name/Username..." />
+  <span id="totalCount">Total: 0</span>
+  <input type="button" id="downloadBtn" value="💾 DOWNLOAD" />
+</header>
+
+<div id="logContainer" tabindex="0" aria-live="polite">
+  <table role="grid" aria-rowcount="0" aria-colcount="5">
+    <thead>
+      <tr>
+        <th>Full Name</th>
+        <th>Username</th>
+        <th>Region</th>
+        <th>Bio</th>
+        <th>Timestamp</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+  <div id="loadingIndicator" hidden>🔄 Scanning Instagram profiles...</div>
+</div>
+
+<script>
+(() => {
+  const regionModeEl = document.getElementById('regionMode');
+  const generateBtn = document.getElementById('generateBtn');
+  const searchInput = document.getElementById('searchInput');
+  const logBody = document.getElementById('logBody');
+  const logContainer = document.getElementById('logContainer');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const totalCount = document.getElementById('totalCount');
+
+  const BATCH_SIZE = 400;
+  const MAX_LOGS = 20000;
+
+  // 195 Countries with Flag
+  const COUNTRIES = {
+    'AF': {name: 'Afghanistan', flag: '🇦🇫'},
+    'AL': {name: 'Albania', flag: '🇦🇱'},
+    'DZ': {name: 'Algeria', flag: '🇩🇿'},
+    'AS': {name: 'American Samoa', flag: '🇦🇸'},
+    'AD': {name: 'Andorra', flag: '🇦🇩'},
+    'AO': {name: 'Angola', flag: '🇦🇴'},
+    'AI': {name: 'Anguilla', flag: '🇦🇮'},
+    'AQ': {name: 'Antarctica', flag: '🇦🇶'},
+    'AG': {name: 'Antigua and Barbuda', flag: '🇦🇬'},
+    'AR': {name: 'Argentina', flag: '🇦🇷'},
+    'AM': {name: 'Armenia', flag: '🇦🇲'},
+    'AW': {name: 'Aruba', flag: '🇦🇼'},
+    'AU': {name: 'Australia', flag: '🇦🇺'},
+    'AT': {name: 'Austria', flag: '🇦🇹'},
+    'AZ': {name: 'Azerbaijan', flag: '🇦🇿'},
+    'BS': {name: 'Bahamas', flag: '🇧🇸'},
+    'BH': {name: 'Bahrain', flag: '🇧🇭'},
+    'BD': {name: 'Bangladesh', flag: '🇧🇩'},
+    'BB': {name: 'Barbados', flag: '🇧🇧'},
+    'BY': {name: 'Belarus', flag: '🇧🇾'},
+    'BE': {name: 'Belgium', flag: '🇧🇪'},
+    'BZ': {name: 'Belize', flag: '🇧🇿'},
+    'BJ': {name: 'Benin', flag: '🇧🇯'},
+    'BM': {name: 'Bermuda', flag: '🇧🇲'},
+    'BT': {name: 'Bhutan', flag: '🇧🇹'},
+    'BO': {name: 'Bolivia', flag: '🇧🇴'},
+    'BA': {name: 'Bosnia and Herzegovina', flag: '🇧🇦'},
+    'BW': {name: 'Botswana', flag: '🇧🇼'},
+    'BR': {name: 'Brazil', flag: '🇧🇷'},
+    'IO': {name: 'British Indian Ocean Territory', flag: '🇮🇴'},
+    'BN': {name: 'Brunei Darussalam', flag: '🇧🇳'},
+    'BG': {name: 'Bulgaria', flag: '🇧🇬'},
+    'BF': {name: 'Burkina Faso', flag: '🇧🇫'},
+    'BI': {name: 'Burundi', flag: '🇧🇮'},
+    'CV': {name: 'Cabo Verde', flag: '🇨🇻'},
+    'KH': {name: 'Cambodia', flag: '🇰🇭'},
+    'CM': {name: 'Cameroon', flag: '🇨🇲'},
+    'CA': {name: 'Canada', flag: '🇨🇦'},
+    'KY': {name: 'Cayman Islands', flag: '🇰🇾'},
+    'CF': {name: 'Central African Republic', flag: '🇨🇫'},
+    'TD': {name: 'Chad', flag: '🇹🇩'},
+    'CL': {name: 'Chile', flag: '🇨🇱'},
+    'CN': {name: 'China', flag: '🇨🇳'},
+    'CX': {name: 'Christmas Island', flag: '🇨🇽'},
+    'CC': {name: 'Cocos (Keeling) Islands', flag: '🇨🇨'},
+    'CO': {name: 'Colombia', flag: '🇨🇴'},
+    'KM': {name: 'Comoros', flag: '🇰🇲'},
+    'CG': {name: 'Congo', flag: '🇨🇬'},
+    'CD': {name: 'Congo, Democratic Republic of the', flag: '🇨🇩'},
+    'CK': {name: 'Cook Islands', flag: '🇨🇰'},
+    'CR': {name: 'Costa Rica', flag: '🇨🇷'},
+    'CI': {name: "Côte d'Ivoire", flag: '🇨🇮'},
+    'HR': {name: 'Croatia', flag: '🇭🇷'},
+    'CU': {name: 'Cuba', flag: '🇨🇺'},
+    'CW': {name: 'Curaçao', flag: '🇨🇼'},
+    'CY': {name: 'Cyprus', flag: '🇨🇾'},
+    'CZ': {name: 'Czechia', flag: '🇨🇿'},
+    'DK': {name: 'Denmark', flag: '🇩🇰'},
+    'DJ': {name: 'Djibouti', flag: '🇩🇯'},
+    'DM': {name: 'Dominica', flag: '🇩🇲'},
+    'DO': {name: 'Dominican Republic', flag: '🇩🇴'},
+    'EC': {name: 'Ecuador', flag: '🇪🇨'},
+    'EG': {name: 'Egypt', flag: '🇪🇬'},
+    'SV': {name: 'El Salvador', flag: '🇸🇻'},
+    'GQ': {name: 'Equatorial Guinea', flag: '🇬🇶'},
+    'ER': {name: 'Eritrea', flag: '🇪🇷'},
+    'EE': {name: 'Estonia', flag: '🇪🇪'},
+    'SZ': {name: 'Eswatini', flag: '🇸🇿'},
+    'ET': {name: 'Ethiopia', flag: '🇪🇹'},
+    'FK': {name: 'Falkland Islands (Malvinas)', flag: '🇫🇰'},
+    'FO': {name: 'Faroe Islands', flag: '🇫🇴'},
+    'FJ': {name: 'Fiji', flag: '🇫🇯'},
+    'FI': {name: 'Finland', flag: '🇫🇮'},
+    'FR': {name: 'France', flag: '🇫🇷'},
+    'GF': {name: 'French Guiana', flag: '🇬🇫'},
+    'PF': {name: 'French Polynesia', flag: '🇵🇫'},
+    'TF': {name: 'French Southern Territories', flag: '🇹🇫'},
+    'GA': {name: 'Gabon', flag: '🇬🇦'},
+    'GM': {name: 'Gambia', flag: '🇬🇲'},
+    'GE': {name: 'Georgia', flag: '🇬🇪'},
+    'DE': {name: 'Germany', flag: '🇩🇪'},
+    'GH': {name: 'Ghana', flag: '🇬🇭'},
+    'GI': {name: 'Gibraltar', flag: '🇬🇮'},
+    'GR': {name: 'Greece', flag: '🇬🇷'},
+    'GL': {name: 'Greenland', flag: '🇬🇱'},
+    'GD': {name: 'Grenada', flag: '🇬🇩'},
+    'GP': {name: 'Guadeloupe', flag: '🇬🇵'},
+    'GU': {name: 'Guam', flag: '🇬🇺'},
+    'GT': {name: 'Guatemala', flag: '🇬🇹'},
+    'GG': {name: 'Guernsey', flag: '🇬🇬'},
+    'GN': {name: 'Guinea', flag: '🇬🇳'},
+    'GW': {name: 'Guinea-Bissau', flag: '🇬🇼'},
+    'GY': {name: 'Guyana', flag: '🇬🇾'},
+    'HT': {name: 'Haiti', flag: '🇭🇹'},
+    'HM': {name: 'Heard Island and McDonald Islands', flag: '🇭🇲'},
+    'VA': {name: 'Holy See', flag: '🇻🇦'},
+    'HN': {name: 'Honduras', flag: '🇭🇳'},
+    'HK': {name: 'Hong Kong', flag: '🇭🇰'},
+    'HU': {name: 'Hungary', flag: '🇭🇺'},
+    'IS': {name: 'Iceland', flag: '🇮🇸'},
+    'IN': {name: 'India', flag: '🇮🇳'},
+    'ID': {name: 'Indonesia', flag: '🇮🇩'},
+    'IR': {name: 'Iran', flag: '🇮🇷'},
+    'IQ': {name: 'Iraq', flag: '🇮🇶'},
+    'IE': {name: 'Ireland', flag: '🇮🇪'},
+    'IM': {name: 'Isle of Man', flag: '🇮🇲'},
+    'IL': {name: 'Israel', flag: '🇮🇱'},
+    'IT': {name: 'Italy', flag: '🇮🇹'},
+    'JM': {name: 'Jamaica', flag: '🇯🇲'},
+    'JP': {name: 'Japan', flag: '🇯🇵'},
+    'JE': {name: 'Jersey', flag: '🇯🇪'},
+    'JO': {name: 'Jordan', flag: '🇯🇴'},
+    'KZ': {name: 'Kazakhstan', flag: '🇰🇿'},
+    'KE': {name: 'Kenya', flag: '🇰🇪'},
+    'KI': {name: 'Kiribati', flag: '🇰🇮'},
+    'KP': {name: 'North Korea', flag: '🇰🇵'},
+    'KR': {name: 'South Korea', flag: '🇰🇷'},
+    'KW': {name: 'Kuwait', flag: '🇰🇼'},
+    'KG': {name: 'Kyrgyzstan', flag: '🇰🇬'},
+    'LA': {name: "Lao People's Democratic Republic", flag: '🇱🇦'},
+    'LV': {name: 'Latvia', flag: '🇱🇻'},
+    'LB': {name: 'Lebanon', flag: '🇱🇧'},
+    'LS': {name: 'Lesotho', flag: '🇱🇸'},
+    'LR': {name: 'Liberia', flag: '🇱🇷'},
+    'LY': {name: 'Libya', flag: '🇱🇾'},
+    'LI': {name: 'Liechtenstein', flag: '🇱🇮'},
+    'LT': {name: 'Lithuania', flag: '🇱🇹'},
+    'LU': {name: 'Luxembourg', flag: '🇱🇺'},
+    'MO': {name: 'Macao', flag: '🇲🇴'},
+    'MG': {name: 'Madagascar', flag: '🇲🇬'},
+    'MW': {name: 'Malawi', flag: '🇲🇼'},
+    'MY': {name: 'Malaysia', flag: '🇲🇾'},
+    'MV': {name: 'Maldives', flag: '🇲🇻'},
+    'ML': {name: 'Mali', flag: '🇲🇱'},
+    'MT': {name: 'Malta', flag: '🇲🇹'},
+    'MH': {name: 'Marshall Islands', flag: '🇲🇭'},
+    'MQ': {name: 'Martinique', flag: '🇲🇶'},
+    'MR': {name: 'Mauritania', flag: '🇲🇷'},
+    'MU': {name: 'Mauritius', flag: '🇲🇺'},
+    'YT': {name: 'Mayotte', flag: '🇾🇹'},
+    'MX': {name: 'Mexico', flag: '🇲🇽'},
+    'FM': {name: 'Micronesia, Federated States of', flag: '🇫🇲'},
+    'MD': {name: 'Moldova, Republic of', flag: '🇲🇩'},
+    'MC': {name: 'Monaco', flag: '🇲🇨'},
+    'MN': {name: 'Mongolia', flag: '🇲🇳'},
+    'ME': {name: 'Montenegro', flag: '🇲🇪'},
+    'MS': {name: 'Montserrat', flag: '🇲🇸'},
+    'MA': {name: 'Morocco', flag: '🇲🇦'},
+    'MZ': {name: 'Mozambique', flag: '🇲🇿'},
+    'MM': {name: 'Myanmar', flag: '🇲🇲'},
+    'NA': {name: 'Namibia', flag: '🇳🇦'},
+    'NR': {name: 'Nauru', flag: '🇳🇷'},
+    'NP': {name: 'Nepal', flag: '🇳🇵'},
+    'NL': {name: 'Netherlands', flag: '🇳🇱'},
+    'NC': {name: 'New Caledonia', flag: '🇳🇨'},
+    'NZ': {name: 'New Zealand', flag: '🇳🇿'},
+    'NI': {name: 'Nicaragua', flag: '🇳🇮'},
+    'NE': {name: 'Niger', flag: '🇳🇪'},
+    'NG': {name: 'Nigeria', flag: '🇳🇬'},
+    'NU': {name: 'Niue', flag: '🇳🇺'},
+    'NF': {name: 'Norfolk Island', flag: '🇳🇫'},
+    'MK': {name: 'North Macedonia', flag: '🇲🇰'},
+    'MP': {name: 'Northern Mariana Islands', flag: '🇲🇵'},
+    'NO': {name: 'Norway', flag: '🇳🇴'},
+    'OM': {name: 'Oman', flag: '🇴🇲'},
+    'PK': {name: 'Pakistan', flag: '🇵🇰'},
+    'PW': {name: 'Palau', flag: '🇵🇼'},
+    'PS': {name: 'Palestine, State of', flag: '🇵🇸'},
+    'PA': {name: 'Panama', flag: '🇵🇦'},
+    'PG': {name: 'Papua New Guinea', flag: '🇵🇬'},
+    'PY': {name: 'Paraguay', flag: '🇵🇾'},
+    'PE': {name: 'Peru', flag: '🇵🇪'},
+    'PH': {name: 'Philippines', flag: '🇵🇭'},
+    'PN': {name: 'Pitcairn', flag: '🇵🇳'},
+    'PL': {name: 'Poland', flag: '🇵🇱'},
+    'PT': {name: 'Portugal', flag: '🇵🇹'},
+    'PR': {name: 'Puerto Rico', flag: '🇵🇷'},
+    'QA': {name: 'Qatar', flag: '🇶🇦'},
+    'RE': {name: 'Réunion', flag: '🇷🇪'},
+    'RO': {name: 'Romania', flag: '🇷🇴'},
+    'RU': {name: 'Russia', flag: '🇷🇺'},
+    'RW': {name: 'Rwanda', flag: '🇷🇼'},
+    'BL': {name: 'Saint Barthélemy', flag: '🇧🇱'},
+    'SH': {name: 'Saint Helena, Ascension and Tristan da Cunha', flag: '🇸🇭'},
+    'KN': {name: 'Saint Kitts and Nevis', flag: '🇰🇳'},
+    'LC': {name: 'Saint Lucia', flag: '🇱🇨'},
+    'MF': {name: 'Saint Martin (French part)', flag: '🇲🇫'},
+    'PM': {name: 'Saint Pierre and Miquelon', flag: '🇵🇲'},
+    'VC': {name: 'Saint Vincent and the Grenadines', flag: '🇻🇨'},
+    'WS': {name: 'Samoa', flag: '🇼🇸'},
+    'SM': {name: 'San Marino', flag: '🇸🇲'},
+    'ST': {name: 'Sao Tome and Principe', flag: '🇸🇹'},
+    'SA': {name: 'Saudi Arabia', flag: '🇸🇦'},
+    'SN': {name: 'Senegal', flag: '🇸🇳'},
+    'RS': {name: 'Serbia', flag: '🇷🇸'},
+    'SC': {name: 'Seychelles', flag: '🇸🇨'},
+    'SL': {name: 'Sierra Leone', flag: '🇸🇱'},
+    'SG': {name: 'Singapore', flag: '🇸🇬'},
+    'SX': {name: 'Sint Maarten (Dutch part)', flag: '🇸🇽'},
+    'SK': {name: 'Slovakia', flag: '🇸🇰'},
+    'SI': {name: 'Slovenia', flag: '🇸🇮'},
+    'SB': {name: 'Solomon Islands', flag: '🇸🇧'},
+    'SO': {name: 'Somalia', flag: '🇸🇴'},
+    'ZA': {name: 'South Africa', flag: '🇿🇦'},
+    'GS': {name: 'South Georgia and the South Sandwich Islands', flag: '🇬🇸'},
+    'SS': {name: 'South Sudan', flag: '🇸🇸'},
+    'ES': {name: 'Spain', flag: '🇪🇸'},
+    'LK': {name: 'Sri Lanka', flag: '🇱🇰'},
+    'SD': {name: 'Sudan', flag: '🇸🇩'},
+    'SR': {name: 'Suriname', flag: '🇸🇷'},
+    'SJ': {name: 'Svalbard and Jan Mayen', flag: '🇸🇯'},
+    'SE': {name: 'Sweden', flag: '🇸🇪'},
+    'CH': {name: 'Switzerland', flag: '🇨🇭'},
+    'SY': {name: 'Syrian Arab Republic', flag: '🇸🇾'},
+    'TW': {name: 'Taiwan', flag: '🇹🇼'},
+    'TJ': {name: 'Tajikistan', flag: '🇹🇯'},
+    'TZ': {name: 'Tanzania, United Republic of', flag: '🇹🇿'},
+    'TH': {name: 'Thailand', flag: '🇹🇭'},
+    'TL': {name: 'Timor-Leste', flag: '🇹🇱'},
+    'TG': {name: 'Togo', flag: '🇹🇬'},
+    'TK': {name: 'Tokelau', flag: '🇹🇰'},
+    'TO': {name: 'Tonga', flag: '🇹🇴'},
+    'TT': {name: 'Trinidad and Tobago', flag: '🇹🇹'},
+    'TN': {name: 'Tunisia', flag: '🇹🇳'},
+    'TR': {name: 'Turkey', flag: '🇹🇷'},
+    'TM': {name: 'Turkmenistan', flag: '🇹🇲'},
+    'TC': {name: 'Turks and Caicos Islands', flag: '🇹🇨'},
+    'TV': {name: 'Tuvalu', flag: '🇹🇻'},
+    'UG': {name: 'Uganda', flag: '🇺🇬'},
+    'UA': {name: 'Ukraine', flag: '🇺🇦'},
+    'AE': {name: 'United Arab Emirates', flag: '🇦🇪'},
+    'GB': {name: 'United Kingdom', flag: '🇬🇧'},
+    'US': {name: 'United States', flag: '🇺🇸'},
+    'UM': {name: 'United States Minor Outlying Islands', flag: '🇺🇲'},
+    'UY': {name: 'Uruguay', flag: '🇺🇾'},
+    'UZ': {name: 'Uzbekistan', flag: '🇺🇿'},
+    'VU': {name: 'Vanuatu', flag: '🇻🇺'},
+    'VE': {name: 'Venezuela', flag: '🇻🇪'},
+    'VN': {name: 'Viet Nam', flag: '🇻🇳'},
+    'VG': {name: 'Virgin Islands (British)', flag: '🇻🇬'},
+    'VI': {name: 'Virgin Islands (U.S.)', flag: '🇻🇮'},
+    'WF': {name: 'Wallis and Futuna', flag: '🇼🇫'},
+    'EH': {name: 'Western Sahara', flag: '🇪🇭'},
+    'YE': {name: 'Yemen', flag: '🇾🇪'},
+    'ZM': {name: 'Zambia', flag: '🇿🇲'},
+    'ZW': {name: 'Zimbabwe', flag: '🇿🇼'}
+  };
+
+  const FIRST_NAMES = [
+    'James', 'Mary', 'John', 'Patricia', 'Robert', 'Jennifer', 'Michael', 'Linda', 'William', 'Elizabeth',
+    'David', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Jessica', 'Thomas', 'Sarah', 'Charles', 'Karen',
+    'Christopher', 'Nancy', 'Daniel', 'Lisa', 'Matthew', 'Betty', 'Anthony', 'Helen', 'Mark', 'Sandra',
+    'Donald', 'Donna', 'Steven', 'Carol', 'Paul', 'Ruth', 'Andrew', 'Sharon', 'Joshua', 'Michelle',
+    'Kenneth', 'Laura', 'Kevin', 'Sarah', 'Brian', 'Kimberly', 'George', 'Deborah', 'Edward', 'Amanda',
+    'Ronald', 'Stephanie', 'Timothy', 'Cynthia', 'Jason', 'Rebecca', 'Jeffrey', 'Martha', 'Ryan', 'Carolyn',
+    'Jacob', 'Christine', 'Gary', 'Marie', 'Nicholas', 'Janet', 'Eric', 'Catherine', 'Jonathan', 'Frances',
+    'Stephen', 'Ann', 'Larry', 'Joyce', 'Justin', 'Virginia', 'Scott', 'Kelly', 'Brandon', 'Christina',
+    'Benjamin', 'Joan', 'Samuel', 'Evelyn', 'Gregory', 'Judith', 'Alexander', 'Megan', 'Patrick', 'Cheryl',
+    'Frank', 'Andrea', 'Raymond', 'Hannah', 'Jack', 'Jacqueline', 'Dennis', 'Martha', 'Jerry', 'Gloria',
+    'Tyler', 'Teresa', 'Aaron', 'Sara', 'Jose', 'Janice', 'Henry', 'Marie', 'Adam', 'Julia', 'Douglas',
+    'Heather', 'Nathan', 'Diane', 'Peter', 'Marilyn', 'Zachary', 'Theresa', 'Kyle', 'Beverly', 'Noah',
+    'Madison', 'Jeremy', 'Doris', 'Harold', 'Phoebe', 'Carl', 'Bonnie', 'Keith', 'Juanita', 'Roger',
+    'Frances', 'Gerald', 'Eleanor', 'Christian', 'Jane', 'Terry', 'Phyllis', 'Sean', 'Ruby', 'Arthur',
+    'Lois', 'Albert', 'Brenda', 'Joe', 'Diana', 'Lawrence', 'Wanda', 'Logan', 'Marjorie', 'Ralph',
+    'Kathryn', 'Roy', 'Olivia', 'Wayne', 'Jean', 'Billy', 'Isabella', 'Jordan', 'Joyce', 'Albert',
+    'Katherine', 'Philip', 'Emma', 'Willie', 'Rose', 'Mason', 'Norma', 'Eugene', 'Ava', 'Louis',
+    'Lillian', 'Harry', 'Addison', 'Peter', 'Shirley', 'Jack', 'Florence', 'Henry', 'Mildred', 'Bruce'
+  ];
+
+  const LAST_NAMES = [
+    'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez',
+    'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin',
+    'Lee', 'Perez', 'Thompson', 'White', 'Harris', 'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson',
+    'Walker', 'Young', 'Allen', 'King', 'Wright', 'Scott', 'Torres', 'Nguyen', 'Hill', 'Flores',
+    'Green', 'Adams', 'Nelson', 'Baker', 'Hall', 'Rivera', 'Campbell', 'Mitchell', 'Carter', 'Roberts',
+    'Gomez', 'Phillips', 'Evans', 'Turner', 'Diaz', 'Parker', 'Cruz', 'Edwards', 'Collins', 'Reyes',
+    'Stewart', 'Morris', 'Morales', 'Murphy', 'Cook', 'Rogers', 'Gutierrez', 'Ortiz', 'Morgan', 'Cooper',
+    'Peterson', 'Bailey', 'Reed', 'Kelly', 'Howard', 'Ramos', 'Kim', 'Cox', 'Ward', 'Richardson',
+    'Watson', 'Brooks', 'Chavez', 'Wood', 'James', 'Bennett', 'Gray', 'Mendoza', 'Ruiz', 'Hughes',
+    'Price', 'Alvarez', 'Castillo', 'Sanders', 'Patel', 'Myers', 'Long', 'Ross', 'Foster', 'Jimenez',
+    'Powell', 'Jenkins', 'Perry', 'Russell', 'Sullivan', 'Bell', 'Coleman', 'Butler', 'Henderson', 'Barnes',
+    'Gonzales', 'Fisher', 'Vasquez', 'Simmons', 'Romero', 'Jordan', 'Patterson', 'Alexander', 'Hamilton', 'Graham',
+    'Reynolds', 'Griffin', 'Wallace', 'Moreno', 'West', 'Cole', 'Hayes', 'Bryant', 'Herrera', 'Gibson',
+    'Ellis', 'Tran', 'Medina', 'Aguilar', 'Stevens', 'Murray', 'Ford', 'Castro', 'Marshall', 'Owens',
+    'Harrison', 'Fernandez', 'Mcdonald', 'Woods', 'Washington', 'Kennedy', 'Wells', 'Vargas', 'Henry', 'Chen',
+    'Freeman', 'Webb', 'Tucker', 'Guzman', 'Burns', 'Crawford', 'Olson', 'Simpson', 'Porter', 'Hunter',
+    'Gordon', 'Mendez', 'Silva', 'Shaw', 'Snyder', 'Mason', 'Dixon', 'Munoz', 'Hunt', 'Hicks'
+  ];
+
+  const BIOS = [
+    'Digital creator ✌️', 'Living my best life 🌟', 'Coffee addict ☕', 'Travel enthusiast ✈️', 
+    'Fitness journey 💪', 'Foodie at heart 🍕', 'Dream chaser ✨', 'Pet lover 🐶', 
+    'Music is life 🎵', 'Art & soul 🎨', 'Adventure awaits 🏔️', 'Bookworm 📚',
+    'Making memories 📸', 'Positive vibes only 🌈', 'Entrepreneur mindset 💼',
+    'Nature lover 🌿', 'Gamer 🎮', 'Fashionista 👗', 'Mom life 👩‍👧', 'Dad life 👨‍👦'
+  ];
+
+  let totalLogsGenerated = 0;
+  let currentRegionMode = 'random';
+  let allEntries = [];
+  let countryList = Object.keys(COUNTRIES);
+
+  function shuffleArray(array) {
+    return array.sort(() => Math.random() - 0.5);
+  }
+
+  function getRegionCode() {
+    switch(currentRegionMode) {
+      case 'manual':
+        const manualInput = searchInput.value.toUpperCase().slice(0,2);
+        return COUNTRIES[manualInput] ? manualInput : 'US';
+      case 'usa': return 'US';
+      case 'europe': 
+        const euCountries = ['DE','FR','IT','ES','GB','NL','BE','SE','DK','FI','NO','PL','CZ','AT','CH'];
+        return euCountries[Math.floor(Math.random() * euCountries.length)];
+      case 'asia':
+        const asiaCountries = ['JP','CN','IN','KR','SG','HK','MY','TH','VN','ID','PH','TW','AU'];
+        return asiaCountries[Math.floor(Math.random() * asiaCountries.length)];
+      default: // random global
+        return countryList[Math.floor(Math.random() * countryList.length)];
+    }
+  }
+
+  function generateRandomString(len, charset) {
+    charset = charset || 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < len; i++) result += charset.charAt(Math.floor(Math.random() * charset.length));
+    return result;
+  }
+
+  function generateFullName() {
+    const first = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+    const last = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+    return `${first} ${last}`;
+  }
+
+  function generateUsername(fullName, regionCode) {
+    const nameParts = fullName.toLowerCase().split(' ');
+    let base = '';
+    
+    // Use first initial + last name or variations
+    const variations = [
+      `${nameParts[0][0]}${nameParts[1]}`,
+      `${nameParts[1]}${nameParts[0][0]}`,
+      `${nameParts[0]}${nameParts[1][0]}`,
+      `${nameParts[0]}${generateRandomString(2, '0123456789')}`,
+      `${nameParts[1]}${(Math.floor(Math.random() * 99) + 1).toString().padStart(2, '0')}`
+    ];
+    
+    return variations[Math.floor(Math.random() * variations.length)];
+  }
+
+  function getTimestamp() {
+    return new Date().toISOString().slice(0,19).replace('T',' ');
+  }
+
+  function createRow(entry) {
+    const tr = document.createElement('tr');
+    
+    tr.innerHTML = `
+      <td class="full-name" title="Click to copy name">${entry.fullName}</td>
+      <td><span class="username">@${entry.username}</span></td>
+      <td><span class="country-flag">${entry.flag}</span>${entry.country}</td>
+      <td class="highlight">${entry.bio}</td>
+      <td style="font-size: 11px;">${entry.timestamp}</td>
+      <td style="color: #00ff41; font-weight: bold;">${entry.status}</td>
+    `;
+    
+    tr.onclick = (e) => {
+      if (e.target.closest('.full-name') || e.target.closest('.username')) {
+        const text = e.target.closest('.full-name') ? entry.fullName : `@${entry.username}`;
+        navigator.clipboard.writeText(text);
+        e.target.style.background = '#ff1493';
+        setTimeout(() => e.target.style.background = '', 500);
+      }
+    };
+    
+    return tr;
+  }
+
+  function generateEntry() {
+    const regionCode = getRegionCode();
+    const regionData = COUNTRIES[regionCode] || COUNTRIES['US'];
+    const fullName = generateFullName();
+    const username = generateUsername(fullName, regionCode);
+    
+    return {
+      fullName: fullName,
+      username: username,
+      country: regionData.name,
+      flag: regionData.flag,
+      bio: BIOS[Math.floor(Math.random() * BIOS.length)],
+      timestamp: getTimestamp(),
+      status: 'ACTIVE'
+    };
+  }
+
+  function updateTotalCount() {
+    totalCount.textContent = `Total: ${totalLogsGenerated.toLocaleString()}`;
+  }
+
+  function loadMoreLogs() {
+    if (totalLogsGenerated >= MAX_LOGS) {
+      loadingIndicator.textContent = `⚠️ Max ${MAX_LOGS.toLocaleString()} records reached`;
+      loadingIndicator.hidden = false;
+      return;
+    }
+    loadingIndicator.hidden = false;
+    
+    requestAnimationFrame(() => {
+      const fragment = document.createDocumentFragment();
+      for (let i = 0; i < BATCH_SIZE && totalLogsGenerated < MAX_LOGS; i++, totalLogsGenerated++) {
+        const entry = generateEntry();
+        allEntries.push(entry);
+        fragment.appendChild(createRow(entry));
+      }
+      logBody.appendChild(fragment);
+      loadingIndicator.hidden = true;
+      updateTotalCount();
+      updateAriaRowCount();
+    });
+  }
+
+  function resetLogs() {
+    totalLogsGenerated = 0;
+    allEntries = [];
+    logBody.innerHTML = '';
+    loadingIndicator.hidden = true;
+    updateTotalCount();
+    updateAriaRowCount();
+  }
+
+  function filterLogs() {
+    const filter = searchInput.value.toLowerCase();
+    if (!filter) {
+      [...logBody.children].forEach(tr => tr.style.display = "");
+      return;
+    }
+    [...logBody.children].forEach(tr => {
+      const haystack = tr.textContent.toLowerCase();
+      tr.style.display = haystack.includes(filter) ? "" : "none";
+    });
+  }
+
+  function updateAriaRowCount() {
+    logBody.parentElement.setAttribute('aria-rowcount', logBody.children.length);
+  }
+
+  // Event Listeners
+  logContainer.addEventListener('scroll', () => {
+    if (loadingIndicator.hidden &&
+        logContainer.scrollTop + logContainer.clientHeight >= logContainer.scrollHeight - 100 &&
+        !searchInput.value.trim()) {
+      loadMoreLogs();
+    }
+  });
+
+  generateBtn.addEventListener('click', () => {
+    currentRegionMode = regionModeEl.value;
+    if (currentRegionMode === 'manual' && !searchInput.value.trim()) {
+      currentRegionMode = 'random';
+    }
+    resetLogs();
+    loadMoreLogs();
+    searchInput.value = '';
+  });
+
+  searchInput.addEventListener('input', () => {
+    filterLogs();
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const csvData = allEntries.map(e => 
+      `"${e.fullName}","${e.username}","${e.country}","${e.bio}","${e.timestamp}","${e.status}"`
+    ).join('\n');
+    
+    const csvBlob = new Blob([`Full Name,Username,Region,Bio,Timestamp,Status\n${csvData}`], 
+      {type: 'text/csv;charset=utf-8;'});
+    
+    const csvLink = document.createElement('a');
+    csvLink.href = URL.createObjectURL(csvBlob);
+    csvLink.download = `instagram_profiles_${currentRegionMode}_${Date.now()}.csv`;
+    csvLink.style.display = 'none';
+    document.body.appendChild(csvLink);
+    csvLink.click();
+    document.body.removeChild(csvLink);
+  });
+
+  // Initialize
+  updateTotalCount();
+  loadMoreLogs();
+  
+  // Update country list for random mode
+  setInterval(() => {
+    if (currentRegionMode === 'random') {
+      countryList = shuffleArray(Object.keys(COUNTRIES));
+    }
+  }, 5000);
+
+})();
+</script>
+
+</body>
+</html>

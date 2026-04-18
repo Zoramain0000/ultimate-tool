@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays • No-Key Utilities Dashboard</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Courier New',monospace;color:gray;overflow-x:hidden;}
+
+/* BACKGROUND VIDEO */
+.bg-video{
+  position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-2;filter:brightness(0.5) contrast(1.1);
+}
+.overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.1);
+  z-index:-1;
+}
+
+/* HEADER */
+header{
+  background:rgba(0,0,0,0.3);
+  padding:18px;text-align:center;border-bottom:1px solid #1f1f1f;
+}
+header h1{font-size:28px;letter-spacing:2px;color:#d1d1d1;}
+
+/* TABS */
+.tabs{
+  display:flex;
+  justify-content:center;
+  margin-top:20px;
+}
+.tab{
+  padding:10px 20px;
+  cursor:pointer;
+  background:rgba(17,17,17,0.7);
+  color:#00ff7f;
+  margin:0 5px;
+  border-radius:8px 8px 0 0;
+  transition:.3s;
+}
+.tab.active{background:#00ff7f;color:#000;}
+
+/* CONTAINER */
+.container{
+  max-width:700px;margin:20px auto;padding:20px;
+  background:rgba(0,0,0,0.2);
+  border-radius:12px;box-shadow:0 0 35px rgba(0,255,65,0.4);
+}
+
+/* SECTION */
+.section{display:none;margin-bottom:25px;}
+.section.active{display:block;}
+.section h2{
+  font-size:20px;margin-bottom:15px;color:#d1d1d1;border-left:4px solid #d1d1d1;padding-left:10px;
+}
+
+/* DISPLAY AREA */
+.display{
+  background:rgba(0,0,0,0.15);
+  padding:15px;border-radius:10px;border:1px solid #222;
+  font-size:18px;color:#00ff7f;margin-bottom:15px;
+  min-height:40px;overflow-x:auto;
+}
+
+/* BUTTONS */
+button{
+  padding:12px;font-size:16px;border:none;border-radius:8px;cursor:pointer;color:#fff;background:rgba(17,17,17,0.8);
+  transition:.3s;margin:3px;
+}
+button:hover{background:rgba(34,34,34,0.8);transform:scale(1.05);}
+button:active{transform:scale(0.98);}
+button.operator{background:rgba(51,51,51,0.8);color:#ffcc00;}
+button.clear{background:rgba(255,68,68,0.85);color:#fff;}
+</style>
+</head>
+<body>
+
+<!-- BACKGROUND VIDEO -->
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • NO-KEY UTILITIES</h1>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('dns')">DNS Lookup</div>
+  <div class="tab" onclick="switchTab('http')">HTTP Headers</div>
+  <div class="tab" onclick="switchTab('crt')">Certificate Info</div>
+  <div class="tab" onclick="switchTab('wayback')">Wayback Snapshot</div>
+</div>
+
+<div class="container">
+  
+  <!-- DNS Lookup -->
+  <div class="section active" id="dns">
+    <h2>DNS Lookup</h2>
+    <input type="text" id="dnsInput" placeholder="Enter domain (example.com)" style="width:100%;padding:10px;border-radius:6px;border:none;margin-bottom:10px;">
+    <button onclick="dnsLookup()">Lookup</button>
+    <div class="display" id="dnsDisplay">Results will appear here...</div>
+  </div>
+
+  <!-- HTTP Headers -->
+  <div class="section" id="http">
+    <h2>HTTP Header Checker</h2>
+    <input type="text" id="httpInput" placeholder="Enter URL (https://example.com)" style="width:100%;padding:10px;border-radius:6px;border:none;margin-bottom:10px;">
+    <button onclick="httpHeaders()">Fetch Headers</button>
+    <div class="display" id="httpDisplay">Results will appear here...</div>
+  </div>
+
+  <!-- Certificate Info -->
+  <div class="section" id="crt">
+    <h2>Certificate Info</h2>
+    <input type="text" id="crtInput" placeholder="Enter domain (example.com)" style="width:100%;padding:10px;border-radius:6px;border:none;margin-bottom:10px;">
+    <button onclick="crtInfo()">Fetch Certificate</button>
+    <div class="display" id="crtDisplay">Results will appear here...</div>
+  </div>
+
+  <!-- Wayback Snapshot -->
+  <div class="section" id="wayback">
+    <h2>Wayback Archive</h2>
+    <input type="text" id="waybackInput" placeholder="Enter URL (example.com)" style="width:100%;padding:10px;border-radius:6px;border:none;margin-bottom:10px;">
+    <button onclick="waybackFetch()">Fetch Snapshot</button>
+    <div class="display" id="waybackDisplay">Results will appear here...</div>
+  </div>
+
+</div>
+
+<script>
+// TAB SWITCH
+function switchTab(tabId){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+
+// DNS Lookup (Google DoH)
+async function dnsLookup(){
+  const domain = document.getElementById('dnsInput').value.trim();
+  if(!domain) return alert("Enter a domain!");
+  const display = document.getElementById('dnsDisplay');
+  display.textContent = "Fetching...";
+  try{
+    const res = await fetch(`https://dns.google/resolve?name=${domain}`);
+    const data = await res.json();
+    display.textContent = JSON.stringify(data, null, 2);
+  }catch(e){display.textContent = "Error fetching DNS info";}
+}
+
+// HTTP Headers
+async function httpHeaders(){
+  const url = document.getElementById('httpInput').value.trim();
+  if(!url) return alert("Enter URL!");
+  const display = document.getElementById('httpDisplay');
+  display.textContent = "Fetching...";
+  try{
+    const res = await fetch(url, {method:'HEAD'});
+    let headers = {};
+    res.headers.forEach((v,k)=>headers[k]=v);
+    display.textContent = JSON.stringify(headers, null, 2);
+  }catch(e){display.textContent = "Error fetching headers";}
+}
+
+// Certificate Info (crt.sh)
+async function crtInfo(){
+  const domain = document.getElementById('crtInput').value.trim();
+  if(!domain) return alert("Enter domain!");
+  const display = document.getElementById('crtDisplay');
+  display.textContent = "Fetching...";
+  try{
+    const res = await fetch(`https://crt.sh/?q=${domain}&output=json`);
+    const data = await res.json();
+    display.textContent = JSON.stringify(data, null, 2);
+  }catch(e){display.textContent = "Error fetching certificate info";}
+}
+
+// Wayback Snapshot
+async function waybackFetch(){
+  const url = document.getElementById('waybackInput').value.trim();
+  if(!url) return alert("Enter URL!");
+  const display = document.getElementById('waybackDisplay');
+  display.textContent = "Fetching...";
+  try{
+    const res = await fetch(`http://archive.org/wayback/available?url=${url}`);
+    const data = await res.json();
+    display.textContent = JSON.stringify(data, null, 2);
+  }catch(e){display.textContent = "Error fetching snapshot";}
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ZeroDays • WikiMap Intelligence Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<!-- Screenshot -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<!-- PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:Segoe UI;color:#e5e7eb;overflow:hidden}
+
+/* Background */
+.bg-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.45);z-index:-2}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:-1}
+
+/* Header */
+header{padding:14px;text-align:center;background:rgba(15,23,42,.3);backdrop-filter:blur(12px)}
+header h1{color:#7dd3fc;letter-spacing:2px}
+header input,select{padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(2,6,23,.4);color:white;margin:4px}
+header button{padding:10px 14px;border-radius:8px;border:none;background:#38bdf8;color:white;cursor:pointer}
+
+/* Layout */
+#app{display:grid;grid-template-columns:60% 40%;height:calc(100vh - 100px)}
+#results{padding:16px;overflow:auto}
+.result{background:rgba(2,6,23,.4);border-radius:12px;padding:12px;margin-bottom:10px;cursor:pointer}
+.result h3{color:#7dd3fc}
+.right{display:grid;grid-template-rows:50% 50%;border-left:1px solid rgba(255,255,255,.1)}
+#map{width:100%;height:100%}
+#panel{padding:12px;background:rgba(2,6,23,.4);overflow:auto}
+
+/* Controls */
+.controls{position:fixed;bottom:20px;left:20px;display:flex;gap:10px}
+.controls button{padding:10px 14px;border-radius:10px;border:none;background:#38bdf8;color:white;cursor:pointer}
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • WIKIMAP INTELLIGENCE PRO</h1>
+  <input id="query" placeholder="Search Wikipedia topic or place">
+<select id="lang">
+  <option value="af">Afrikaans</option>
+  <option value="sq">Albanian</option>
+  <option value="am">Amharic</option>
+  <option value="ar">Arabic</option>
+  <option value="hy">Armenian</option>
+  <option value="az">Azerbaijani</option>
+  <option value="eu">Basque</option>
+  <option value="be">Belarusian</option>
+  <option value="bn">Bengali</option>
+  <option value="bs">Bosnian</option>
+  <option value="bg">Bulgarian</option>
+  <option value="ca">Catalan</option>
+  <option value="ceb">Cebuano</option>
+  <option value="ny">Chichewa</option>
+  <option value="zh">Chinese</option>
+  <option value="co">Corsican</option>
+  <option value="hr">Croatian</option>
+  <option value="cs">Czech</option>
+  <option value="da">Danish</option>
+  <option value="nl">Dutch</option>
+  <option value="en">English</option>
+  <option value="eo">Esperanto</option>
+  <option value="et">Estonian</option>
+  <option value="tl">Filipino</option>
+  <option value="fi">Finnish</option>
+  <option value="fr">French</option>
+  <option value="fy">Frisian</option>
+  <option value="gl">Galician</option>
+  <option value="ka">Georgian</option>
+  <option value="de">German</option>
+  <option value="el">Greek</option>
+  <option value="gu">Gujarati</option>
+  <option value="ht">Haitian Creole</option>
+  <option value="ha">Hausa</option>
+  <option value="haw">Hawaiian</option>
+  <option value="he">Hebrew</option>
+  <option value="hi">Hindi</option>
+  <option value="hmn">Hmong</option>
+  <option value="hu">Hungarian</option>
+  <option value="is">Icelandic</option>
+  <option value="ig">Igbo</option>
+  <option value="id">Indonesian</option>
+  <option value="ga">Irish</option>
+  <option value="it">Italian</option>
+  <option value="ja">Japanese</option>
+  <option value="jw">Javanese</option>
+  <option value="kn">Kannada</option>
+  <option value="kk">Kazakh</option>
+  <option value="km">Khmer</option>
+  <option value="rw">Kinyarwanda</option>
+  <option value="ko">Korean</option>
+  <option value="ku">Kurdish (Kurmanji)</option>
+  <option value="ky">Kyrgyz</option>
+  <option value="lo">Lao</option>
+  <option value="la">Latin</option>
+  <option value="lv">Latvian</option>
+  <option value="lt">Lithuanian</option>
+  <option value="lb">Luxembourgish</option>
+  <option value="mk">Macedonian</option>
+  <option value="mg">Malagasy</option>
+  <option value="ms">Malay</option>
+  <option value="ml">Malayalam</option>
+  <option value="mt">Maltese</option>
+  <option value="mi">Maori</option>
+  <option value="mr">Marathi</option>
+  <option value="mn">Mongolian</option>
+  <option value="my">Myanmar (Burmese)</option>
+  <option value="ne">Nepali</option>
+  <option value="no">Norwegian</option>
+  <option value="or">Odia (Oriya)</option>
+  <option value="ps">Pashto</option>
+  <option value="fa">Persian</option>
+  <option value="pl">Polish</option>
+  <option value="pt">Portuguese</option>
+  <option value="pa">Punjabi</option>
+  <option value="ro">Romanian</option>
+  <option value="ru">Russian</option>
+  <option value="sm">Samoan</option>
+  <option value="gd">Scots Gaelic</option>
+  <option value="sr">Serbian</option>
+  <option value="st">Sesotho</option>
+  <option value="sn">Shona</option>
+  <option value="sd">Sindhi</option>
+  <option value="si">Sinhala</option>
+  <option value="sk">Slovak</option>
+  <option value="sl">Slovenian</option>
+  <option value="so">Somali</option>
+  <option value="es">Spanish</option>
+  <option value="su">Sundanese</option>
+  <option value="sw">Swahili</option>
+  <option value="sv">Swedish</option>
+  <option value="tg">Tajik</option>
+  <option value="ta">Tamil</option>
+  <option value="tt">Tatar</option>
+  <option value="te">Telugu</option>
+  <option value="th">Thai</option>
+  <option value="tr">Turkish</option>
+  <option value="tk">Turkmen</option>
+  <option value="uk">Ukrainian</option>
+  <option value="ur">Urdu</option>
+  <option value="ug">Uyghur</option>
+  <option value="uz">Uzbek</option>
+  <option value="vi">Vietnamese</option>
+  <option value="cy">Welsh</option>
+  <option value="xh">Xhosa</option>
+  <option value="yi">Yiddish</option>
+  <option value="yo">Yoruba</option>
+  <option value="zu">Zulu</option>
+</select>
+
+  <button onclick="searchWiki()">Search</button>
+</header>
+
+<div id="app">
+  <div id="results"></div>
+  <div class="right">
+    <div id="map"></div>
+    <div id="panel">
+      <h3>🧠 AI Summary</h3>
+      <div id="summary">No summary yet</div>
+      <h3>🧬 Entity Graph</h3>
+      <div id="entities">No entities yet</div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <button onclick="capture('app','full.png')">📸 Capture</button>
+  <button onclick="capture('map','map.png')">🗺️ Map</button>
+  <button onclick="capture('panel','ai.png')">🧠 AI</button>
+  <button onclick="makePDF()">📄 PDF</button>
+  <button onclick="darkWebScan()">🔐 Dark-Web OSINT</button>
+  <button onclick="toggleSatellite()">🛰️ Satellite</button>
+</div>
+
+<script>
+// MAP
+const map = L.map('map').setView([20,0],2);
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+osm.addTo(map);
+let isSat = false;
+const cluster = L.markerClusterGroup();
+map.addLayer(cluster);
+
+// STATE
+let currentText = '', beforeShot = null, afterShot = null;
+
+// SEARCH
+async function searchWiki(){
+  cluster.clearLayers();
+  document.getElementById('results').innerHTML='';
+  const q = document.getElementById('query').value;
+  const lang = document.getElementById('lang').value;
+  if(!q) return;
+  const res = await fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json&origin=*`);
+  const data = await res.json();
+  data.query.search.forEach(r => addResult(r.title, lang));
+}
+
+// ADD RESULT
+async function addResult(title, lang){
+  const res = await fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&prop=extracts|coordinates&exintro&titles=${encodeURIComponent(title)}&format=json&origin=*`);
+  const page = Object.values((await res.json()).query.pages)[0];
+  if(page.coordinates){
+    const {lat, lon} = page.coordinates[0];
+    cluster.addLayer(L.marker([lat,lon]).bindPopup(title));
+    map.setView([lat,lon],5);
+  }
+  currentText = page.extract?.replace(/<[^>]+>/g,'')||'';
+  summarize(currentText);
+  drawEntities(currentText);
+  const resultsDiv = document.getElementById('results');
+  const div = document.createElement('div');
+  div.className = 'result';
+  div.innerHTML = `<h3>${title}</h3><p>${currentText.slice(0,300)}...</p>`;
+  div.onclick = ()=>{if(page.coordinates){map.setView([page.coordinates[0].lat,page.coordinates[0].lon],6)}};
+  resultsDiv.appendChild(div);
+}
+
+// MULTI-AI SUMMARY (FRONTEND)
+async function summarize(text){
+  const panel = document.getElementById('summary');
+  panel.innerHTML = 'Analyzing...';
+
+  // Mock frontend AI summarization (real API optional)
+  let summary = text.split('.').slice(0,3).join('.') + '.';
+  panel.innerHTML = summary || 'No summary available';
+}
+
+// ENTITY GRAPH
+function drawEntities(text){
+  const entities = [...new Set(text.match(/\b[A-Z][a-z]{3,}\b/g))].slice(0,8);
+  const svg = entities.map((e,i)=>`<circle cx="${60+i*70}" cy="60" r="22" fill="#38bdf8"/>
+    <text x="${60+i*70}" y="65" fill="#000" text-anchor="middle">${e.slice(0,6)}</text>`).join('');
+  document.getElementById('entities').innerHTML = `<svg width="100%" height="120">${svg}</svg>`;
+}
+
+// DARK-WEB OSINT
+function darkWebScan(){
+  if(!currentText) return alert('No text to analyze');
+  const hits = currentText.match(/\.onion|dark web|tor network|hidden service/gi);
+  alert(hits ? `Dark-web references detected:\n${[...new Set(hits)].join(', ')}` : 'No dark-web indicators found');
+}
+
+// SATELLITE TOGGLE
+function toggleSatellite(){
+  if(isSat){ map.removeLayer(sat); osm.addTo(map); }
+  else{ map.removeLayer(osm); sat.addTo(map); }
+  isSat = !isSat;
+}
+
+// SCREENSHOT
+function capture(id,name){
+  html2canvas(document.getElementById(id),{backgroundColor:null,useCORS:true}).then(c=>{
+    const a=document.createElement('a'); a.href=c.toDataURL(); a.download=name; a.click();
+  });
+}
+
+// TIMELINE
+function saveBefore(){html2canvas(document.getElementById('app')).then(c=>beforeShot=c)}
+function saveAfter(){html2canvas(document.getElementById('app')).then(c=>afterShot=c)}
+
+// PDF
+function makePDF(){
+  const {jsPDF} = window.jspdf;
+  const pdf = new jsPDF();
+  pdf.text("ZeroDays WikiMap Intelligence Report",10,10);
+  pdf.text(currentText.slice(0,1000),10,20);
+  pdf.save("investigation.pdf");
+}
+</script>
+
+</body>
+</html>

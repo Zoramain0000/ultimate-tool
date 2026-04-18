@@ -1,0 +1,335 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Main Web Application</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+html,body{
+  height:100%;
+  font-family:Arial,sans-serif;
+  color:gray;
+  overflow-x:hidden;
+}
+
+/* 🎥 BACKGROUND VIDEO */
+.bg-video{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:-2;
+  filter:brightness(0.35);
+}
+
+/* overlay for clarity */
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.25);
+  z-index:-1;
+}
+
+header{
+  background:rgba(0,0,0,0.6);
+  color:gray;
+  padding:15px;
+  text-align:center;
+}
+
+nav{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:10px;
+  margin:20px auto;
+  max-width:1200px;
+  padding:0 10px;
+}
+
+nav a{
+  flex:1 1 140px;
+  text-align:center;
+  padding:10px 15px;
+  background:rgba(0,0,0,0.65);
+  color:white;
+  text-decoration:none;
+  border-radius:5px;
+  font-size:14px;
+  transition:0.3s;
+}
+
+nav a:hover{
+  background:black;
+  transform:scale(1.05);
+}
+
+.container{
+  background:rgba(0,0,0,0.65);
+  max-width:800px;
+  margin:20px auto;
+  padding:20px;
+  border-radius:8px;
+  box-shadow:0 0 15px gray;
+  text-align:center;
+}
+
+h2{
+  color:gray;
+  font-size:24px;
+}
+
+footer{
+  background:rgba(0,0,0,0.6);
+  color:#a0a0a0;
+  text-align:center;
+  padding:15px;
+  font-size:14px;
+}
+
+/* Responsive */
+@media(max-width:768px){
+  nav a{flex:1 1 100%;}
+}
+</style>
+</head>
+
+<body>
+
+<!-- 🎥 BACKGROUND VIDEO -->
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="io/ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>Main Dashboard</h1>
+</header>
+
+<div class="container">
+  <h2>Welcome to ultimate zerodays</h2>
+</div>
+
+<nav>
+  <a href="io/Location.html"> Location </a>
+  <a href="io/Own-location.html"> Own Location </a>
+  <a href="io/YouTube-thumbnail.html"> YT thumbnail </a>
+  <a href="io/Ip-generator.html"> IP address Generator </a>
+  <a href="io/Phone-number-generator.html"> Phone number machine</a>
+  <a href="io/Cal.html"> Calculator machine </a>
+  <a href="io/lookup.html"> IP address Lookup </a>
+  <a href="io/WhatWeb.html"> WhatWeb osint </a>
+  <a href="https://dorksearch.com/"> Google dork search </a>
+  <a href="https://publicwww.com/"> Find source code</a>
+  
+   <a href="https://en.fofa.info/"> find vulnerable thing</a>
+   <a href="io/traceroute.html"> Traceroute Visualizer </a>
+   <a href="io/DNA.html"> DNS & Domain </a>
+   <a href="io/decodeorencode.html">Base64/URl Encoder / Decoder</a>
+   <a href="io/hash.html">Hash Generator</a>
+   <a href="io/username.html"> Social media finder</a>
+   <a href="io/password.html"> security Test 1</a>
+   <a href="io/passsec.html"> security test 2</a>
+   <a href="io/Strength.html">Password Strength Analyzer</a>
+   <a href="io/suit.html"> Multiple tools Pro</a>
+   
+    <a href="io/tempdate.html"> timestamp converter 1 </a>
+    <a href="io/tempdate2.html">timestamp converter 2</a>
+    <a href="https://tineye.com/">Reverse image search 1</a>
+    <a href="https://www.duplichecker.com/reverse-image-search.php">Reverse image search 2</a>
+    <a href="https://www.reversely.ai/">Reverse image search 3</a>
+    <a href="https://dnschecker.org/reverse-image-search.php">Reverse image search 4</a>
+    <a href="io/converter.html">ipv4 = ipv6,/etc</a>
+    <a href="io/rin.html">Reverse Image EXIF Extractor</a>
+    <a href="io/system.html">Multiple tools Calculators</a>
+    <a href="io/home32.html">Public File Metadata Viewer</a>
+  
+    <a href="io/w.html">Website Tech Stack Fingerprint</a>
+    <a href="io/valid.html">IPv4 / IPv6 Validator</a>
+    <a href="io/asnmap.html">ASN Map Viewer</a>
+    <a href="io/phone.html">Phone Number Info</a>
+    <a href="io/json.html">json Multiple pro tools</a>
+    <a href="io/cob.html">Media Player</a>
+    <a href="io/compass.html">comparison of between Website (manual)</a>
+    <a href="https://v6.www-y2mate.com/">YouTube downloader</a>
+    <a href="https://snapsave.app/"> Facebook video downloader</a>
+    <a href="https://downev.com/profileviewer.html">Facebook/instagram profile Viewer/downloader</a>
+    
+    <a href="https://fvdownloader.net/facebook-profile-picture-viewer">Facebook profile Viewer</a>
+    <a href="https://vocalremover.org/splitter-ai"> audio splitter-ai</a>
+    <a href="https://vocalremover.org/pitch">audio speed and pitch changer</a>
+    <a href="https://vocalremover.org/key-bpm-finder">Song Key and BPM Finder</a>
+    <a href="https://vocalremover.org/cutter">Audio Cutter</a>
+    <a href="https://vocalremover.org/joiner">Audio Joiner</a>
+    <a href="https://vocalremover.org/voice-recorder"> voice recorder</a>
+    <a href="https://vocalremover.org/karaoke">Recording Voice Over a Song</a>
+    <a href="https://vocalremover.org/"> vocalremover and isolation</a>
+    <a href="https://www.phpkobo.com/html-obfuscator"> html obfuscator</a>
+
+    <a href="io/devices.html">CONNECTED DEVICE ANOMALY DETECTOR</a>
+    <a href="io/net.html">Network Device Scanner</a>
+    <a href="io/usb.html">USB device activity monitor</a>
+    <a href="io/osint&recon.html">osint intellegence</a>
+    <a href="io/Browser.html">Background Service Activity Tracker for Browser</a>
+    <a href="io/browser1.html">Background Service Activity Tracker for device</a>
+    <a href="io/sec.html">Email Security Arsenal</a>
+    <a href="io/scene.html">Network Security Arsenal</a>
+    <a href="https://dnschecker.org/ping-ipv4.php">ping 1 for IP address</a>
+    <a href="https://www.site24x7.com/tools/ping-test.html">ping 2 for Website </a>
+  
+    <a href="https://check-host.net/check-dns">dns</a>
+    <a href="https://check-host.net/check-udp">udp port</a>
+    <a href="https://check-host.net/check-tcp">tcp port</a>
+    <a href="https://check-host.net/check-http">http</a>
+    <a href="https://check-host.net/check-ping"> ping</a>
+    <a href="https://check-host.net/ip-info">information of ip-info</a>
+    <a href="https://hackertarget.com/test-ping/">ping test by hackertarget</a>
+    <a href="https://ping.pe/1.1.1.1">ping by ping.pe</a>
+    <a href="https://www.wormly.com/test-remote-ping">ping by wormly</a>
+    <a href="https://hackertarget.com/online-traceroute/">Traceroute by hackertarget</a>
+  
+    <a href="https://www.websitepulse.com/tools/tcp-traceroute-test"> tcp-traceroute-test</a>
+    <a href="https://mxtoolbox.com/TraceRouteLookup.aspx">TraceRouteLookup</a>
+    <a href="io/search.html">find anything or random</a>
+    <a href="io/identity.html">Identity Generator Pro Advanced</a>
+    <a href="io/identitypro.html">IDENTITY GENERATOR PRO</a>
+    <a href="https://www.fakenamegenerator.com/"> fakenamegenerator/ Identity GENERATOR</a>
+    <a href="https://datafakegenerator.com/generador"> datafakegenerator</a>
+    <a href="https://generate-random.org/persons"> generate-random</a>
+    <a href="https://www.fakepersongenerator.com/fake-identity-generator"> fake-identity-generator</a>
+    <a href="https://azharanowar.github.io/random-user-generator/">random-user-generator</a>
+  
+    <a href="https://www.fakemailgenerator.com/#/superrito.com/Nexce1973/">fakemailgenerator</a>
+    <a href="io/emailgen.html">Email Generator Pro</a>
+    <a href="io/dictionary.html">Dictionary</a>
+    <a href="https://grabify.link/">grabify</a>
+    <a href="https://iplogger.org/">iplogger</a>
+    <a href="io/phonehunter.html">Number Hunter • Global Location </a>
+    <a href="https://hackertarget.com/nmap-online-port-scanner/">nmap powered by hackertarget</a>
+    <a href="io/test32.html">REMOTE RECON INTELLIGENCE</a>
+    <a href="io/test33.html">Remote Recon & Intelligence - Embedded Viewer</a>
+    <a href="io/3dtracker.html">3Dmap + ip tracker</a>
+  
+    <a href="https://www.social-searcher.com/">social-searcher</a>
+    <a href="https://socialcatfish.com/reverse-image-search/?utm_source=googleads&utm_medium=cpc&utm_campaign=22907951449&&utm_term=&&&&9060963&x&t&gad_source=1&gad_campaignid=22907954854&gbraid=0AAAAADzF6Y4dYRIOiTAoMpobEGhZrF7rs&gclid=CjwKCAiAj8LLBhAkEiwAJjbY7yBIZ4ngppwIzN-uLREe460wDSG5knv7_3ECtyNVXFitqQgsIsOTtRoCcjkQAvD_BwE"> reverse-image-search by photo</a>
+    <a href="io/number.html"> phone number lookup main</a>
+    <a href="https://ssstik.io/en-1"> Tiktok without watermark</a>
+    <a href="io/Cat56.html">Utilities tools 1</a>
+    <a href="io/transferlog.html">Advanced Network & Email Generator</a>
+    <a href="https://mxtoolbox.com/EmailHeaders.aspx">Analyzer Email Headers </a>
+    <a href="http://metricsparrow.com/toolkit/email-permutator/"> Email format</a>
+    <a href="https://www.aware-online.com/en/osint-tools/email-address-tools/">somes osint-tools</a>
+    <a href="https://viewdns.info/"> reverse Email lookup</a>
+  
+    <a href="https://github.com/The-Osint-Toolbox/Email-Username-OSINT?tab=readme-ov-file"> Email username osint-tools</a>
+    <a href="https://osintframework.com/">osintframework</a>
+    <a href="https://intelx.io/"> powerfull osint intelx</a>
+    <a href="io/stampdate.html">Timestamp Manipulation</a>
+    <a href="io/phonelookup32.html">Global Phone Number Lookup</a>
+    <a href="io/AIphone.html">AI Phone Number Generator</a>
+    <a href="io/dp.html"> Domain Lookup v2</a>
+    <a href="io/web32.html">lookup for Website </a>
+    <a href="io/Lookup32.html">STRANGER HUNTER</a>
+    <a href="https://www.opensanctions.org/">open source for person data</a>
+  
+    <a href="https://socialcatfish.com/?cjevent=Cj0KCQiAp-zLBhDkARIsABcYc6u1knQjlMWfNFeFkoG87QvnASmMmVw0WXnZBRBTSqXDGoEj0MZGjH0aAu2TEALw_wcB&utm_source=CJ&utm_medium=affiliate&utm_content=15354853&utm_campaign=7283875&gad_source=1&gad_campaignid=22701066366&gbraid=0AAAAADLbtxckNq3qS1hN6qgs0AeF8NZ9g&gclid=Cj0KCQiAp-zLBhDkARIsABcYc6u1knQjlMWfNFeFkoG87QvnASmMmVw0WXnZBRBTSqXDGoEj0MZGjH0aAu2TEALw_wcB"> find info for names, email, phone Number, username, address ,image</a>
+    <a href="io/Proxy.html">find any Proxy Service/server</a>
+    <a href="io/cob1.html">Media Player 2</a>
+    <a href="https://www.dorkgpt.com/">dorkgpt </a>
+    <a href="https://mailmeteor.com/tools/gmail-generator"> gmail-generator</a>
+    <a href="io/proxy2.html">Proxy Server Finder 2.0 - Powered by Premium API</a>
+    <a href="https://unaimytext.com/">Humanize AI Text: Bypass AI Detectors</a>
+    <a href="https://www.maxai.co/ai-tools/ai-writer/no-limitations-with-ai-imagery/">maxai.co</a>
+    <a href="https://raphaelai.org/">ai image Generator</a>
+    <a href="io/reddit.html">GEO tag tracker for reddit</a>
+  
+    <a href="io/info309.html">Geo auto tracker v1</a>
+    <a href="https://onion.ail-project.org/"> onion Lookup</a>
+    <a href="https://onionsearchengine.com/">onion search engine</a>
+    <a href="io/trackv2.html">ULTIMATE 25+ API GEO TRACKER + MAP AUTO-SEARCH + REAL IP REVEAL </a>
+    <a href="io/info209.html">Geo auto tracker v2</a>
+    <a href="io/qrcode.html">QR Generator – Red Team Edition</a>
+    <a href="io/qrcode2.html">QR Studio Pro - malicious qrcode 1.0(beta version)</a>
+    <a href="https://scanqr.org/qr-code-generator/"> qr-code-generator</a>
+    <a href="https://chatgptfree.ai/"> chatgptfree no login </a>
+    <a href="https://phishyurl.com/"> phishyurl generador malicious </a>
+ 
+    <a href="io/qrcode3.html "> QR Studio Pro - malicious qrcode 2.0(beta version)</a>
+    <a href="io/qrcode4.html"> QR generator - Red Team & malicious Edition</a>
+    <a href="https://discoverprofile.com/"> Find user account</a>
+    <a href="https://one-plus.github.io/Facebook"> Facebook osint engine</a>
+    <a href="io/SPOOFTHING.html">SpoofFinder - ASN Spoofing Intelligence</a>
+    <a href="io/Asn12345.html">ASN12345 Live BGP Intelligence</a>
+    <a href="io/Asngen123456.html">ASN Local Log Generator - Ultimate</a>
+    <a href="io/Virusscan.html">Live Link Status Scanner 1</a>
+    <a href="io/urldemon.html">QR Code Pro – Live API</a>
+    <a href="https://blgardner.github.io/prism.tools/"> Generator 101</a>
+  
+    <a href="https://www.easy-qr-generator.com/"> custom qrcode</a>
+    <a href="https://managerlot9.github.io/free-qr-generator/"> custom qrcode 2</a>
+    <a href="https://www.openmusic.ai/ai-song-cover-generator">Ai music Generator 1(need to sign in)</a>
+    <a href="https://www.musiccreator.ai/ai-song-cover-generator">Ai music Generator 2(need to sign in)</a>
+    <a href="io/qrcode2scan.html">qrcode2scanner</a>
+    <a href="https://youtube-thumbnail-grabber.com/"> youtube-thumbnail-grabber v1.0</a>
+    <a href="https://fraigo.github.io/online-video-thumbnail-generator/">online-video-thumbnail-generator</a>
+    <a href="io/JWT.html"> Hack JWT pentest</a>
+    <a href="io/JWTgen.html"> Generator JWT pentest</a>
+    <a href="io/spy-clipboard.html">SYSTEM // CLIPBOARD_INJECTOR</a>
+
+    <a href="io/2davatargen.html">Avatar-Gen | 150+ Styles | Powered by DiceBear</a>
+    <a href="https://www.browserstack.com/free-tools/credit-card-number-generator">Credit Card Number Generator</a>
+    <a href="io/1logip.html"> ipv4 generate-random </a>
+    <a href="io/1dnschecker.html"> Ai Domain checker</a>
+    <a href="io/1dnschecker.html">AI Domain Health Checker</a>
+    <a href="io/1dnschecker2.html">AI Domain Health Checker - Enterprise Pentest Edition</a>
+    <a href="io/2long.html"> Advanced log Generator</a>
+    <a href="io/2prolog.html">Proxy Generator  board</a>
+    <a href="io/1atraceroute.html"> Traceroute Generator </a>
+    <a href="io/1autodef.html">defence mechanism checker</a>
+  
+    <a href="io/1urlive.html">Advanced URL Discovery Tool</a>
+    <a href="https://www.dorkgpt.com/">  Ai Dork search</a>
+    <a href="io/aisubnet.html"> Ai Subdomain finder</a>
+    <a href="io/11uuidgen.html">uuid Generator</a>
+    <a href="io/11Phozint.html">Phone OSINT Recon v5.0</a>
+    <a href="io/11Areana.html">JWT Generator</a>
+    <a href="io/11hashlog.html">Hash Generator</a>
+    <a href="https://md5hashing.net/">Multitools</a>
+    <a href="io/11hashcon.html">Mass Hash Cracker ↔ Text Converter</a>
+    <a href="io/11hashfinder.html">🔍 Ultimate Hash Identifier & Cracker</a>
+  
+    <a href="https://overchat.ai/text/ai-code-detector">AI code detector 1</a>
+    <a href="https://mydetector.ai/ai-code-detector/"> AI code detector 2</a>
+    <a href="io/11answer.html">ZerodayAI Email Breach Detector</a>
+    <a href="io/11ant.html">Global Phone Lookup Tool</a>
+    <a href="io/11sec200.html">LPR & Vehicle Log Generator v195</a>
+    <a href="io/112.html">Facebook Profile Data Generator v195</a>
+ <a href="io/113.html">Instagram Profile Generator v195</a>
+ <a href="io/111.html">YouTube Creator Data Generator v195</a>
+ <a href="io/122.html">UDP Log Generator v195</a>
+ <a href="intro.html">refresh to reload</a>
+ <a href="https://znc-foundation-gpt.vercel.app/"> znc-foundation-gpt</a>
+ <a href="https://zerodays-search-agent2.vercel.app/"> zerodays-search-agent2</a>
+ <a href="intro.html">reset to reload</a>
+  <a href="#">Zerodays Ending</a>
+</nav>
+
+<footer>
+  ||_--------------------------------------_||<br>
+  Technology information system tools for cyber‑security
+</footer>
+
+</body>
+</html>
+
+  

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Currency Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background:rgba(0,0,0,0.5);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: red;
+        }
+
+        select, input {
+            width: 98%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: red;
+            color: green;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+background:rgba(0,0,0,0.5);
+        }
+
+        .result {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: red;
+        }
+
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Simple Currency Converter</h1>
+    <label for="fromCurrency"style="color:red;">From Currency</label>
+    <select id="fromCurrency"></select>
+
+    <label for="toCurrency"style="color:red;">To Currency</label>
+    <select id="toCurrency"></select>
+
+    <label for="amount"style="color:red;">Amount</label>
+    <input type="number" id="amount" placeholder="Enter amount" value="1" min="0">
+
+    <button onclick="convertCurrency()">Convert</button>
+
+    <div class="result" id="result"></div>
+</div>
+
+<script>
+    const fromCurrency = document.getElementById("fromCurrency");
+    const toCurrency = document.getElementById("toCurrency");
+    const amountInput = document.getElementById("amount");
+    const resultDiv = document.getElementById("result");
+
+const currencies = [
+    "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "CNY", "SEK", "NZD",
+    "MXN", "SGD", "HKD", "NOK", "KRW", "TRY", "INR", "RUB", "BRL", "ZAR",
+    "DKK", "PLN", "TWD", "THB", "MYR", "IDR", "CZK", "ILS", "CLP", "PHP",
+    "AED", "COP", "SAR", "RON", "HUF", "PKR", "EGP", "BDT", "VND", "NGN",
+    "ARS", "QAR", "KWD", "BHD", "OMR", "DZD", "MAD", "LKR", "UAH", "KES",
+    "TZS", "GHS", "ETB", "UGX", "GEL", "KZT", "BND", "KPW", "ISK", "HRK",
+    "MDL", "AFN", "MUR", "TMT", "AZN", "BAM", "MNT", "BIF", "DJF", "GNF",
+    "HTG", "MMK", "NGN", "ZMK", "LBP", "SYP", "AMD", "PAB", "PEN", "PYG",
+    "CUP", "HNL", "FJD", "XOF", "JMD", "YER", "KWD", "SZL", "MMK", "UZS",
+    "LBP", "KGS", "RWF", "BAM", "NPR", "INR", "WST", "AFN", "VUV", "GHS",
+    "LKR", "CLP", "COP", "BOB", "MZN", "MKD", "BTN", "OMR", "MTL", "ZWL",
+    "XAF", "MKD", "BAM", "WST", "KMF", "BTN", "TJS", "TMT", "LYD", "MZN",
+    "MNT", "GHS", "KMF", "PYG", "AFN", "MUR", "MDL", "VND", "NPR", "GEL",
+    "SDG", "SOS", "TZS", "MMK", "DJF", "INR", "BBD", "VUV", "MWK", "BIF",
+    "DJF", "GNF", "YER", "BND", "SLL", "MKD", "MNT", "TND", "MAD", "UGX",
+    "RWF", "GHS", "ZMW", "NAD", "PYG", "AFN", "GMD", "XCD", "BAM", "XOF",
+    "INR", "TRY", "BND", "MZN", "MMK", "MUR", "BIF", "MMK", "RWF", "SLL",
+    "BIF", "ZAR", "MWK", "BND", "MWK", "KZT", "AFN", "AON", "KMF", "BMD",
+    "MMK", "BAM", "BND", "VUV", "KES", "GHS", "MMK", "KMF", "MDL", "BAM",
+    "HRK", "RON", "SYP", "AFN", "VUV", "MMK", "SLL", "SDG", "SYP", "MMK"
+];
+
+
+    // Load currency options dynamically
+    function loadCurrencyOptions() {
+        for (let currency of currencies) {
+            let option = document.createElement("option");
+            option.value = currency;
+            option.textContent = currency;
+            fromCurrency.appendChild(option);
+            toCurrency.appendChild(option.cloneNode(true));
+        }
+    }
+
+    // Fetch real-time conversion rates from API
+    async function convertCurrency() {
+        const from = fromCurrency.value;
+        const to = toCurrency.value;
+        const amount = parseFloat(amountInput.value);
+
+        if (isNaN(amount) || amount <= 0) {
+            resultDiv.innerHTML = `<span class="error">Please enter a valid amount!</span>`;
+            return;
+        }
+
+        const apiKey = "218aa91b2a85e55245b41751"; // Replace with your API key
+        const apiURL = `https://api.exchangerate-api.com/v4/latest/${from}`;
+
+        try {
+            const response = await fetch(apiURL);
+            const data = await response.json();
+
+            if (data.rates[to]) {
+                const rate = data.rates[to];
+                const convertedAmount = (rate * amount).toFixed(2);
+                resultDiv.innerHTML = `${amount} ${from} = ${convertedAmount} ${to}`;
+            } else {
+                resultDiv.innerHTML = `<span class="error">Invalid currency code!</span>`;
+            }
+        } catch (error) {
+            resultDiv.innerHTML = `<span class="error">Error fetching data. Please try again later.</span>`;
+        }
+    }
+
+    // Initialize currency options
+    loadCurrencyOptions();
+
+</script>
+</body>
+</html>

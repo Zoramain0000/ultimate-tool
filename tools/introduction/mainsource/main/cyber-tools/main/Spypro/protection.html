@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Spy Scanner - Comprehensive Security Tool</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron&family=Roboto&display=swap');
+
+        /* Reset and base */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+            color: #eee;
+            height: 100vh;
+            max-height: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        header {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            margin-bottom: 15px;
+            color: red;
+            text-shadow: 0 0 8px red;
+            text-align: center;
+            user-select: none;
+        }
+
+        .scanner {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 14px;
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            box-shadow: 0 0 25px red, inset 0 0 30px red;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        button#scanButton {
+            background: red;
+            border: none;
+            border-radius: 12px;
+            color: green;
+            font-weight: 700;
+            font-size: 1.2rem;
+            padding: 14px 0;
+            cursor: pointer;
+            box-shadow: 0 4px 25px red;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            user-select: none;
+        }
+
+        button#scanButton:hover, button#scanButton:focus {
+            background: rgba(0, 0, 0, 0.5);
+            outline: none;
+            transform: scale(1.05);
+        }
+
+        section.status {
+            margin-top: 10px;
+        }
+
+        section.status h2 {
+            font-family: 'Orbitron', monospace;
+            color: red;
+            font-weight: 700;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 8px red;
+        }
+
+        ul.info-list {
+            list-style: none;
+            margin-top: 10px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        ul.info-list li {
+            background: rgba(0, 0, 0, 0.5);
+            margin-bottom: 8px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border-left: 5px solid red;
+            font-weight: 600;
+            font-size: 1rem;
+            user-select: text;
+            transition: background 0.3s;
+        }
+
+        ul.info-list li:hover {
+           background: rgba(0, 0, 0, 0.5);
+        }
+
+        ul.info-list li span.status-dot {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 10px;
+            vertical-align: middle;
+            box-shadow: 0 0 8px red;
+        }
+
+        li {
+           color: green;
+        }
+
+        /* Status dot colors */
+        .status-dot.safe {
+            background-color: #3aff76;
+        }
+        .status-dot.warning {
+            background-color: #ffcc00;
+        }
+        .status-dot.danger {
+            background-color: #ff4455;
+        }
+
+        /* Scrollbar for the info list */
+        ul.info-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        ul.info-list::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 3px;
+        }
+
+        ul.info-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        @media ( max-width: 400px) {
+            body {
+                padding: 10px;
+            }
+            .scanner {
+                max-width: 100%;
+                padding: 15px;
+            }
+            header {
+                font-size: 1.5rem;
+            }
+            button#scanButton {
+                font-size: 1.1rem;
+                padding: 12px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+<header>SPY SCANNER - COMPREHENSIVE SECURITY TOOL</header>
+
+<div class="scanner" role="main" aria-label="Comprehensive Security Scanner Tool">
+    <button id="scanButton" aria-live="polite" aria-pressed="false" aria-label="Start scanning your device for security threats">
+        Start Scan
+    </button>
+
+    <section class="status" aria-live="polite" aria-atomic="true" aria-relevant="additions">
+        <h2>Scan Results</h2>
+        <ul class="info-list" id="resultsList" role="list">
+            <li>Press "Start Scan" to begin detecting security threats.</li>
+        </ul>
+    </section>
+</div>
+
+<script>
+    (function(){
+        const scanButton = document.getElementById('scanButton');
+        const resultsList = document.getElementById('resultsList');
+
+        function addResult(message, level) {
+            const li = document.createElement('li');
+            const dot = document.createElement('span');
+            dot.className = 'status-dot ' + level;
+            dot.setAttribute('aria-hidden', 'true');
+            li.appendChild(dot);
+            li.appendChild(document.createTextNode(message));
+            resultsList.appendChild(li);
+        }
+
+        function clearResults() {
+            while(resultsList.firstChild) {
+                resultsList.removeChild(resultsList.firstChild);
+            }
+        }
+
+        async function checkPermissions() {
+            let results = [];
+            if (!navigator.permissions) {
+                results.push({
+                    message: "Permissions API not supported by your browser.",
+                    level: "warning"
+                });
+                return results;
+            }
+
+            try {
+                const camPerm = await navigator.permissions.query({name: 'camera'});
+                const micPerm = await navigator.permissions.query({name: 'microphone'});
+                const camStatus = camPerm.state;
+                const micStatus = micPerm.state;
+
+                results.push({
+                    message: `Camera permission: ${camStatus}`,
+                    level: camStatus === 'granted' ? 'safe' :
+                           camStatus === 'denied' ? 'danger' : 'warning'
+                });
+                results.push({
+                    message: `Microphone permission: ${micStatus}`,
+                    level: micStatus === 'granted' ? 'safe' :
+                           micStatus === 'denied' ? 'danger' : 'warning'
+                });
+            } catch (e) {
+                results.push({
+                    message: "Error retrieving camera/microphone permissions.",
+                    level: 'warning'
+                });
+            }
+            return results;
+        }
+
+        async function listMediaDevices() {
+            const results = [];
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoInputs = devices.filter(d => d.kind === 'videoinput');
+                const audioInputs = devices.filter(d => d.kind === 'audioinput');
+
+                if(videoInputs.length > 0) {
+                    results.push({
+                        message: `Detected ${videoInputs.length} video input device(s): ${videoInputs.map(d => d.label || 'Unnamed Camera').join(', ')}`,
+                        level: 'safe'
+                    });
+                } else {
+                    results.push({
+                        message: "No video input (camera) devices detected.",
+                        level: 'warning'
+                    });
+                }
+
+                if(audioInputs.length > 0) {
+                    results.push({
+                        message: `Detected ${audioInputs.length} audio input device(s): ${audioInputs.map(d => d.label || 'Unnamed Microphone').join(', ')}`,
+                        level: 'safe'
+                    });
+                } else {
+                    results.push({
+                        message: "No audio input (microphone) devices detected.",
+                        level: 'warning'
+                    });
+                }
+            } catch(e) {
+                results.push({
+                    message: 'Unable to access media devices info (permission denied or error).',
+                    level: 'danger'
+                });
+            }
+            return results;
+        }
+
+        function getDeviceInfo() {
+            const ua = navigator.userAgent;
+            const platform = navigator.platform;
+            return `Your Browser: ${ua} | Platform: ${platform}`;
+        }
+
+        async function checkMediaActivity() {
+            const results = [];
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({audio: true, video: true});
+                results.push({
+                    message: 'Camera & Microphone are accessible: NO suspicious spying detected from browser context.',
+                    level: 'safe'
+                });
+                stream.getTracks().forEach(t => t.stop());
+            } catch(e) {
+                if(e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+                    results.push({
+                        message: 'Camera and/or Microphone permission denied or blocked by user.',
+                        level: 'warning'
+                    });
+                } else if(e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
+                    results.push({
+                        message: 'No Camera/Microphone hardware found.',
+                        level: 'danger'
+                    });
+                } else if(e.name === 'NotReadableError' || e.name === 'TrackStartError') {
+                    results.push({
+                        message: 'Camera or Microphone hardware is currently in use by another application (possible spying risk).',
+                        level: 'danger'
+                    });
+                } else {
+                    results.push({
+                        message: `Error accessing camera or microphone: ${e.message}`,
+                        level: 'warning'
+                    });
+                }
+            }
+            return results;
+        }
+
+        async function runScan() {
+            clearResults();
+            addResult('Scanning device for security threats...', 'safe');
+
+            const permissionResults = await checkPermissions();
+            permissionResults.forEach(r => addResult(r.message, r.level));
+
+            const deviceResults = await listMediaDevices();
+            deviceResults.forEach(r => addResult(r.message, r.level));
+
+            const mediaActivityResults = await checkMediaActivity();
+            mediaActivityResults.forEach(r => addResult(r.message, r.level));
+
+            addResult(getDeviceInfo(), 'safe');
+            addResult('Scan complete. This tool is designed for non-profit and educational purposes only. Always ensure your devices are secure and up to date.', 'warning');
+        }
+
+        scanButton.addEventListener('click', async () => {
+            scanButton.disabled = true;
+            scanButton.textContent = 'Scanning...';
+            await runScan();
+            scanButton.disabled = false;
+            scanButton.textContent = 'Start Scan';
+        });
+
+    })();
+</script>
+</body>
+</html>

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zero Days Emulator</title>
+  <style>
+    body {
+      background: #000 url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      background-color: rgba(0, 0, 0, 0.5);
+      color: #00ff00;
+      font-family: monospace;
+      padding: 20px;
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #terminal {
+      height: 100%;
+      overflow-y: auto;
+      padding: 10px;
+      border: 1px solid #00ff00;
+      border-radius: 5px;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: none; /* Hide terminal initially */
+    }
+    #input {
+      outline: none;
+      border: none;
+      background: transparent;
+      color: #00ff00;
+      width: 100%;
+      font-size: 16px;
+    }
+    .command {
+      margin: 0;
+    }
+    /* Loading Screen Styles */
+    #loadingScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: black;
+      color: red;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: monospace;
+      font-size: 20px;
+      z-index: 9999; /* Ensure it is on top */
+      text-align: center;
+    }
+    .loading-text {
+      white-space: pre; /* Preserve whitespace for ASCII art */
+    }
+  </style>
+</head>
+<body>
+  <div id="loadingScreen">
+    <div class="loading-text">
+      Loading...<br>
+ _____                 _____ _            _   _            _             _  
+|__  /___  _ __ __ _  |_   _| |__   ___  | | | | __ _  ___| | _____ _ __| | 
+  / // _ \| '__/ _` |   | | | '_ \ / _ \ | |_| |/ _` |/ __| |/ / _ \ '__| | 
+ / /| (_) | | | (_| |   | | | | | |  __/ |  _  | (_| | (__|   <  __/ |  |_| 
+/____\___/|_|  \__,_|   |_| |_| |_|\___| |_| |_|\__,_|\___|_|\_\___|_|  (_) 
+         <br>
+    </div>
+  </div>
+
+  <div id="terminal">
+    <div id="output"></div>
+    <div>
+      <span>$ </span><input type="text" id="input" autofocus />
+    </div>
+  </div>
+
+<script>
+    const outputDiv = document.getElementById("output");
+    const inputField = document.getElementById("input");
+    const loadingScreen = document.getElementById("loadingScreen");
+
+    // Simulated file system
+    let fileSystem = {
+      "file1.txt": "This is the content of file1.txt",
+      "file2.txt": "This is the content of file2.txt",
+      "folder1": {},
+      "folder2": {},
+      "longfile.txt": "This is a long file.\nIt has multiple lines.\nThis is the third line.\nThis is the fourth line.\nThis is the fifth line."
+    };
+
+    // Command history
+    let commandHistory = [];
+    let historyIndex = -1;
+
+    // Simulated environment variables and aliases
+    let environment = {};
+    let aliases = {};
+
+    inputField.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        const command = inputField.value;
+        executeCommand(command);
+        inputField.value = ""; // Clear input field
+      } else if (event.key === "ArrowUp") {
+        // Navigate command history
+        if (historyIndex < commandHistory.length - 1) {
+          historyIndex++;
+          inputField.value = commandHistory[commandHistory.length - 1 - historyIndex];
+        }
+      } else if (event.key === "ArrowDown") {
+        // Navigate command history
+        if (historyIndex > 0) {
+          historyIndex--;
+          inputField.value = commandHistory[commandHistory.length - 1 - historyIndex] || "";
+        } else {
+          historyIndex = -1;
+          inputField.value = "";
+        }
+      }
+    });
+
+    function executeCommand(command) {
+      const commandOutput = document.createElement("div");
+      commandOutput.className = "command";
+      commandOutput.textContent = `$ ${command}`;
+      outputDiv.appendChild(commandOutput);
+
+      // Store command in history
+      commandHistory.push(command);
+      historyIndex = -1;
+
+      // Simulate command execution
+      let response;
+      const args = command.split(" ");
+      const cmd = args[0].toLowerCase();
+
+      switch (cmd) {
+        case "help":
+          response = `
+Available commands:<br>
+  help - Displays available commands.<br>
+  clear - Clears the terminal output.<br>
+  echo [text] - Displays the text provided after the command.<br>
+  ls - Lists files and directories in the current directory.<br>
+  pwd - Prints the current working directory.<br>
+  date - Displays the current date and time.<br>
+  cat [file] - Displays the content of the specified file.<br>
+  mkdir [folder] - Creates a new directory with the specified name.<br>
+  rmdir [folder] - Removes the specified directory if it is empty.<br>
+  touch [file] - Creates a new file with the specified name.<br>
+  rm [file] - Removes the specified file.<br>
+  mv [source] [destination] - Moves a file from the source to the destination.<br>
+  cp [source] [destination] - Copies a file from the source to the destination.<br>
+  history - Displays the command history.<br>
+  man [command] - Displays the manual for the specified command.<br>
+  find [name] - Searches for files matching the specified name.<br>
+  grep [pattern] [file] - Searches for a pattern in a file.<br>
+  head [file] - Displays the first 5 lines of the specified file.<br>
+  tail [file] - Displays the last 5 lines of the specified file.<br>
+  chmod [permissions] [file] - Changes the permissions of the specified file.<br>
+  jobs - Lists the current jobs.<br>
+  bg - Moves jobs to the background.<br>
+  fg - Brings jobs to the foreground.< br>
+  exit - Exits the terminal.<br>
+  alias [name=value] - Creates an alias for a command.<br>
+  unalias [name] - Removes an alias.<br>
+  export [name=value] - Sets an environment variable.<br>
+  unset [name] - Removes an environment variable.<br>
+  source [file] - Sources a file.<br>
+  sleep [seconds] - Pauses execution for a specified number of seconds.<br>
+  wait - Waits for background jobs to finish.<br>
+  trap - Sets a trap for signals.<br>
+  printf [format] - Formats and prints data.<br>
+  set [options] - Sets shell options.<br>
+  zero - Resets the system to its default state.<br>
+  pkg - Package management command.<br>
+  install [package] - Installs the specified package.<br>
+  apt - Advanced package tool command.<br>
+  update - Updates the package list.<br>
+  upgrade - Upgrades installed packages.<br>
+          `;
+          break;
+        case "clear":
+          outputDiv.innerHTML = ""; // Clear the terminal output
+          return; // Exit the function
+        case "ls":
+          response = Object.keys(fileSystem).join("<br>"); // List files and folders
+          break;
+        case "pwd":
+          response = "/home/user"; // Simulated current directory
+          break;
+        case "date":
+          response = new Date().toString(); // Current date and time
+          break;
+        case "cat":
+          if (args[1] && fileSystem[args[1]]) {
+            response = fileSystem[args[1]].replace(/\n/g, "<br>"); // Show file content with line breaks
+          } else {
+            response = "File not found: " + (args[1] || "");
+          }
+          break;
+        case "mkdir":
+          if (args[1]) {
+            fileSystem[args[1]] = {}; // Create a new folder
+            response = `Directory created: ${args[1]}`;
+          } else {
+            response = "Usage: mkdir [folder]";
+          }
+          break;
+        case "rmdir":
+          if (args[1] && fileSystem[args[1]] && typeof fileSystem[args[1]] === 'object' && Object.keys(fileSystem[args[1]]).length === 0) {
+            delete fileSystem[args[1]]; // Remove the folder if empty
+            response = `Directory removed: ${args[1]}`;
+          } else {
+            response = "Directory not found or not empty: " + (args[1] || "");
+          }
+          break;
+        case "touch":
+          if (args[1]) {
+            fileSystem[args[1]] = "New file created."; // Create a new file
+            response = `File created: ${args[1]}`;
+          } else {
+            response = "Usage: touch [file]";
+          }
+          break;
+        case "rm":
+          if (args[1] && fileSystem[args[1]]) {
+            delete fileSystem[args[1]]; // Remove the file
+            response = `File removed: ${args[1]}`;
+          } else {
+            response = "File not found: " + (args[1] || "");
+          }
+          break;
+        case "mv":
+          if (args[1] && args[2] && fileSystem[args[1]]) {
+            fileSystem[args[2]] = fileSystem[args[1]]; // Move file to new location
+            delete fileSystem[args[1]]; // Remove original file
+            response = `Moved ${args[1]} to ${args[2]}`;
+          } else {
+            response = "Usage: mv [source] [destination]";
+          }
+          break;
+        case "cp":
+          if (args[1] && args[2] && fileSystem[args[1]]) {
+            fileSystem[args[2]] = fileSystem[args[1]]; // Copy file to new location
+            response = `Copied ${args[1]} to ${args[2]}`;
+          } else {
+            response = "Usage: cp [source] [destination]";
+          }
+          break;
+        case "history":
+          response = commandHistory.join("<br>"); // Show command history
+          break;
+        case "man":
+          if (args[1]) {
+            response = getManual(args[1]); // Show manual for the command
+          } else {
+            response = "Usage: man [command]";
+          }
+          break;
+        case "jobs":
+          response = "No jobs currently running."; // Simulated jobs output
+          break;
+        case "bg":
+          response = "No jobs to move to background."; // Simulated background job output
+          break;
+        case "fg":
+          response = "No jobs to bring to foreground."; // Simulated foreground job output
+          break;
+        case "exit":
+          response = "Exiting terminal..."; // Simulated exit
+          break;
+        case "alias":
+          if (args[1]) {
+            const [name, value] = args[1].split("=");
+            aliases[name] = value || ""; // Create or update alias
+            response = `Alias set: ${name}=${value}`;
+          } else {
+            response = "Usage: alias [name=value]";
+          }
+          break;
+        case "unalias":
+          if (args[1] && aliases[args[1]]) {
+            delete aliases[args[1]]; // Remove alias
+            response = `Alias removed: ${args[1]}`;
+          } else {
+            response = "Alias not found: " + (args[1] || "");
+          }
+          break;
+        case "export":
+          if (args[1]) {
+            const [name, value] = args[1].split("=");
+            environment[name] = value || ""; // Set environment variable
+            response = `Exported: ${name}=${value}`;
+          } else {
+            response = "Usage: export [name=value]";
+          }
+          break;
+        case "unset":
+          if (args[1] && environment[args[1]]) {
+            delete environment[args[1]]; // Remove environment variable
+            response = `Unset: ${args[1]}`;
+          } else {
+            response = "Variable not found: " + (args[1] || "");
+          }
+          break;
+        case "source":
+          if (args[1]) {
+            response = `Sourcing file: ${args[1]}`; // Simulated sourcing
+          } else {
+            response = "Usage: source [file]";
+          }
+          break;
+        case "sleep":
+          if (args[1] && !isNaN(args[1])) {
+            response = `Sleeping for ${args[1]} seconds...`; // Simulated sleep
+            setTimeout(() => {
+              const wakeMessage = document.createElement("div");
+              wakeMessage.className = "command";
+              wakeMessage.textContent = "Awoke from sleep.";
+              outputDiv.appendChild(wakeMessage);
+              outputDiv.scrollTop = outputDiv.scrollHeight;
+            }, args[1] * 1000);
+          } else {
+            response = "Usage: sleep [ seconds]";
+          }
+          break;
+        case "wait":
+          response = "Waiting for background jobs to finish..."; // Simulated wait
+          break;
+        case "trap":
+          response = "Trap set for signals."; // Simulated trap
+          break;
+        case "printf":
+          if (args[1]) {
+            response = args.slice(1).join(" "); // Print formatted output
+          } else {
+            response = "Usage: printf [format] [arguments]";
+          }
+          break;
+        case "set":
+          response = "Current options: " + Object.keys(environment).join(", "); // Show set options
+          break;
+        case "zero":
+          fileSystem = {
+            "file1.txt": "This is the content of file1.txt",
+            "file2.txt": "This is the content of file2.txt",
+            "folder1": {},
+            "folder2": {},
+            "longfile.txt": "This is a long file.\nIt has multiple lines.\nThis is the third line.\nThis is the fourth line.\nThis is the fifth line."
+          };
+          response = "System reset to default state.";
+          break;
+        case "pkg":
+          response = "Package management command recognized.";
+          break;
+        case "install":
+          if (args[1]) {
+            response = `Installing package: ${args[1]}...`;
+          } else {
+            response = "Usage: install [package]";
+          }
+          break;
+        case "apt":
+          response = "Advanced package tool command recognized.";
+          break;
+        case "update":
+          response = "Updating package list...";
+          break;
+        case "upgrade":
+          response = "Upgrading installed packages...";
+          break;
+        case "grep":
+          if (args[1] && args[2] && fileSystem[args[2]]) {
+            const content = fileSystem[args[2]];
+            const matches = content.split("\n").filter(line => line.includes(args[1]));
+            response = matches.length ? matches.join("<br>") : "No matches found.";
+          } else {
+            response = "Usage: grep [pattern] [file]";
+          }
+          break;
+        case "head":
+          if (args[1] && fileSystem[args[1]]) {
+            const lines = fileSystem[args[1]].split("\n").slice(0, 5);
+            response = lines.join("<br>");
+          } else {
+            response = "File not found: " + ( args[1] || "");
+          }
+          break;
+        case "tail":
+          if (args[1] && fileSystem[args[1]]) {
+            const lines = fileSystem[args[1]].split("\n").slice(-5);
+            response = lines.join("<br>");
+          } else {
+            response = "File not found: " + (args[1] || "");
+          }
+          break;
+        case "chmod":
+          if (args[1] && args[2]) {
+            response = `Permissions for ${args[2]} changed to ${args[1]}.`;
+          } else {
+            response = "Usage: chmod [permissions] [file]";
+          }
+          break;
+        default:
+          response = "Command not found: " + command;
+      }
+
+      const responseOutput = document.createElement("div");
+      responseOutput.className = "command";
+      responseOutput.innerHTML = response; // Use innerHTML to allow <br> tags
+      outputDiv.appendChild(responseOutput);
+
+      // Scroll to the bottom of the terminal
+      outputDiv.scrollTop = outputDiv.scrollHeight;
+    }
+
+    function getManual(command) {
+      const manuals = {
+        help: "Displays available commands.",
+        clear: "Clears the terminal output.",
+        echo: "Displays the text provided after the command.",
+        ls: "Lists files and directories in the current directory.",
+        pwd: "Prints the current working directory.",
+        date: "Displays the current date and time.",
+        cat: "Displays the content of the specified file.",
+        mkdir: "Creates a new directory with the specified name.",
+        rmdir: "Removes the specified directory if it is empty.",
+        touch: "Creates a new file with the specified name.",
+        rm: "Removes the specified file.",
+        mv: "Moves a file from the source to the destination.",
+        cp: "Copies a file from the source to the destination.",
+        history: "Displays the command history.",
+        man: "Displays the manual for the specified command.",
+        find: "Searches for files matching the specified name.",
+        grep: "Searches for a pattern in a file.",
+        head: "Displays the first 5 lines of the specified file.",
+        tail: "Displays the last 5 lines of the specified file.",
+        chmod: "Changes the permissions of the specified file.",
+        jobs: "Lists the current jobs.",
+        bg: "Moves jobs to the background.",
+        fg: "Brings jobs to the foreground.",
+        exit: "Exits the terminal.",
+        alias: "Creates an alias for a command.",
+        unalias: "Removes an alias.",
+        export: "Sets an environment variable.",
+        unset: "Removes an environment variable.",
+        source: "Sources a file.",
+        sleep: "Pauses execution for a specified number of seconds.",
+        wait: "Waits for background jobs to finish.",
+        trap: "Sets a trap for signals.",
+        printf: "Formats and prints data.",
+        set: "Sets shell options.",
+        zero: "Resets the system to its default state.",
+        pkg: "Package management command.",
+        install: "Installs the specified package.",
+        apt: "Advanced package tool command.",
+        update: "Updates the package list.",
+        upgrade: "Upgrades installed packages."
+      };
+      return manuals[command] || "No manual entry for " + command;
+    }
+
+    // Show loading screen for 3 seconds before displaying the terminal
+    setTimeout(() => {
+      loadingScreen.style.display = "none"; // Hide loading screen
+      document.getElementById("terminal").style.display = "block"; // Show terminal
+    }, 3000);
+</script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI DNS Query Tool</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+    
+      color: #00ff55;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+      transition: background 0.3s, color 0.3s;
+    }
+    .container {
+      max-width: 700px;
+      width: 100%;
+      background: #1e1e1e;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(0, 255, 64, 0.3);
+    }
+    h1 {
+      font-size: 2rem;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .input-group {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    input, select, button {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+    }
+    input, select {
+      flex: 1;
+      background: #333333;
+      color: #00ff55;
+    }
+    button {
+      background: #ff0000;
+      color: #00ff55;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #16a34a;
+    }
+    .output, .ai-helper, .history {
+      margin-top: 1.5rem;
+      background: #1e1e1e;
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    .ai-helper {
+      font-style: italic;
+      color: #cccccc;
+      margin-bottom: 1rem;
+    }
+    .output pre {
+      white-space: pre-wrap;
+      background: #00ff73;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      color: #000000;
+    }
+    .history ul {
+      list-style: none;
+      font-size: 0.9rem;
+      color: #94a3b8;
+    }
+    .history li {
+      margin-bottom: 0.5rem;
+    }
+    .toolbar {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .toolbar button {
+      background: #1e293b;
+      color: #00ff55;
+      border: 1px solid #00ff55;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 AI DNS Query Tool</h1>
+    <div class="ai-helper" id="aiHelper">Try typing a domain name like <code>example.com</code> and select a DNS type.</div>
+    <div class="input-group">
+      <input type="text" id="domainInput" placeholder="Enter domain name...">
+      <select id="recordType">
+        <option value="A">A</option>
+        <option value="AAAA">AAAA</option>
+        <option value="CNAME">CNAME</option>
+        <option value="MX">MX</option>
+        <option value="TXT">TXT</option>
+        <option value="NS">NS</option>
+      </select>
+      <button onclick="runQuery()">Query</button>
+    </div>
+    <div class="toolbar">
+      <button onclick="copyResults()">📋 Copy</button>
+      <button onclick="exportResults()">⬇️ Export</button>
+    </div>
+    <div class="output" id="outputBox">
+      <pre id="results">Results will appear here...</pre>
+    </div>
+    <div class="history">
+      <h3>Query History</h3>
+      <ul id="historyList"></ul>
+    </div>
+  </div>
+
+  <script>
+    const aiTips = [
+      "🔎 Tip: Use 'MX' to view email server records.",
+      "💡 Did you know? 'CNAME' points to another domain.",
+      "🌐 Try 'NS' to see which nameservers are in control.",
+      "🧠 A record returns an IPv4 address.",
+      "✨ Use 'TXT' for SPF or DMARC records!"
+    ];
+
+    function rotateAITips() {
+      const aiHelper = document.getElementById("aiHelper");
+      let index = 0;
+      setInterval(() => {
+        aiHelper.textContent = aiTips[index];
+        index = (index + 1) % aiTips.length;
+      }, 5000);
+    }
+
+    function runQuery() {
+      const domain = document.getElementById("domainInput").value.trim();
+      const type = document.getElementById("recordType").value;
+      const outputBox = document.getElementById("results");
+
+      if (!/^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(domain)) {
+        outputBox.textContent = "❌ Please enter a valid domain name.";
+        return;
+      }
+
+      outputBox.textContent = "🔄 Querying... Please wait...";
+
+      fetch(`https://dns.google/resolve?name=${domain}&type=${type}`)
+        .then(res => res.json())
+        .then(data => {
+          const answer = data.Answer || [];
+          if (!answer.length) {
+            outputBox.textContent = `❌ No records found for ${domain} [${type}].`;
+            return;
+          }
+          const formatted = answer.map(rec => `📄 ${rec.name} - ${rec.type} - ${rec.data}`).join('\n');
+          outputBox.textContent = formatted;
+          updateHistory(domain, type);
+          localStorage.setItem("lastResults", formatted);
+        })
+        .catch(() => {
+          outputBox.textContent = "⚠️ An error occurred while querying DNS.";
+        });
+    }
+
+    function updateHistory(domain, type) {
+      const list = document.getElementById("historyList");
+      const li = document.createElement("li");
+      li.textContent = `${new Date().toLocaleTimeString()} — ${domain} [${type}]`;
+      list.prepend(li);
+
+      const history = JSON.parse(localStorage.getItem("queryHistory") || "[]");
+      history.unshift(li.textContent);
+      localStorage.setItem("queryHistory", JSON.stringify(history.slice(0, 10)));
+    }
+
+    function loadHistory() {
+      const list = document.getElementById("historyList");
+      const history = JSON.parse(localStorage.getItem("queryHistory") || "[]");
+      history.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        list.appendChild(li);
+      });
+    }
+
+    function copyResults() {
+      const text = document.getElementById("results").textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Copied to clipboard!");
+      });
+    }
+
+    function exportResults() {
+      const text = document.getElementById("results").textContent;
+      const blob = new Blob([text], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "dns_results.txt";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    rotateAITips();
+    loadHistory();
+  </script>
+</body>
+</html>

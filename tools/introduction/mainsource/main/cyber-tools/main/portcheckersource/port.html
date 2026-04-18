@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced Port Checker</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      
+      margin: 0;
+      padding: 20px;
+      color: #2c3e50;
+    }
+
+    .container {
+      max-width: 900px;
+      background: #000000;
+      margin: auto;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #00ff0d;
+      margin-bottom: 20px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input, select {
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      flex: 1;
+      min-width: 180px;
+    }
+
+    button {
+      padding: 10px 16px;
+      font-size: 16px;
+      background: #ff0000;
+      color: #38ff06;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0099ff;
+    }
+
+    .output {
+      margin-top: 20px;
+    }
+
+    .status {
+      padding: 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .open {
+      background-color: #eafaf1;
+      color: #27ae60;
+    }
+
+    .closed {
+      background-color: #fdecea;
+      color: #c0392b;
+    }
+
+    .scanning {
+      background-color: #fef9e7;
+      color: #f39c12;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0% { background-color: #fef9e7; }
+      50% { background-color: #fff3c4; }
+      100% { background-color: #fef9e7; }
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .log-area {
+      max-height: 150px;
+      overflow-y: auto;
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 14px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Advanced Port Checker</h1>
+    <div class="input-group">
+      <input type="text" id="target" placeholder="Enter IP or domain (e.g. example.com)" />
+      <input type="number" id="startPort" placeholder="Start Port (e.g. 20)" />
+      <input type="number" id="endPort" placeholder="End Port (e.g. 25)" />
+      <select id="protocol">
+        <option value="tcp">TCP</option>
+        <option value="udp">UDP</option>
+      </select>
+      <div class="actions">
+        <button onclick="checkRange()">Scan Range</button>
+        <button onclick="loadCommon()">Common Ports</button>
+        <button onclick="clearResults()">Clear</button>
+      </div>
+    </div>
+    <div class="output">
+      <div id="statusMsg" class="status scanning" style="display:none;"></div>
+      <div id="result"></div>
+      <div class="log-area" id="logArea"></div>
+    </div>
+  </div>
+
+  <script>
+    function simulatePortStatus(port) {
+      const common = [21, 22, 23, 25, 53, 80, 110, 143, 443, 3306, 8080];
+      return common.includes(port) || Math.random() < 0.05 ? 'open' : 'closed';
+    }
+
+    function logMessage(msg) {
+      const logArea = document.getElementById('logArea');
+      const timestamp = new Date().toLocaleTimeString();
+      logArea.innerHTML += `[${timestamp}] ${msg}<br>`;
+      logArea.scrollTop = logArea.scrollHeight;
+    }
+
+    function checkRange() {
+      const target = document.getElementById('target').value.trim();
+      const start = parseInt(document.getElementById('startPort').value);
+      const end = parseInt(document.getElementById('endPort').value);
+      const protocol = document.getElementById('protocol').value;
+      const result = document.getElementById('result');
+      const statusMsg = document.getElementById('statusMsg');
+      const logArea = document.getElementById('logArea');
+
+      result.innerHTML = '';
+      logArea.innerHTML = '';
+      statusMsg.style.display = 'none';
+
+      if (!target || isNaN(start) || isNaN(end) || start <= 0 || end > 65535 || start > end) {
+        result.innerHTML = `<div class="status closed">❌ Invalid input: Please check domain/IP and port range.</div>`;
+        return;
+      }
+
+      statusMsg.textContent = `🔍 Scanning ${target} from port ${start} to ${end} (${protocol.toUpperCase()})...`;
+      statusMsg.className = 'status scanning';
+      statusMsg.style.display = 'block';
+      logMessage(`Started scanning ${target} from port ${start} to ${end} (${protocol.toUpperCase()})`);
+
+      let output = `
+        <table>
+          <thead><tr><th>Port</th><th>Status</th><th>Protocol</th></tr></thead>
+          <tbody id="tableBody">
+      `;
+      result.innerHTML = output;
+
+      let port = start;
+      const scanNext = () => {
+        if (port > end) {
+          statusMsg.className = 'status open';
+          statusMsg.textContent = `✅ Scan complete for ${target}`;
+          return;
+        }
+
+        const status = simulatePortStatus(port);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${port}</td>
+          <td class="${status}">${status.toUpperCase()}</td>
+          <td>${protocol.toUpperCase()}</td>
+        `;
+        document.getElementById('tableBody').appendChild(row);
+        logMessage(`Port ${port} (${protocol.toUpperCase()}): ${status.toUpperCase()}`);
+        port++;
+        setTimeout(scanNext, 100); // Simulate delay per port
+      };
+
+      scanNext();
+    }
+
+    function loadCommon() {
+      document.getElementById('startPort').value = 20;
+      document.getElementById('endPort').value = 100;
+    }
+
+    function clearResults() {
+      document.getElementById('result').innerHTML = '';
+      document.getElementById('logArea').innerHTML = '';
+      document.getElementById('target').value = '';
+      document.getElementById('startPort').value = '';
+      document.getElementById('endPort').value = '';
+      document.getElementById('statusMsg').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

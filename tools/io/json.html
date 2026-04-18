@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays Utility Toolbox</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:Segoe UI,Arial,sans-serif;color:#d6d6d6;overflow-x:hidden;}
+
+/* BACKGROUND VIDEO */
+.bg-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;filter:brightness(0.25) grayscale(0.4);}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.2);z-index:-1;}
+
+header{
+  padding:20px;text-align:center;background:rgba(255,255,255,0);border-bottom:1px solid rgba(255,255,255,0.1);text-shadow:0 0 6px #000;
+}
+header h1{letter-spacing:3px;font-size:28px;}
+header span{color:#00ff88;font-size:12px;text-shadow:0 0 6px #000;}
+
+.container{max-width:1100px;margin:30px auto;padding:20px;background:rgba(255,255,255,0);}
+
+.section{margin-bottom:30px}
+.section h2{
+  font-size:18px;margin-bottom:12px;border-left:4px solid #00ff88;padding-left:10px;color:#bfbfbf;text-shadow:0 0 6px #000;
+}
+
+textarea,input{width:100%;padding:12px;background:rgba(0,0,0,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:6px;color:#fff;margin-bottom:12px;font-size:14px;}
+
+button{
+  padding:12px 22px;background:rgba(0,0,0,0.1);border:1px solid #00ff88;color:#00ff88;border-radius:6px;cursor:pointer;transition:.3s;
+}
+button:hover{background:#00ff88;color:black;transform:scale(1.05);}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+
+.card{background:rgba(0,0,0,0.05);padding:14px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);font-size:14px;text-shadow:0 0 6px #000;}
+.card span{display:block;font-size:11px;color:#aaa;margin-bottom:5px;text-shadow:0 0 4px #000;}
+
+.log{background:rgba(0,0,0,0.05);border:1px solid rgba(255,255,255,0.05);border-radius:6px;padding:12px;font-family:monospace;font-size:13px;max-height:220px;overflow:auto;color:#8aff8a;text-shadow:0 0 4px #000;}
+
+footer{text-align:center;padding:15px;font-size:12px;color:#777;background:rgba(255,255,255,0);border-top:1px solid rgba(255,255,255,0.1);text-shadow:0 0 6px #000;}
+</style>
+</head>
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • UTILITY TOOLBOX</h1>
+  <span>Offline & Online Developer Utilities</span>
+</header>
+
+<div class="container">
+
+  <!-- UUID Generator -->
+  <div class="section">
+    <h2>UUID Generator</h2>
+    <button onclick="generateUUID()">Generate UUID</button>
+    <pre id="uuidOutput">-</pre>
+  </div>
+
+  <!-- Regex Tester -->
+  <div class="section">
+    <h2>Regex Tester</h2>
+    <input id="regexInput" placeholder="Enter regex (e.g., \d+)">
+    <textarea id="regexText" rows="3" placeholder="Enter text to test"></textarea>
+    <button onclick="testRegex()">Test Regex</button>
+    <pre id="regexOutput">-</pre>
+  </div>
+
+  <!-- Text Difference Checker -->
+  <div class="section">
+    <h2>Text Difference Checker</h2>
+    <textarea id="diffText1" rows="3" placeholder="Text 1"></textarea>
+    <textarea id="diffText2" rows="3" placeholder="Text 2"></textarea>
+    <button onclick="checkDiff()">Check Difference</button>
+    <pre id="diffOutput">-</pre>
+  </div>
+
+  <!-- Code Minifier -->
+  <div class="section">
+    <h2>Code Minifier</h2>
+    <textarea id="minifyInput" rows="3" placeholder="Enter JS/CSS/HTML code"></textarea>
+    <button onclick="minifyCode()">Minify</button>
+    <pre id="minifyOutput">-</pre>
+  </div>
+
+  <!-- Code Beautifier -->
+  <div class="section">
+    <h2>Code Beautifier</h2>
+    <textarea id="beautifyInput" rows="3" placeholder="Enter JS/CSS/HTML code"></textarea>
+    <button onclick="beautifyCode()">Beautify</button>
+    <pre id="beautifyOutput">-</pre>
+  </div>
+
+  <!-- Color Code Converter -->
+  <div class="section">
+    <h2>Color Code Converter</h2>
+    <input id="colorInput" placeholder="Enter HEX/RGB/HSLA color (e.g., #ff0000)">
+    <button onclick="convertColor()">Convert</button>
+    <pre id="colorOutput">-</pre>
+  </div>
+
+  <div class="section">
+    <h2>Activity Log</h2>
+    <div class="log" id="log"></div>
+  </div>
+
+</div>
+
+<footer>
+  Educational & ethical utility toolbox • No backend • No tracking
+</footer>
+
+<script>
+// log helper
+const log = msg=>{
+  const l=document.getElementById("log");
+  l.innerHTML+=`[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+  l.scrollTop=l.scrollHeight;
+};
+
+// UUID Generator
+function generateUUID(){
+  const uuid='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{
+    const r=Math.random()*16|0,v=c=='x'?r:(r&0x3|0x8);
+    return v.toString(16);
+  });
+  document.getElementById("uuidOutput").textContent=uuid;
+  log("Generated UUID: "+uuid);
+}
+
+// Regex Tester
+function testRegex(){
+  try{
+    const pattern=new RegExp(document.getElementById("regexInput").value);
+    const text=document.getElementById("regexText").value;
+    const matches=text.match(pattern);
+    document.getElementById("regexOutput").textContent=matches?matches.join(', '):"No match";
+    log("Regex tested");
+  }catch(e){document.getElementById("regexOutput").textContent="Error: "+e;}
+}
+
+// Text Difference Checker
+function checkDiff(){
+  const t1=document.getElementById("diffText1").value.split(/\n/);
+  const t2=document.getElementById("diffText2").value.split(/\n/);
+  const diff=[];
+  const max=Math.max(t1.length,t2.length);
+  for(let i=0;i<max;i++){
+    if((t1[i]||'')!==(t2[i]||'')) diff.push(`Line ${i+1}:\n 1: ${(t1[i]||'')}\n 2: ${(t2[i]||'')}`);
+  }
+  document.getElementById("diffOutput").textContent=diff.length?diff.join('\n'):"No differences";
+  log("Text difference checked");
+}
+
+// Code Minifier
+function minifyCode(){
+  const code=document.getElementById("minifyInput").value;
+  const minified=code.replace(/\s+/g,' ').replace(/\s*([{}();,:])\s*/g,'$1').trim();
+  document.getElementById("minifyOutput").textContent=minified;
+  log("Code minified");
+}
+
+// Code Beautifier
+function beautifyCode(){
+  const code=document.getElementById("beautifyInput").value;
+  const beautified=code.replace(/;/g,';\n').replace(/{/g,'{\n').replace(/}/g,'\n}\n');
+  document.getElementById("beautifyOutput").textContent=beautified;
+  log("Code beautified");
+}
+
+// Color Code Converter
+function convertColor(){
+  const input=document.getElementById("colorInput").value.trim();
+  let output='';
+  if(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(input)){
+    const hex=input.substring(1);
+    const r=parseInt(hex.length===3?hex[0]+hex[0]:hex.substring(0,2),16);
+    const g=parseInt(hex.length===3?hex[1]+hex[1]:hex.substring(2,4),16);
+    const b=parseInt(hex.length===3?hex[2]+hex[2]:hex.substring(4,6),16);
+    output=`RGB(${r}, ${g}, ${b})`;
+  } else if(/rgb/i.test(input)){
+    output=input; // can parse to HEX if needed
+  } else output="Invalid color format";
+  document.getElementById("colorOutput").textContent=output;
+  log("Color converted");
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Generator | WebAdHere Software</title>
+    <!-- JSZip for handling multiple file downloads as a single package -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        :root {
+            --primary: #00d2ff;
+            --accent: #3a7bd5;
+            --bg-glass: rgba(15, 15, 15, 0.85);
+            --border-glass: rgba(255, 255, 255, 0.1);
+            --text: #e0e0e0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text);
+            background: #000;
+        }
+
+        #bg-video {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            min-width: 100%;
+            min-height: 100%;
+            z-index: -1;
+            object-fit: cover;
+            filter: brightness(0.4);
+        }
+
+        .container {
+            width: 700px;
+            max-height: 90vh;
+            background: var(--bg-glass);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .content {
+            padding: 20px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .label-frame {
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .label-frame-title {
+            position: absolute;
+            top: -10px;
+            left: 15px;
+            background: #1a1a1a;
+            padding: 0 8px;
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-glass);
+            padding: 10px;
+            color: #fff;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+        }
+
+        .source-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .source-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.85rem;
+            transition: opacity 0.3s;
+        }
+
+        .disabled {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 210, 255, 0.3);
+        }
+
+        button:active { transform: translateY(0); }
+
+        button.secondary {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .footer {
+            padding: 10px 20px;
+            background: rgba(0,0,0,0.3);
+            border-top: 1px solid var(--border-glass);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+        }
+
+        .status {
+            color: var(--primary);
+            font-style: italic;
+        }
+
+        .software-label {
+            color: #666;
+        }
+
+        /* Scrollbar styling */
+        .content::-webkit-scrollbar { width: 6px; }
+        .content::-webkit-scrollbar-thumb { background: var(--border-glass); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <video autoplay muted loop id="bg-video">
+        <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+    </video>
+
+    <div class="container">
+        <div class="header">
+            <h1>COOKIE GENERATOR</h1>
+        </div>
+
+        <div class="content">
+            <!-- Cookie Type Selection -->
+            <div class="label-frame">
+                <div class="label-frame-title">Cookie Type</div>
+                <div class="radio-group">
+                    <label class="radio-item"><input type="radio" name="cookieType" value="1" checked> Session Cookie</label>
+                    <label class="radio-item"><input type="radio" name="cookieType" value="2"> Preference Cookie</label>
+                    <label class="radio-item"><input type="radio" name="cookieType" value="3"> Tracking Cookie</label>
+                    <label class="radio-item"><input type="radio" name="cookieType" value="4"> Mixed Cookies</label>
+                </div>
+            </div>
+
+            <!-- Custom Domain -->
+            <div class="label-frame">
+                <div class="label-frame-title">Custom Domains (separate multiple with commas)</div>
+                <input type="text" id="customDomain" placeholder="e.g. mysite.com, test.org">
+            </div>
+
+            <!-- Source Selection -->
+            <div class="label-frame" id="sourceSection">
+                <div class="label-frame-title">Source Selection (For Tracking Cookies)</div>
+                <div class="btn-group">
+                    <button class="secondary" onclick="selectAllSources(true)">Select All</button>
+                    <button class="secondary" onclick="selectAllSources(false)">Clear All</button>
+                </div>
+                <div class="source-grid" id="sourceGrid">
+                    <!-- JS will populate this -->
+                </div>
+            </div>
+
+            <!-- Counts -->
+            <div style="display: flex; gap: 20px;">
+                <div class="label-frame" style="flex: 1;">
+                    <div class="label-frame-title">Cookie Count</div>
+                    <input type="number" id="cookieCount" value="5" min="1">
+                </div>
+                <div class="label-frame" style="flex: 1;">
+                    <div class="label-frame-title">File Count</div>
+                    <input type="number" id="fileCount" value="1" min="1">
+                </div>
+            </div>
+
+            <div class="btn-group" style="justify-content: center; margin-top: 0;">
+                <button onclick="generateCookies()" style="padding: 15px 40px; font-size: 1.1rem;">GENERATE & DOWNLOAD</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="status" id="statusBar">Ready</div>
+            <div class="software-label">WebAdHere Software</div>
+        </div>
+    </div>
+
+    <script>
+        const popularDomains = [
+            "google.com", "youtube.com", "facebook.com", "twitter.com", "instagram.com",
+            "amazon.com", "netflix.com", "microsoft.com", "apple.com", "linkedin.com",
+            "github.com", "stackoverflow.com", "medium.com", "wikipedia.org", "reddit.com",
+            "pinterest.com", "tumblr.com", "wordpress.com", "blogger.com", "mozilla.org",
+            "whatsapp.com", "telegram.org", "spotify.com", "twitch.tv", "tiktok.com",
+            "yahoo.com", "bing.com", "baidu.com", "yandex.com", "duckduckgo.com"
+        ];
+
+        const allSources = [
+            'direct', 'google', 'facebook', 'twitter', 'email', 'instagram', 'youtube', 'tiktok', 'linkedin',
+            'bing', 'yandex', 'duckduckgo', 'baidu', 'yahoo', 'referral', 'pinterest', 'reddit', 'medium',
+            'quora', 'stackoverflow', 'microsoft', 'organic'
+        ];
+
+        // Init source checkboxes
+        const sourceGrid = document.getElementById('sourceGrid');
+        allSources.forEach(source => {
+            const div = document.createElement('div');
+            div.className = 'source-item';
+            div.innerHTML = `<input type="checkbox" value="${source}" id="src_${source}"> <label for="src_${source}">${source}</label>`;
+            sourceGrid.appendChild(div);
+        });
+
+        // Toggle source selection availability
+        const typeRadios = document.querySelectorAll('input[name="cookieType"]');
+        const sourceSection = document.getElementById('sourceSection');
+
+        function updateSourceState() {
+            const selectedType = document.querySelector('input[name="cookieType"]:checked').value;
+            if (selectedType == "3" || selectedType == "4") {
+                sourceSection.classList.remove('disabled');
+            } else {
+                sourceSection.classList.add('disabled');
+            }
+        }
+
+        typeRadios.forEach(r => r.addEventListener('change', updateSourceState));
+        updateSourceState();
+
+        function selectAllSources(val) {
+            document.querySelectorAll('#sourceGrid input').forEach(cb => cb.checked = val);
+        }
+
+        function getSelectedSources() {
+            return Array.from(document.querySelectorAll('#sourceGrid input:checked')).map(cb => cb.value);
+        }
+
+        function setStatus(msg) {
+            document.getElementById('statusBar').innerText = msg;
+        }
+
+        function getRandomDomain(custom) {
+            if (custom && custom.trim()) {
+                const domains = custom.split(',').map(d => d.trim());
+                return domains[Math.floor(Math.random() * domains.length)];
+            }
+            return popularDomains[Math.floor(Math.random() * popularDomains.length)];
+        }
+
+        function generateRandomHex(len) {
+            let res = '';
+            const chars = '0123456789abcdef';
+            for(let i=0; i<len; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
+            return res;
+        }
+
+        // Logic Generators
+        function generateSessionCookie(custom) {
+            const expiry = new Date();
+            expiry.setDate(expiry.getDate() + (Math.random() * (2.0 - 1.0) + 1.0));
+            return {
+                "domain": getRandomDomain(custom),
+                "path": "/",
+                "name": "session_id",
+                "value": generateRandomHex(32),
+                "secure": false,
+                "httpOnly": true,
+                "expirationDate": Math.floor(expiry.getTime() / 1000)
+            };
+        }
+
+        function generatePreferenceCookie(custom) {
+            const themes = ['light', 'dark', 'blue', 'green', 'high-contrast'];
+            const langs = ['tr', 'en', 'de', 'fr', 'es'];
+            const expiry = new Date();
+            expiry.setDate(expiry.getDate() + Math.floor(Math.random() * (45 - 15) + 15));
+            return {
+                "domain": getRandomDomain(custom),
+                "path": "/",
+                "name": "preferences",
+                "value": `theme=${themes[Math.floor(Math.random()*themes.length)]}; language=${langs[Math.floor(Math.random()*langs.length)]}`,
+                "secure": false,
+                "httpOnly": false,
+                "expirationDate": Math.floor(expiry.getTime() / 1000)
+            };
+        }
+
+        function generateTrackingCookie(selectedSources, custom) {
+            const uid = Math.floor(Math.random() * 9000000000) + 1000000000;
+            let source = "";
+            if (selectedSources.length > 0) {
+                const num = Math.min(selectedSources.length, Math.floor(Math.random() * 3) + 1);
+                const shuffled = [...selectedSources].sort(() => 0.5 - Math.random());
+                source = shuffled.slice(0, num).join(',');
+            } else {
+                source = allSources[Math.floor(Math.random() * allSources.length)];
+            }
+
+            const expiry = new Date();
+            expiry.setDate(expiry.getDate() + Math.floor(Math.random() * (60 - 20) + 20));
+            
+            let domain = getRandomDomain(custom);
+            if (!domain.startsWith('.')) domain = '.' + domain;
+
+            return {
+                "domain": domain,
+                "path": "/",
+                "name": `tracking_uid_${uid}`,
+                "value": `uid:${uid},source:${source}`,
+                "secure": true,
+                "httpOnly": false,
+                "sameSite": "None",
+                "expirationDate": Math.floor(expiry.getTime() / 1000)
+            };
+        }
+
+        // Main Generation Engine
+        async function generateCookies() {
+            const count = parseInt(document.getElementById('cookieCount').value);
+            const fileCount = parseInt(document.getElementById('fileCount').value);
+            const type = parseInt(document.querySelector('input[name="cookieType"]:checked').value);
+            const custom = document.getElementById('customDomain').value;
+            const sources = getSelectedSources();
+
+            if (isNaN(count) || count < 1 || isNaN(fileCount) || fileCount < 1) {
+                alert("Please enter valid numbers");
+                return;
+            }
+
+            setStatus("Generating...");
+            const zip = new JSZip();
+
+            for (let f = 0; f < fileCount; f++) {
+                let cookies = [];
+                for (let c = 0; c < count; c++) {
+                    let currentType = type;
+                    if (type === 4) currentType = Math.floor(Math.random() * 3) + 1;
+
+                    if (currentType === 1) cookies.push(generateSessionCookie(custom));
+                    else if (currentType === 2) cookies.push(generatePreferenceCookie(custom));
+                    else cookies.push(generateTrackingCookie(sources, custom));
+                }
+                
+                zip.file(`cookies_${f + 1}.json`, JSON.stringify(cookies, null, 2));
+            }
+
+            setStatus("Packaging files...");
+            const content = await zip.generateAsync({type: "blob"});
+            
+            // Trigger Download
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(content);
+            link.download = `webadhere_cookies_${Date.now()}.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            setStatus(`${fileCount} file(s) successfully created.`);
+        }
+    </script>
+</body>
+</html>

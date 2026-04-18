@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IPv6 Generator Enhanced</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: #2a2a40;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+      text-align: center;
+      max-width: 700px;
+      width: 100%;
+    }
+
+    h1 {
+      margin-bottom: 1rem;
+      font-size: 1.8rem;
+      color: #00ffd5;
+    }
+
+    textarea {
+      width: 100%;
+      background: #111;
+      color: #0f0;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid #00ffd5;
+      resize: vertical;
+      min-height: 100px;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+
+    select, input[type="number"], button {
+      padding: 0.6rem;
+      margin: 0.3rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+    }
+
+    button {
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    #generate {
+      background: #00ffd5;
+      color: #000;
+    }
+
+    #copy, #download, #qrBtn, #validate, #toggleFormat {
+      background: #444;
+      color: #fff;
+    }
+
+    button:hover {
+      opacity: 0.85;
+    }
+
+    #qrcode {
+      margin-top: 1rem;
+    }
+
+    .copied, .validMsg {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: #00ff8b;
+    }
+
+    .invalid {
+      color: #ff4b4b;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>IPv6 Generator Enhanced</h1>
+
+  <div>
+    <label for="count">How many:</label>
+    <input type="number" id="count" min="1" max="50" value="1" />
+    <label for="format">Format:</label>
+    <select id="format">
+      <option value="compressed">Compressed</option>
+      <option value="expanded">Expanded</option>
+    </select>
+    <label for="suffix">Add:</label>
+    <select id="suffix">
+      <option value="">None</option>
+      <option value="/64">/64</option>
+      <option value="/128">/128</option>
+      <option value="%eth0">%eth0</option>
+    </select>
+  </div>
+
+  <textarea id="output" placeholder="Your IPv6 addresses will appear here..."></textarea>
+
+  <div>
+    <button id="generate">Generate</button>
+    <button id="copy">Copy</button>
+    <button id="download">Download</button>
+    <button id="qrBtn">QR Code</button>
+    <button id="validate">Validate</button>
+    <button id="toggleFormat">Toggle Format</button>
+  </div>
+
+  <div id="copyMsg" class="copied"></div>
+  <div id="qrcode"></div>
+  <div id="validationMsg" class="validMsg"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+  function generateIPv6Raw() {
+    return Array.from({ length: 8 }, () => Math.floor(Math.random() * 0x10000).toString(16).padStart(4, '0'));
+  }
+
+  function compressIPv6(segments) {
+    const full = segments.map(s => s.replace(/^0+/, '') || '0');
+    let bestStart = -1, bestLen = 0;
+    for (let i = 0; i < full.length;) {
+      if (full[i] === '0') {
+        let start = i;
+        while (i < full.length && full[i] === '0') i++;
+        let len = i - start;
+        if (len > bestLen) {
+          bestStart = start;
+          bestLen = len;
+        }
+      } else i++;
+    }
+    if (bestLen > 1) {
+      full.splice(bestStart, bestLen, '');
+      if (bestStart === 0) full.unshift('');
+      if (bestStart + bestLen === 8) full.push('');
+    }
+    return full.join(':').replace(/:{3,}/, '::');
+  }
+
+  function expandIPv6(segments) {
+    return segments.map(s => s.padStart(4, '0')).join(':');
+  }
+
+  function generateMultipleIPv6(count, format, suffix) {
+    const list = [];
+    for (let i = 0; i < count; i++) {
+      const segments = generateIPv6Raw();
+      let ipv6 = format === 'expanded' ? expandIPv6(segments) : compressIPv6(segments);
+      if (suffix) ipv6 += suffix;
+      list.push(ipv6);
+    }
+    return list.join('\n');
+  }
+
+  function toggleFormat() {
+    const current = document.getElementById('output').value.split('\n');
+    const newFormat = current.map(addr => {
+      const main = addr.split(/[\/%]/)[0];
+      const suffix = addr.slice(main.length);
+      if (main.includes('::')) {
+        const expanded = expandIPv6(expandShortened(main));
+        return expanded + suffix;
+      } else {
+        return compressIPv6(main.split(':')) + suffix;
+      }
+    });
+    document.getElementById('output').value = newFormat.join('\n');
+  }
+
+  function expandShortened(ipv6) {
+    const parts = ipv6.split('::');
+    const left = parts[0].split(':').filter(Boolean);
+    const right = parts[1]?.split(':').filter(Boolean) || [];
+    const fill = new Array(8 - left.length - right.length).fill('0');
+    return [...left, ...fill, ...right];
+  }
+
+  function isValidIPv6(ip) {
+    return /^(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}(\/\d{1,3})?(%[^\s]+)?$/.test(ip) ||
+           /^((?:[a-fA-F0-9]{1,4}:){1,7}:|::(?:[a-fA-F0-9]{1,4}:){0,6}[a-fA-F0-9]{1,4})(\/\d{1,3})?(%[^\s]+)?$/.test(ip);
+  }
+
+  const output = document.getElementById("output");
+  const copyMsg = document.getElementById("copyMsg");
+  const qrcodeDiv = document.getElementById("qrcode");
+  const validationMsg = document.getElementById("validationMsg");
+
+  document.getElementById("generate").addEventListener("click", () => {
+    const count = parseInt(document.getElementById("count").value);
+    const format = document.getElementById("format").value;
+    const suffix = document.getElementById("suffix").value;
+    output.value = generateMultipleIPv6(count, format, suffix);
+    copyMsg.textContent = "";
+    validationMsg.textContent = "";
+    qrcodeDiv.innerHTML = "";
+  });
+
+  document.getElementById("copy").addEventListener("click", () => {
+    output.select();
+    document.execCommand("copy");
+    copyMsg.textContent = "Copied to clipboard!";
+  });
+
+  document.getElementById("download").addEventListener("click", () => {
+    const blob = new Blob([output.value], { type: "text/plain" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "ipv6_list.txt";
+    link.click();
+  });
+
+  document.getElementById("qrBtn").addEventListener("click", () => {
+    qrcodeDiv.innerHTML = "";
+    const ipv6 = output.value.split('\n')[0] || "";
+    if (ipv6) {
+      new QRCode(qrcodeDiv, {
+        text: ipv6,
+        width: 128,
+        height: 128,
+        colorDark: "#00ffd5",
+        colorLight: "#ffffff",
+      });
+    }
+  });
+
+  document.getElementById("validate").addEventListener("click", () => {
+    const lines = output.value.trim().split('\n');
+    const valid = lines.every(ip => isValidIPv6(ip.trim()));
+    validationMsg.textContent = valid ? "All addresses are valid!" : "Some addresses are invalid!";
+    validationMsg.className = valid ? "validMsg" : "validMsg invalid";
+  });
+
+  document.getElementById("toggleFormat").addEventListener("click", toggleFormat);
+</script>
+
+</body>
+</html>

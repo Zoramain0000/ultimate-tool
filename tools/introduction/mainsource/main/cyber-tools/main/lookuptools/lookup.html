@@ -1,0 +1,224 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI DNS & Network Lookup Tool</title>
+  <style>
+    body {
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      
+      color: #0f0;
+      font-family: 'Courier New', monospace;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      background: #111;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 15px lime;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .input-group, .output {
+      margin-top: 1rem;
+    }
+    input, select, button {
+      padding: 0.5rem;
+      font-size: 1rem;
+      background: #222;
+      color: #0f0;
+      border: 1px solid #0f0;
+      border-radius: 5px;
+      margin-right: 0.5rem;
+    }
+    .output {
+      background: #000;
+      padding: 1rem;
+      border: 1px solid #333;
+      border-radius: 5px;
+      white-space: pre-wrap;
+    }
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 3px solid #0f0;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 0.8s linear infinite;
+      margin-left: 10px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    select option[title]::after {
+      content: attr(title);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌐 AI DNS & Network Lookup Tool</h1>
+    <div class="input-group">
+      <input type="text" id="queryInput" placeholder="Enter domain or IP" />
+      <select id="lookupType">
+        <optgroup label="General">
+          <option title="American Registry for Internet Numbers">ARIN</option>
+          <option title="Domain name WHOIS info">Whois</option>
+          <option title="Reverse IP to hostname">Reverse</option>
+        </optgroup>
+        <optgroup label="DNS Records">
+          <option title="HTTPS binding record">HTTPS</option>
+          <option title="HTTP binding record">HTTP</option>
+          <option title="Start of Authority">SOA</option>
+          <option title="Text records">TXT</option>
+          <option title="Canonical name">CNAME</option>
+          <option title="Mail Exchange">MX</option>
+          <option title="IPv6 Address">AAAA</option>
+          <option title="DomainKeys Identified Mail">DKIM</option>
+          <option title="Domain-based Message Authentication, Reporting & Conformance">DMARC</option>
+        </optgroup>
+        <optgroup label="Security / Advanced">
+          <option title="Mail Transfer Agent Strict Transport Security">MTA-STS</option>
+          <option title="Brand Indicators for Message Identification">BIMI</option>
+          <option title="Delegation Signer">DS</option>
+          <option title="Next Secure">NSEC</option>
+          <option title="Resource Record Signature">RRSIG</option>
+          <option title="Autonomous System Number">ASN</option>
+          <option title="IP Security Key">IPSECKEY</option>
+          <option title="Geographic location">LOC</option>
+          <option title="Certificate record">CERT</option>
+          <option title="DNS Public Key">DNSKEY</option>
+          <option title="Service location">SRV</option>
+          <option title="NSEC3 Parameters">NSEC3PARAM</option>
+        </optgroup>
+      </select>
+      <button onclick="performLookup()">🔍 Lookup</button>
+      <span id="spinner" class="spinner" style="display:none"></span>
+    </div>
+    <div class="output" id="outputBox">Awaiting input...</div>
+  </div>
+
+  <script>
+    const dnsApiTypeMap = {
+      'HTTP': 65,
+      'HTTPS': 64,
+      'SOA': 6,
+      'TXT': 16,
+      'CNAME': 5,
+      'DS': 43,
+      'NSEC': 47,
+      'RRSIG': 46,
+      'IPSECKEY': 45,
+      'LOC': 29,
+      'CERT': 37,
+      'DNSKEY': 48,
+      'SRV': 33,
+      'AAAA': 28,
+      'MX': 15,
+      'NSEC3PARAM': 51
+    };
+
+    function saveQuery(query, type) {
+      let history = JSON.parse(localStorage.getItem('queryHistory')) || [];
+      history.unshift({ query, type, time: new Date().toISOString() });
+      localStorage.setItem('queryHistory', JSON.stringify(history.slice(0, 10)));
+    }
+
+    async function performLookup() {
+      const query = document.getElementById('queryInput').value.trim();
+      const type = document.getElementById('lookupType').value;
+      const output = document.getElementById('outputBox');
+      const spinner = document.getElementById('spinner');
+
+      if (!query) {
+        output.textContent = '❌ Please enter a domain or IP address.';
+        return;
+      }
+
+      output.textContent = `🔄 Performing ${type} Lookup for: ${query}`;
+      spinner.style.display = 'inline-block';
+
+      try {
+        saveQuery(query, type);
+
+        if (type === 'ARIN') return await lookupArin(query);
+        if (type === 'Whois') return await lookupWhois(query);
+
+        const typeCode = dnsApiTypeMap[type.toUpperCase()] || type.toUpperCase();
+        const res = await fetch(`https://dns.google/resolve?name=${query}&type=${typeCode}`);
+        const contentType = res.headers.get('content-type');
+
+        if (!res.ok || !contentType.includes("application/json")) {
+          throw new Error(`Invalid response from DNS API (${res.status})`);
+        }
+
+        const data = await res.json();
+
+        if (data.Answer) {
+          const result = data.Answer.map(r => `${r.name} - ${r.type} → ${r.data}`).join('\n');
+          output.textContent = `✅ ${type} Lookup Result for ${query}:\n${result}`;
+        } else {
+          output.textContent = `❌ No records found for ${type}.`;
+        }
+      } catch (err) {
+        output.textContent = `❌ Error during ${type} Lookup:\n${err.message}`;
+      } finally {
+        spinner.style.display = 'none';
+      }
+    }
+
+    async function lookupWhois(domain) {
+      const output = document.getElementById('outputBox');
+      const spinner = document.getElementById('spinner');
+
+      try {
+        const res = await fetch(`https://api.api-ninjas.com/v1/whois?domain=${domain}`, {
+          headers: { 'X-Api-Key': 'qSvx1UaT95HigxOb9+cVJQ==46DbTPUh08PEiKuG' }
+        });
+
+        if (!res.ok) throw new Error(`WHOIS failed with code ${res.status}`);
+        const data = await res.json();
+
+        output.textContent = `✅ WHOIS Record for ${domain}:\n\nDomain: ${data.domain_name}\nRegistrar: ${data.registrar}\nCreated: ${data.creation_date}\nExpires: ${data.expiration_date}\nUpdated: ${data.updated_date}\nStatus: ${data.status}\nName Servers: ${data.name_servers.join(', ')}`;
+      } catch (err) {
+        output.textContent = `❌ WHOIS Error:\n${err.message}`;
+      } finally {
+        spinner.style.display = 'none';
+      }
+    }
+
+    async function lookupArin(ip) {
+      const output = document.getElementById('outputBox');
+      const spinner = document.getElementById('spinner');
+
+      try {
+        const res = await fetch(`https://whois.arin.net/rest/ip/${ip}.json`, {
+          headers: { Accept: 'application/json' }
+        });
+
+        if (!res.ok) throw new Error(`ARIN failed with code ${res.status}`);
+        const data = await res.json();
+
+        const net = data.net;
+        const block = Array.isArray(net.netBlocks.netBlock)
+          ? net.netBlocks.netBlock[0]
+          : net.netBlocks.netBlock;
+
+        output.textContent = `✅ ARIN Record for ${ip}:\n\nHandle: ${net.handle.$}\nName: ${net.name.$}\nOrg: ${net.orgRef ? net.orgRef['@name'] : 'N/A'}\nCIDR: ${block.cidrLength.$}\nStart: ${net.startAddress.$}\nEnd: ${net.endAddress.$}\nUpdated: ${net.updateDate.$}`;
+      } catch (err) {
+        output.textContent = `❌ ARIN Lookup Error:\n${err.message}`;
+      } finally {
+        spinner.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

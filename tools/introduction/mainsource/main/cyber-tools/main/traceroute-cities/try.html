@@ -1,0 +1,267 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Advanced Traceroute Tool</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      background-color: #1e1e2f;
+      color: #f1f1f1;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background:rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      text-align: center;
+      font-size: 1.8em;
+      color: red ;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    main {
+      padding: 30px;
+      max-width: 1000px;
+      margin: auto;
+      background: rgba(0, 0, 0, 0.5); /* Transparent container */
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+    }
+
+    #traceroute-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+
+    input[type="text"] {
+      padding: 12px;
+      width: 300px;
+      border-radius: 6px;
+      border: none;
+      font-size: 1em;
+    }
+
+    button {
+      background-color: red;
+      border: none;
+      padding: 12px 18px;
+      font-size: 1em;
+      color: green;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #4dbfe3;
+    }
+
+    #results {
+      background-color: rgba(42, 46, 58, 0.8); /* Transparent background for results */
+      border-radius: 6px;
+      padding: 20px;
+      font-family: 'Courier New', monospace;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      margin-bottom: 40px;
+    }
+
+    .result-line {
+      margin-bottom: 8px;
+      white-space: pre-wrap;
+    }
+
+    .error {
+      color: #ff4b4b;
+      font-weight: bold;
+    }
+
+    .typing::after {
+      content: '|';
+      animation: blink 1s step-start infinite;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    #map {
+      padding: 20px;
+      background-color: rgba(21, 21, 33, 0.7); /* Transparent background for map */
+      border-radius: 6px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .map-hop {
+      position: relative;
+      padding-left: 40px;
+      margin-bottom: 30px;
+    }
+
+    .map-hop::before {
+      content: '';
+      position: absolute;
+      left: 16px;
+      top: 0;
+      bottom: -20px;
+      width: 4px;
+      background: red;
+    }
+
+    .map-hop::after {
+      content: '';
+      position: absolute;
+      left: 9px;
+      top: 5px;
+      width: 14px;
+      height: 14px;
+      background: red;
+      border-radius: 50%;
+      border: 2px solid #1e1e2f;
+    }
+
+    .map-info {
+      line-height: 1.5;
+    }
+
+    @media (max-width: 600px) {
+      input[type="text"], button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>Advanced Traceroute Tool</header>
+  <main>
+    <div id="traceroute-form">
+      <input type="text" id="hostname" placeholder="Enter hostname or IP (e.g. google.com)">
+      <button id="traceroute-btn">Run Traceroute</button>
+    </div>
+
+    <div id="results">
+      <div class="result-line">Waiting for input...</div>
+    </div>
+
+    <div id="map">
+      <div class="result-line">Map trace will appear here.</div>
+    </div>
+  </main>
+
+  <script>
+    const btn = document.getElementById('traceroute-btn');
+    const results = document.getElementById('results');
+    const map = document.getElementById('map');
+
+    const cities = [
+      'New York, US', 'Chicago, US', 'London, UK', 'Paris, FR', 'Frankfurt, DE',
+      'Tokyo, JP', 'Seoul, KR', 'Singapore, SG', 'Sydney, AU', 'Toronto, CA',
+      'Berlin, DE', 'Los Angeles, US', 'Madrid, ES', 'Moscow, RU', 'Beijing, CN',
+      'Mumbai, IN', 'Dubai, AE', 'Rio de Janeiro, BR', 'Cape Town, ZA', 'Melbourne, AU',
+      'Amsterdam, NL', 'Rome, IT', 'Barcelona, ES', 'Zurich, CH', 'Stockholm, SE',
+      'Warsaw, PL', 'Vancouver, CA', 'Hong Kong, HK', 'Lagos, NG', 'Kuala Lumpur, MY',
+      'Jakarta, ID', 'Istanbul, TR', 'Bangkok, TH', 'Cairo, EG', 'Oslo, NO',
+      'Vienna, AT', 'Buenos Aires, AR', 'Lima, PE', 'Athens, GR', 'Kiev, UA',
+      'Ho Chi Minh City, VN', 'Dublin, IE', 'Manila, PH', 'Santiago, CL',
+      'Bucharest, RO', 'Brisbane, AU', 'Auckland, NZ', 'Tbilisi, GE',
+      'Abu Dhabi, AE', 'Helsinki, FI', 'Copenhagen, DK', 'Nairobi, KE',
+      'Jeddah, SA', 'Karachi, PK', 'Amman, JO', 'Casablanca, MA', 'Mexico City, MX',
+      'Dhaka, BD', 'Accra, GH', 'Port Louis, MU', 'Vilnius, LT', 'Tashkent, UZ',
+      'Prague, CZ', 'Zagreb, HR', 'Baku, AZ', 'Addis Ababa, ET', 'Belgrade, RS',
+      'Beirut, LB', 'Riyadh, SA', 'Sofia, BG', 'Montreal, CA', 'Caracas, VE',
+      'Gothenburg, SE', 'Quito, EC', 'Islamabad, PK', 'Medellin, CO', 'Brussels, BE',
+      'San Juan, PR', 'Montevideo, UY'
+    ];
+
+    const generateRandomIP = () => {
+      const randomPart1 = Math.floor(Math.random() * 256);
+      const randomPart2 = Math.floor(Math.random() * 256);
+      const randomPart3 = Math.floor(Math.random() * 256);
+      const randomPart4 = Math.floor(Math.random() * 256);
+      return `${randomPart1}.${randomPart2}.${randomPart3}.${randomPart4}`;
+    };
+
+    const simulateTraceroute = (host) => {
+      const hops = Math.floor(Math.random() * 6) + 10;
+      const output = [];
+      const mapData = [];
+
+      for (let i = 1; i <= hops; i++) {
+        const ip = generateRandomIP();
+        const rtt1 = (Math.random() * 40 + i * 2).toFixed(2);
+        const rtt2 = (Math.random() * 40 + i * 2).toFixed(2);
+        const rtt3 = (Math.random() * 40 + i * 2).toFixed(2);
+        const city = cities[i % cities.length];
+        const hostname = `hop${i}.${host.replace(/\./g, '-')}.net`;
+
+        output.push(`${i}\t${ip} (${hostname})\t${rtt1} ms\t${rtt2} ms\t${rtt3} ms`);
+        mapData.push({ hop: i, ip, city, hostname });
+      }
+
+      output.push(`Trace complete to ${host}`);
+      return { output, mapData };
+    };
+
+    const printLines = (lines, index = 0) => {
+      if (index >= lines.length) return;
+
+      const line = document.createElement('div');
+      line.className = 'result-line typing';
+      results.appendChild(line);
+
+      let charIndex = 0;
+      const type = () => {
+        if (charIndex < lines[index].length) {
+          line.textContent += lines[index][charIndex++];
+          setTimeout(type, 10);
+        } else {
+          line.classList.remove('typing');
+          printLines(lines, index + 1);
+        }
+      };
+      type();
+    };
+
+    const drawMap = (hops) => {
+      map.innerHTML = '';
+      hops.forEach(hop => {
+        const hopDiv = document.createElement('div');
+        hopDiv.className = 'map-hop';
+        hopDiv.innerHTML = `<div class="map-info">
+          <strong>Hop ${hop.hop}</strong> — ${hop.city}<br>
+          ${hop.hostname} [${hop.ip}]
+        </div>`;
+        map.appendChild(hopDiv);
+      });
+    };
+
+    btn.addEventListener('click', () => {
+      const hostname = document.getElementById('hostname').value.trim();
+      results.innerHTML = '';
+      map.innerHTML = '';
+
+      if (!hostname) {
+        results.innerHTML = `<div class="result-line error">Please enter a valid hostname or IP address.</div>`;
+        return;
+      }
+
+      results.innerHTML = `<div class="result-line">Running traceroute to <strong>${hostname}</strong>...</div>`;
+
+      setTimeout(() => {
+        const { output, mapData } = simulateTraceroute(hostname);
+        results.innerHTML = '';
+        printLines(output);
+        drawMap(mapData);
+      }, 1000);
+    });
+  </script>
+</body>
+</html>

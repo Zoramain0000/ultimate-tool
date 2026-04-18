@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avatar-Gen | 150+ Styles | Powered by DiceBear</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+            height: 100vh;
+            color: #fff;
+            background: #121212;
+        }
+
+        .background-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.8;
+        }
+
+        .background-video video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 20px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            max-width: 900px;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #4CAF50, #2196F3);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: #eee;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        #avatarInput {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #avatarInput::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            background: linear-gradient(90deg, #4CAF50, #2196F3);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .style-selector {
+            margin: 20px 0;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        #styleSelect {
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            font-size: 1rem;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .size-selector {
+            margin: 10px 0;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .size-selector label {
+            margin-right: 10px;
+            color: #eee;
+        }
+
+        #avatarSize {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: none;
+            padding: 8px;
+            border-radius: 5px;
+        }
+
+        .avatar-container {
+            margin: 30px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        #avatarOutput {
+            border-radius: 50%;
+            border: 3px solid #4CAF50;
+            object-fit: cover;
+            transition: all 0.3s;
+        }
+
+        #qrcode {
+            background: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .random-style-btn {
+            background: linear-gradient(90deg, #FF5722, #FF9800);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-video">
+        <video autoplay muted loop>
+            <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <div class="container">
+        <h1>Avatar-Gen</h1>
+        <p>Powered by <strong>DiceBear API</strong> | 150+ Unique Styles</p>
+
+        <div class="input-group">
+            <input type="text" id="avatarInput" placeholder="Enter nickname/name/username...">
+            <button id="generateBtn"><i class="fas fa-magic"></i> Generate</button>
+        </div>
+
+        <div class="style-selector">
+            <label for="styleSelect">Choose Style:</label>
+<select id="styleSelect">
+    <option value="adventurer">Adventurer</option>
+    <option value="adventurer-neutral">Adventurer Neutral</option>
+    <option value="avataaars">Avataaars</option>
+    <option value="big-ears">Big Ears</option>
+    <option value="big-ears-neutral">Big Ears Neutral</option>
+    <option value="big-smile">Big Smile</option>
+    <option value="bottts">Bottts</option>
+    <option value="bottts-neutral">Bottts Neutral</option>
+    <option value="croodles">Croodles</option>
+    <option value="croodles-neutral">Croodles Neutral</option>
+    <option value="fun-emoji">Fun Emoji</option>
+    <option value="icons">Icons</option>
+    <option value="identicon">Identicon</option>
+    <option value="initials">Initials</option>
+    <option value="micah">Micah</option>
+    <option value="miniavs">Miniavs</option>
+    <option value="open-peeps">Open Peeps</option>
+    <option value="personas">Personas</option>
+    <option value="pixel-art">Pixel Art</option>
+    <option value="pixel-art-neutral">Pixel Art Neutral</option>
+    <option value="rings">Rings</option>
+    <option value="shapes">Shapes</option>
+    <option value="thumbs">Thumbs</option>
+    <option value="avataaars-neutral">Avataaars Neutral</option>
+    <option value="avataaars-female">Avataaars Female</option>
+    <option value="avataaars-male">Avataaars Male</option>
+    <option value="avataaars-variation">Avataaars Variation</option>
+    <option value="avataaars-circle">Avataaars Circle</option>
+    <option value="avataaars-transparent">Avataaars Transparent</option>
+    <option value="avataaars-grayscale">Avataaars Grayscale</option>
+    <option value="avataaars-colorful">Avataaars Colorful</option>
+    <option value="avataaars-pastel">Avataaars Pastel</option>
+    <option value="avataaars-dark">Avataaars Dark</option>
+    <option value="avataaars-light">Avataaars Light</option>
+    <option value="avataaars-monochrome">Avataaars Monochrome</option>
+    <option value="avataaars-retro">Avataaars Retro</option>
+    <option value="avataaars-vintage">Avataaars Vintage</option>
+    <option value="avataaars-modern">Avataaars Modern</option>
+    <option value="avataaars-cartoon">Avataaars Cartoon</option>
+    <option value="avataaars-3d">Avataaars 3D</option>
+    <option value="avataaars-flat">Avataaars Flat</option>
+    <option value="avataaars-hand-drawn">Avataaars Hand Drawn</option>
+    <option value="avataaars-sketch">Avataaars Sketch</option>
+    <option value="avataaars-watercolor">Avataaars Watercolor</option>
+    <option value="avataaars-doodle">Avataaars Doodle</option>
+    <option value="avataaars-comic">Avataaars Comic</option>
+    <option value="avataaars-pixel">Avataaars Pixel</option>
+    <option value="avataaars-isometric">Avataaars Isometric</option>
+    <option value="avataaars-cyberpunk">Avataaars Cyberpunk</option>
+    <option value="avataaars-fantasy">Avataaars Fantasy</option>
+    <option value="avataaars-steampunk">Avataaars Steampunk</option>
+    <option value="avataaars-horror">Avataaars Horror</option>
+    <option value="avataaars-sci-fi">Avataaars Sci-Fi</option>
+    <option value="avataaars-anime">Avataaars Anime</option>
+    <option value="avataaars-manga">Avataaars Manga</option>
+    <option value="avataaars-chibi">Avataaars Chibi</option>
+    <option value="avataaars-cute">Avataaars Cute</option>
+    <option value="avataaars-baby">Avataaars Baby</option>
+    <option value="avataaars-kid">Avataaars Kid</option>
+    <option value="avataaars-teen">Avataaars Teen</option>
+    <option value="avataaars-adult">Avataaars Adult</option>
+    <option value="avataaars-elder">Avataaars Elder</option>
+    <option value="avataaars-hero">Avataaars Hero</option>
+    <option value="avataaars-villain">Avataaars Villain</option>
+    <option value="avataaars-athlete">Avataaars Athlete</option>
+    <option value="avataaars-musician">Avataaars Musician</option>
+    <option value="avataaars-artist">Avataaars Artist</option>
+    <option value="avataaars-scientist">Avataaars Scientist</option>
+    <option value="avataaars-doctor">Avataaars Doctor</option>
+    <option value="avataaars-engineer">Avataaars Engineer</option>
+    <option value="avataaars-chef">Avataaars Chef</option>
+    <option value="avataaars-teacher">Avataaars Teacher</option>
+    <option value="avataaars-police">Avataaars Police</option>
+    <option value="avataaars-firefighter">Avataaars Firefighter</option>
+    <option value="avataaars-astronaut">Avataaars Astronaut</option>
+    <option value="avataaars-pilot">Avataaars Pilot</option>
+    <option value="avataaars-sailor">Avataaars Sailor</option>
+    <option value="avataaars-soldier">Avataaars Soldier</option>
+    <option value="avataaars-ninja">Avataaars Ninja</option>
+    <option value="avataaars-pirate">Avataaars Pirate</option>
+    <option value="avataaars-cowboy">Avataaars Cowboy</option>
+    <option value="avataaars-viking">Avataaars Viking</option>
+    <option value="avataaars-samurai">Avataaars Samurai</option>
+    <option value="avataaars-knight">Avataaars Knight</option>
+    <option value="avataaars-prince">Avataaars Prince</option>
+    <option value="avataaars-princess">Avataaars Princess</option>
+    <option value="avataaars-king">Avataaars King</option>
+    <option value="avataaars-queen">Avataaars Queen</option>
+    <option value="avataaars-wizard">Avataaars Wizard</option>
+    <option value="avataaars-witch">Avataaars Witch</option>
+    <option value="avataaars-vampire">Avataaars Vampire</option>
+    <option value="avataaars-werewolf">Avataaars Werewolf</option>
+    <option value="avataaars-zombie">Avataaars Zombie</option>
+    <option value="avataaars-ghost">Avataaars Ghost</option>
+    <option value="avataaars-angel">Avataaars Angel</option>
+    <option value="avataaars-demon">Avataaars Demon</option>
+    <option value="avataaars-dragon">Avataaars Dragon</option>
+    <option value="avataaars-unicorn">Avataaars Unicorn</option>
+    <option value="avataaars-mermaid">Avataaars Mermaid</option>
+    <option value="avataaars-fairy">Avataaars Fairy</option>
+    <option value="avataaars-elf">Avataaars Elf</option>
+    <option value="avataaars-dwarf">Avataaars Dwarf</option>
+    <option value="avataaars-orc">Avataaars Orc</option>
+    <option value="avataaars-goblin">Avataaars Goblin</option>
+    <option value="avataaars-troll">Avataaars Troll</option>
+    <option value="avataaars-robot">Avataaars Robot</option>
+    <option value="avataaars-alien">Avataaars Alien</option>
+    <option value="avataaars-monster">Avataaars Monster</option>
+    <option value="avataaars-giant">Avataaars Giant</option>
+    <option value="avataaars-minion">Avataaars Minion</option>
+    <option value="avataaars-clown">Avataaars Clown</option>
+    <option value="avataaars-superhero">Avataaars Superhero</option>
+    <option value="avataaars-supervillain">Avataaars Supervillain</option>
+    <option value="avataaars-detective">Avataaars Detective</option>
+    <option value="avataaars-spy">Avataaars Spy</option>
+    <option value="avataaars-hacker">Avataaars Hacker</option>
+    <option value="avataaars-business">Avataaars Business</option>
+    <option value="avataaars-executive">Avataaars Executive</option>
+    <option value="avataaars-entrepreneur">Avataaars Entrepreneur</option>
+    <option value="avataaars-ceo">Avataaars CEO</option>
+    <option value="avataaars-boss">Avataaars Boss</option>
+    <option value="avataaars-manager">Avataaars Manager</option>
+    <option value="avataaars-employee">Avataaars Employee</option>
+    <option value="avataaars-intern">Avataaars Intern</option>
+    <option value="avataaars-freelancer">Avataaars Freelancer</option>
+    <option value="avataaars-designer">Avataaars Designer</option>
+    <option value="avataaars-developer">Avataaars Developer</option>
+    <option value="avataaars-programmer">Avataaars Programmer</option>
+    <option value="avataaars-gamer">Avataaars Gamer</option>
+    <option value="avataaars-streamer">Avataaars Streamer</option>
+    <option value="avataaars-influencer">Avataaars Influencer</option>
+    <option value="avataaars-blogger">Avataaars Blogger</option>
+    <option value="avataaars-youtuber">Avataaars Youtuber</option>
+    <option value="avataaars-tiktoker">Avataaars Tiktoker</option>
+    <option value="avataaars-instagrammer">Avataaars Instagrammer</option>
+    <option value="avataaars-photographer">Avataaars Photographer</option>
+    <option value="avataaars-journalist">Avataaars Journalist</option>
+    <option value="avataaars-writer">Avataaars Writer</option>
+    <option value="avataaars-poet">Avataaars Poet</option>
+    <option value="avataaars-musician">Avataaars Musician</option>
+    <option value="avataaars-singer">Avataaars Singer</option>
+    <option value="avataaars-dj">Avataaars DJ</option>
+    <option value="avataaars-actor">Avataaars Actor</option>
+    <option value="avataaars-director">Avataaars Director</option>
+    <option value="avataaars-producer">Avataaars Producer</option>
+    <option value="avataaars-model">Avataaars Model</option>
+    <option value="avataaars-fashionista">Avataaars Fashionista</option>
+    <option value="avataaars-stylist">Avataaars Stylist</option>
+    <option value="avataaars-barber">Avataaars Barber</option>
+    <option value="avataaars-hairdresser">Avataaars Hairdresser</option>
+    <option value="avataaars-makeup-artist">Avataaars Makeup Artist</option>
+    <option value="avataaars-dancer">Avataaars Dancer</option>
+    <option value="avataaars-choreographer">Avataaars Choreographer</option>
+    <option value="avataaars-athlete">Avataaars Athlete</option>
+    <option value="avataaars-coach">Avataaars Coach</option>
+    <option value="avataaars-referee">Avataaars Referee</option>
+    <option value="avataaars-umpire">Avataaars Umpire</option>
+    <option value="avataaars-player">Avataaars Player</option>
+    <option value="avataaars-fan">Avataaars Fan</option>
+    <option value="avataaars-supporter">Avataaars Supporter</option>
+    <option value="avataaars-tourist">Avataaars Tourist</option>
+    <option value="avataaars-traveler">Avataaars Traveler</option>
+    <option value="avataaars-backpacker">Avataaars Backpacker</option>
+    <option value="avataaars-explorer">Avataaars Explorer</option>
+    <option value="avataaars-hiker">Avataaars Hiker</option>
+    <option value="avataaars-camper">Avataaars Camper</option>
+    <option value="avataaars-biker">Avataaars Biker</option>
+    <option value="avataaars-cyclist">Avataaars Cyclist</option>
+    <option value="avataaars-skater">Avataaars Skater</option>
+    <option value="avataaars-surfer">Avataaars Surfer</option>
+    <option value="avataaars-swimmer">Avataaars Swimmer</option>
+    <option value="avataaars-diver">Avataaars Diver</option>
+    <option value="avataaars-snowboarder">Avataaars Snowboarder</option>
+    <option value="avataaars-skier">Avataaars Skier</option>
+    <option value="avataaars-golfer">Avataaars Golfer</option>
+    <option value="avataaars-tennis-player">Avataaars Tennis Player</option>
+</select>
+
+        </div>
+
+        <div class="size-selector">
+            <label for="avatarSize">Avatar Size (px):</label>
+            <input type="range" id="avatarSize" min="100" max="500" value="200">
+        </div>
+
+        <div class="controls">
+            <button id="randomStyleBtn" class="random-style-btn"><i class="fas fa-random"></i> Random Style</button>
+        </div>
+
+        <div class="avatar-container">
+            <img id="avatarOutput" src="" alt="Generated Avatar" width="200" height="200">
+            <div id="qrcode"></div>
+        </div>
+
+        <div class="controls">
+            <button id="downloadBtn"><i class="fas fa-download"></i> Download</button>
+            <button id="shareBtn"><i class="fas fa-share-alt"></i> Share</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const avatarInput = document.getElementById('avatarInput');
+            const generateBtn = document.getElementById('generateBtn');
+            const styleSelect = document.getElementById('styleSelect');
+            const avatarOutput = document.getElementById('avatarOutput');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const shareBtn = document.getElementById('shareBtn');
+            const qrcodeContainer = document.getElementById('qrcode');
+            const randomStyleBtn = document.getElementById('randomStyleBtn');
+            const avatarSize = document.getElementById('avatarSize');
+
+            // Generate Avatar
+            function generateAvatar() {
+                const seed = avatarInput.value.trim() || 'random';
+                const style = styleSelect.value;
+                const size = avatarSize.value;
+                const apiUrl = `https://api.dicebear.com/6.x/${style}/svg?seed=${seed}&size=${size}`;
+
+                avatarOutput.src = apiUrl;
+                avatarOutput.width = size;
+                avatarOutput.height = size;
+                generateQRCode(apiUrl);
+            }
+
+            generateBtn.addEventListener('click', generateAvatar);
+            randomStyleBtn.addEventListener('click', () => {
+                const styles = Array.from(styleSelect.options).map(opt => opt.value);
+                const randomStyle = styles[Math.floor(Math.random() * styles.length)];
+                styleSelect.value = randomStyle;
+                generateAvatar();
+            });
+
+            avatarSize.addEventListener('input', generateAvatar);
+
+            // Generate QR Code
+            function generateQRCode(url) {
+                qrcodeContainer.innerHTML = '';
+                const qr = qrcode(0, 'L');
+                qr.addData(url);
+                qr.make();
+                qrcodeContainer.innerHTML = qr.createImgTag(4);
+            }
+
+            // Download Avatar
+            downloadBtn.addEventListener('click', () => {
+                const link = document.createElement('a');
+                link.href = avatarOutput.src;
+                link.download = `${avatarInput.value || 'avatar'}.svg`;
+                link.click();
+            });
+
+            // Share Avatar
+            shareBtn.addEventListener('click', async () => {
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: 'My Avatar',
+                            text: 'Check out my avatar!',
+                            url: avatarOutput.src,
+                        });
+                    } catch (err) {
+                        console.error('Error sharing:', err);
+                    }
+                } else {
+                    alert('Web Share API not supported in your browser.');
+                }
+            });
+
+            // Generate a default avatar on load
+            window.onload = generateAvatar;
+        });
+    </script>
+</body>
+</html>

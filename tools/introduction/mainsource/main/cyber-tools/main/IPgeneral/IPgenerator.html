@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI IP Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #container {
+            background: black;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+          color:green;
+        }
+        #ipDisplay {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            height: 100px;
+            overflow-y: auto;
+            background: #e9ecef;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: red;
+            color: green;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>AI IP Generator</h1>
+        <button onclick="generateIP()">Generate IP</button>
+        <div id="ipDisplay"></div>
+    </div>
+
+    <script>
+        function generateIP() {
+            const publicIP = generatePublicIP();
+            const privateIP = generatePrivateIP();
+            document.getElementById('ipDisplay').innerHTML += `Public IP: ${publicIP}<br>Private IP: ${privateIP}<br><br>`;
+        }
+
+        function generatePublicIP() {
+            return `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
+        }
+
+        function generatePrivateIP() {
+            const privateRanges = [
+                `10.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`,
+                `172.${Math.floor(Math.random() * 16) + 16}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`,
+                `192.168.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`
+            ];
+            return privateRanges[Math.floor(Math.random() * privateRanges.length)];
+        }
+    </script>
+</body>
+</html>

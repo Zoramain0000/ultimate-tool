@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Main Web Application</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      background-color: #ffffff;
+      color: #000000;
+      line-height: 1.6;
+    }
+    header {
+      background: #000000;
+      color: #2fc212;
+      padding: 15px;
+      text-align: center;
+    }
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px auto;
+      max-width: 1200px;
+      padding: 0 10px;
+    }
+    nav a {
+      flex: 1 1 140px;
+      text-align: center;
+      padding: 10px 15px;
+      background: #000000;
+      color: #4aff02;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 14px;
+      transition: background 0.3s, transform 0.2s;
+    }
+    nav a:hover {
+      background: #3b0202;
+      transform: scale(1.05);
+    }
+    .container {
+      background: #000000;
+      color: #2fc212;
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 255, 34, 0.2);
+      text-align: center;
+    }
+    h2 {
+      color: green;
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    footer {
+      background: #000000;
+      color: #0feb63;
+      text-align: center;
+      padding: 15px;
+      font-size: 14px;
+    }
+    @media (max-width: 768px) {
+      nav a {
+        flex: 1 1 100%;
+        font-size: 16px;
+      }
+      h2 {
+        font-size: 20px;
+      }
+    }
+    @media (max-width: 480px) {
+      header h1 {
+        font-size: 22px;
+      }
+      nav a {
+        font-size: 14px;
+        padding: 8px 10px;
+      }
+      .container {
+        margin: 10px;
+        padding: 15px;
+      }
+      footer {
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Main Dashboard</h1>
+  </header>
+
+  <!-- 🔊 Background Music (Autoplay + Loop) -->
+  <audio id="bg-music" autoplay loop>
+    <source src="hol_up!(48k).mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+  </audio>
+
+  <!-- Optional JS for autoplay fix on mobile -->
+  <script>
+    document.addEventListener('click', () => {
+      const audio = document.getElementById('bg-music');
+      if (audio && audio.paused) {
+        audio.play().catch(err => console.log('Autoplay blocked:', err));
+      }
+    }, { once: true });
+  </script>
+
+
+
+  <div class="container">
+    <h2>Welcome to CyberTools</h2>
+  </div>
+  
+  <nav>
+    <a href="pingsource/ping.html">IP Ping</a>
+    <a href="IPtraceroute/IPtracert.html">IP Tracert</a>
+    <a href="iplookupsource/iplookup.html">IP Lookup</a>
+    <a href="IPtrackersource/IPtracker.html">IP Tracker</a>
+    <a href="IPmaps/maps.html">IP Maps</a>
+    <a href="IPkeylogger/IPStealing(undone).html">IP Keylogger</a>
+    <a href="IPv6/IPv6.html">IPv6 Generator</a>
+    <a href="Card/Tools.html">IP Information</a>
+    <a href="searchengine(v2)/main.html">ZerodaysTools</a>
+    <a href="IPattacksource/Attak.html">IP Attack</a>
+    <a href="IPscanner/Scanner.html">IP Scanner</a>
+    <a href="myIP/IPown.html">IP Address</a>
+    <a href="iplookupsource/iplookup.html">Lookup Tools</a>
+    <a href="SPFrecord/SPFrecordlookup.html">SPF Record Lookup</a>
+    <a href="dnschecker/checker.html">DNS Check</a>
+    <a href="lookuptools/lookup.html">Lookup Tools v2</a>
+    <a href="domaincheck/health.html">Domain Health</a>
+    <a href="ReverseDNS/DNS.html">Reverse DNS</a>
+    <a href="DNSQUEsources/DNS.html">DNS Queries</a>
+    <a href="Robot/Scanner.html">IP Robot Scanner</a>
+    <a href="IPgeneral/IPgenerator.html">IP Generator</a>
+    <a href="PhonenumberTools/Pnumber.html">AI Phone Number</a>
+    <a href="Godmode/Cheat.html">Godmode</a>
+    <a href="subnettoolssource/subnet.html">Subnet Lookup</a>
+    <a href="NGLlinks/NGL.html">NGL Links</a>
+    <a href="Calculator/Cal.html">Calculator</a>
+    <a href="ipgeolocation/ipgeo.html">IP Geolocation Lookup</a>
+    <a href="macaddressgen/macaddress.html">MAC Address Gen</a>
+    <a href="maclookupsources/Macaddresslookup.html">MAC Address Lookup</a>
+    <a href="portcheckersource/port.html">Port Check</a>
+    <a href="sslcertificatechecker/sslchecker.html">SSL Certificate Check</a>
+    <a href="terms/rule.html">Terms & Rules</a>
+    <a href="https://cse.google.com/cse?cx=c089a306d5b3649f5#gsc.tab=0">Searchable</a>
+    <a href="searchengine(v2)/main.html">Zerodays</a>
+    <a href="passwordencrypted.html">Password Encryption Utility</a>
+    <a href="passwordgen/passgen.html">Password Generator</a>
+    <a href="pass-strength/pass-strengthtest.html">Password Strength Tester</a>
+    <a href="QRcodegen/qrcode.html">QR Code Generator</a>
+    <a href="QRcodescan/QRcodescan.html">QR Scanner</a>
+    <a href="creditcardgen/creditcard.html">Credit Card Generator</a>
+    <a href="socialfinders/userfinder.html">Social Finder</a>
+    <a href="networkanalysis/inspector.html">Network Analysis</a>
+    <a href="networksniffersource/sniffer.html">Network Sniffer</a>
+    <a href="secret/tooldet.html">IP Detector</a>
+    <a href="Dictionary/Chat.html">Dictionary/chat box </a>
+    <a href="Secondpage/main.html">Hackable</a>
+    <a href="Translator/Google.html">Zero days Translator</a>
+    <a href="Notepad/note.html">Zero days Notepad</a>
+<a href="ipfinder/ip.html">Zerodays IP</a>
+    <a href="Wordtest/General.html">Zerodays Picture Editor</a>
+    <a href="Weather/Map.html">Weather Tool</a>
+    <a href="traceroute-cities/try.html"> Zerodays traceroute cities</a>
+    <a href=" traceroute-country/try.html">Zerodays traceroute country</a>
+    <a href="Spypro/protection.html">protection Scanner</a>
+    <a href="Sherlock/ip.html">userfinder #1</a>
+    <a href="hash/generator.html">hash Gen</a>
+    <a href="grammar/bot.html">grammar text</a>
+    <a href="games/Chess.html">chess games</a>
+    <a href="games/Number.html">Number Guessing games</a>
+    <a href="games/Snake.html">snake games</a>
+    <a href="games/XANDO.html">Tic Tac Toe games</a>
+    <a href="Gallery/Album.html">Zero Days Gallery</a>
+    <a href="Files/store.html">Zerodays Files manager & code Editor</a>
+    <a href="Card/Tools.html">IP Information Tool</a>
+    <a href="CAL/dark.html">Zero days Calendar</a>
+    <a href="builder/projector.html">Zero Days Alarm Clock</a>
+    <a href="Blue/test34.html">Real-Time Dangerous Code Analyzer</a>
+    <a href="Alien-eyes/see.html">Advanced Username Scanner</a>
+    <a href="Newtooks/Doom.html">code runner</a>
+    <a href="Newtooks/dork.html">Geomap Business Finder</a>
+    <a href="#">Zerodays Ending</a>
+  </nav>
+  
+  <footer>
+    ||_--------------------------------------_||<br>
+    Technology information system tools for cyber-security and hacking
+  </footer>
+</body>
+</html>

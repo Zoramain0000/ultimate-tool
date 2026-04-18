@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>SecureStrength - Password Strength Tester</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+            background-color: #F5F5F5;
+            color: #09c923;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: rgb(0, 0, 0);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 245, 41, 0.1);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .output {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #password {
+            width: 98%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        #strengthIndicator {
+            height: 10px;
+            margin-top: 5px;
+            background-color: red; /* Default strength color */
+            transition: background-color 0.3s;
+        }
+
+        .feedback {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .requirement {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SecureStrength - Password Strength Tester</h1>
+        <input type="text" id="password" placeholder="Enter your password">
+        <div id="strengthIndicator"></div>
+        <div class="output">
+            <div class="feedback" id="feedback"></div>
+        </div>
+        <div class="requirement">
+            <h3>Password Requirements:</h3>
+            <ul>
+                <li>At least 8 characters</li>
+                <li>At least 1 uppercase letter</li>
+                <li>At least 1 lowercase letter</li>
+                <li>At least 1 number</li>
+                <li>At least 1 special character</li>
+            </ul>
+        </div>
+    </div>
+    <script>
+        const passwordField = document.getElementById('password');
+        const strengthIndicator = document.getElementById('strengthIndicator');
+        const feedback = document.getElementById('feedback');
+
+        passwordField.addEventListener('input', function() { // Removed the extra space in 'input'
+            const password = this.value;
+            const strength = calculateStrength(password);
+            strengthIndicator.style.backgroundColor = strength.color;
+            feedback.textContent = strength.message;
+        });
+
+        function calculateStrength(password) {
+            let strength = { score: 0, color: 'red', message: 'Very Weak' };
+            if (password.length >= 8) strength.score++;
+            if (/[A-Z]/.test(password)) strength.score++;
+            if (/[a-z]/.test(password)) strength.score++;
+            if (/[0-9]/.test(password)) strength.score++;
+            if (/[^A-Za-z0-9]/.test(password)) strength.score++;
+
+            switch (strength.score) {
+                case 0:
+                case 1:
+                    strength.color = 'red';
+                    strength.message = 'Very Weak';
+                    break;
+                case 2:
+                    strength.color = 'orange';
+                    strength.message = 'Weak';
+                    break;
+                case 3:
+                    strength.color = 'yellow';
+                    strength.message = 'Moderate';
+                    break;
+                case 4:
+                case 5:
+                    strength.color = 'green';
+                    strength.message = 'Strong';
+                    break;
+            }
+            return strength;
+        }
+    </script>
+</body>
+</html>

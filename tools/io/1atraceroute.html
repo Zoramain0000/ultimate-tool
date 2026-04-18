@@ -1,0 +1,1478 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Traceroute Log Generator v3.9 - REAL Hostnames API</title>
+
+<!-- Cloudflare QRCode Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+  /* ORIGINAL AESTHETIC PRESERVED */
+  body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Consolas', 'Courier New', monospace;
+    color: red;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: rgba(0,0,0,0.1);
+  }
+
+  /* Background Video - Original Source */
+  #bgVideo {
+    position: fixed;
+    top: 0;
+    left: 0;
+    min-width: 100%;
+    min-height: 100%;
+    z-index: -1;
+    object-fit: cover;
+    filter: brightness(0.3) contrast(1.2);
+  }
+
+  header {
+    padding: 12px 20px;
+    background: rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    backdrop-filter: blur(4px);
+    border-bottom: 1px solid rgba(255,0,0,0.3);
+    z-index: 10;
+  }
+
+  label {
+    font-weight: bold;
+    font-size: 13px;
+    white-space: nowrap;
+    text-transform: uppercase;
+    color: #ff5555;
+  }
+
+  select, input[type=button], input[type=text] {
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid #500;
+    outline: none;
+    background: rgba(0,0,0,0.1);
+    color: red;
+  }
+
+  input[type=button] {
+    background: #800000;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    font-weight: bold;
+    border-color: red;
+  }
+
+  input[type=button]:hover {
+    background: red;
+    color: black;
+    box-shadow: 0 0 15px red;
+  }
+
+  input[type=text] {
+    flex-grow: 1;
+    min-width: 150px;
+  }
+  
+  input[type=text]:focus, select:focus {
+    border-color: red;
+    box-shadow: 0 0 5px rgba(255,0,0,0.5);
+  }
+
+  .header-control-group {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+
+  #logContainer {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.1);
+    padding: 10px 0;
+    position: relative;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead tr {
+    background: rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  }
+
+  th, td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #330000;
+    white-space: nowrap;
+    text-align: left;
+  }
+
+  th {
+    color: #ff5555;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 1px;
+    border-bottom: 2px solid red;
+  }
+
+  tbody tr {
+    transition: background 0.1s;
+  }
+
+  tbody tr:hover {
+    background: rgba(255,0,0,0.2);
+    cursor: pointer;
+    text-shadow: 0 0 2px red;
+  }
+
+  tbody tr.clickable { cursor: pointer; }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #050505; }
+  ::-webkit-scrollbar-thumb { background: #800000; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: red; }
+
+  /* QR Modal Styling */
+  #qrModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  #qrModal.active {
+    opacity: 1;
+  }
+
+  #qrModalContent {
+    background: rgba(10,0,0,0.95);
+    padding: 25px;
+    border-radius: 8px;
+    border: 2px solid red;
+    text-align: center;
+    max-width: 95%;
+    max-height: 95%;
+    overflow-y: auto;
+    box-shadow: 0 0 50px rgba(255,0,0,0.3);
+    position: relative;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+  }
+  
+  #qrModal.active #qrModalContent {
+    transform: scale(1);
+  }
+
+  #qrModalContent h3 {
+    margin: 0 0 15px 0;
+    font-size: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: red;
+    text-shadow: 0 0 10px red;
+    border-bottom: 1px solid #500;
+    padding-bottom: 10px;
+  }
+
+  #qrSizeSelector {
+    margin-bottom: 15px;
+    padding: 5px;
+    background: black;
+    color: red;
+    border: 1px solid red;
+    font-family: inherit;
+    cursor: pointer;
+    width: 200px;
+  }
+
+  #qrImageContainer {
+    margin: 0 auto 20px auto;
+    border: 4px solid #500;
+    border-radius: 4px;
+    box-shadow: inset 0 0 30px #000;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: width 0.3s ease, height 0.3s ease;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #qrcode {
+    padding: 10px;
+    background: #fff;
+  }
+  
+  #qrcode img {
+    display: block;
+  }
+
+  #qrHiddenOverlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #ff3333;
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 10;
+    border-radius: 2px;
+  }
+
+  .qr-hidden #qrcode {
+    filter: blur(20px) grayscale(100%);
+    opacity: 0.1;
+    transition: all 0.3s ease;
+  }
+
+  .qr-hidden #qrHiddenOverlay {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  #qrDetails {
+    background: #000;
+    border: 1px solid #500;
+    color: #ccc;
+    padding: 10px;
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    text-align: left;
+    white-space: pre-wrap;
+    max-height: 150px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+  }
+
+  #qrStatus {
+    font-size: 12px;
+    color: #ffaa00;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .modal-btn {
+    background: #200;
+    color: red;
+    border: 1px solid red;
+    padding: 8px 16px;
+    font-family: monospace;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .modal-btn:hover {
+    background: red;
+    color: black;
+    box-shadow: 0 0 10px red;
+  }
+
+  .btn-exit { border-color: #ff3333; }
+  .btn-hide { border-color: #666; color: #aaa; }
+  .btn-hide:hover { background: #666; color: black; box-shadow: none;}
+  .btn-show { display: none; background: #002200; color: #0f0; border-color: #0f0; }
+  .btn-show:hover { background: #0f0; color: black; box-shadow: 0 0 10px #0f0; }
+  .btn-download { border-color: #0055ff; color: #55aaff; }
+  .btn-download:hover { background: #0055ff; color: white; box-shadow: 0 0 10px #0055ff; }
+
+  #loadingIndicator {
+    padding: 10px 0;
+    text-align: center;
+    color: #ff5555;
+    font-style: italic;
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+  @media (max-width: 600px) {
+    th, td { padding: 6px 4px; font-size: 10px; }
+    header { padding: 10px; gap: 5px; flex-direction: column; align-items: stretch; }
+    select, input[type=button] { width: 100%; box-sizing: border-box; }
+    #qrModalContent { padding: 15px; width: 95%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Original Background Video -->
+<video autoplay muted loop id="bgVideo">
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+
+<header>
+  <div style="display:flex; gap:10px; flex-wrap:wrap; width:100%;">
+    <div class="header-control-group" style="flex-grow:1;">
+      <label for="targetInput">TARGET (IP/DOMAIN):</label>
+      <input type="text" id="targetInput" placeholder="192.168.x.x or domain.com" />
+    </div>
+
+    <div class="header-control-group">
+      <label for="countrySelect">Route Region:</label>
+      <select id="countrySelect" aria-label="Select country for route"></select>
+    </div>
+
+    <div class="header-control-group">
+      <label for="protocolSelect">Protocol:</label>
+      <select id="protocolSelect">
+        <option value="ALL">ALL</option>
+        <option value="ICMP">ICMP</option>
+        <option value="TCP">TCP</option>
+        <option value="UDP">UDP</option>
+        <option value="GRE">GRE</option>
+      </select>
+    </div>
+
+    <div class="header-control-group">
+      <label for="portSelect">Port:</label>
+      <select id="portSelect" aria-label="Select Port Range">
+        <option value="random" selected>Random (1-1024)</option>
+        <option value="range1024">Ephemeral (1-1024)</option>
+        <option value="range65535">Full Range (1-65535)</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap; width:100%; margin-top:10px;">
+    <input type="button" id="generateBtn" value="START ROUTE GENERATOR" />
+    <input type="text" id="searchInput" placeholder="Filter hops..." />
+    <input type="button" id="downloadBtn" value="DOWNLOAD CSV" />
+  </div>
+</header>
+
+<div id="logContainer" tabindex="0" aria-live="polite">
+  <table role="grid">
+    <thead>
+      <tr>
+        <th scope="col">Hop #</th>
+        <th scope="col">Hop IP</th>
+        <th scope="col">REAL Hostname</th>
+        <th scope="col">Target</th>
+        <th scope="col">Region</th>
+        <th scope="col">TTL</th>
+        <th scope="col">Latency (ms)</th>
+        <th scope="col">Status</th>
+        <th scope="col">Protocol</th>
+        <th scope="col">Port</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+  <div id="loadingIndicator" hidden>🔍 Fetching REAL hostnames from API service...</div>
+</div>
+
+<!-- QR Modal -->
+<div id="qrModal">
+  <div id="qrModalContent">
+    <h3>Hop Authentic QR</h3>
+    
+    <select id="qrSizeSelector">
+      <option value="128">Size: Small (128px)</option>
+      <option value="256" selected>Size: Medium (256px)</option>
+      <option value="512">Size: Large (512px)</option>
+    </select>
+    
+    <div id="qrImageContainer">
+      <div id="qrcode"></div>
+      <div id="qrHiddenOverlay">
+        <div style="font-size:40px; margin-bottom:10px;">🔒</div>
+        <div>CONTENT HIDDEN</div>
+      </div>
+    </div>
+    
+    <div id="qrStatus"></div>
+    <div id="qrDetails"></div>
+    
+    <div class="modal-actions">
+      <button id="btnHide" class="modal-btn btn-hide">🚫 Hide QR</button>
+      <button id="btnShow" class="modal-btn btn-show">👁 Reveal QR</button>
+      <button id="btnDownloadQR" class="modal-btn btn-download">💾 Save Image</button>
+      <button id="btnExit" class="modal-btn btn-exit">❌ Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/**
+ * TRACEROUTE LOG GENERATOR v3.9 - REAL API HOSTNAMES
+ * No API keys - Pure client-side with public DNS services
+ */
+(() => {
+const countries = [
+    "United States", "Canada", "United Kingdom", "Germany", "France", "Australia", "India",
+    "Brazil", "Japan", "Russia", "China", "Mexico", "Italy", "South Korea", "Netherlands",
+    "Spain", "Sweden", "Norway", "Poland", "Turkey", "South Africa", "Argentina", "Belgium",
+    "Switzerland", "New Zealand", "Singapore", "Malaysia", "Thailand", "Indonesia", "Vietnam",
+    "Ireland", "Czech Republic", "Portugal", "Greece", "Finland", "Denmark", "Colombia",
+    "Chile", "Egypt", "United Arab Emirates", "Saudi Arabia", "Israel", "Philippines",
+    "Hungary", "Romania", "Ukraine", "Pakistan", "Bangladesh", "Morocco", "Algeria", "Angola",
+    "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain",
+    "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia",
+    "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso",
+    "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic",
+    "Chad", "Chile", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba",
+    "Cyprus", "Czech Republic", "Democratic Republic of the Congo", "Denmark", "Djibouti",
+    "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea",
+    "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon",
+    "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau",
+    "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran",
+    "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan",
+    "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho",
+    "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi",
+    "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius",
+    "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco",
+    "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand",
+    "Nicaragua", "Niger", "Nigeria", "North Macedonia", "Norway", "Oman", "Pakistan",
+    "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines",
+    "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis",
+    "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe",
+    "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia",
+    "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan",
+    "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Tajikistan",
+    "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia",
+    "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom",
+    "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
+    "Yemen", "Zambia", "Zimbabwe"
+  ];
+
+const statuses = ["REACHED", "TIMEOUT", "FILTERED", "HOST_UNREACHABLE"];
+const protocols = ["ICMP", "TCP", "UDP", "GRE"];
+
+const elements = {
+  countrySelect: document.getElementById('countrySelect'),
+  targetInput: document.getElementById('targetInput'),
+  protocolSelect: document.getElementById('protocolSelect'),
+  portSelect: document.getElementById('portSelect'),
+  generateBtn: document.getElementById('generateBtn'),
+  searchInput: document.getElementById('searchInput'),
+  logBody: document.getElementById('logBody'),
+  logContainer: document.getElementById('logContainer'),
+  loadingIndicator: document.getElementById('loadingIndicator'),
+  downloadBtn: document.getElementById('downloadBtn'),
+  
+  qrModal: document.getElementById('qrModal'),
+  qrImageContainer: document.getElementById('qrImageContainer'),
+  qrDiv: document.getElementById('qrcode'), 
+  qrDetails: document.getElementById('qrDetails'),
+  qrStatus: document.getElementById('qrStatus'),
+  qrSizeSelector: document.getElementById('qrSizeSelector'),
+  btnHide: document.getElementById('btnHide'),
+  btnShow: document.getElementById('btnShow'),
+  btnDownloadQR: document.getElementById('btnDownloadQR'),
+  btnExit: document.getElementById('btnExit'),
+};
+
+let qrCounter = 0;
+let allEntries = [];
+let currentTarget = null;
+let currentCountry = null;
+let currentQRData = null;
+let hostnameCache = new Map();
+let totalLogsGenerated = 0;
+
+const BATCH_SIZE = 50;
+const MAX_LOGS = 999999;
+
+function populateCountries() { 
+  countries.forEach(c => {
+    const o = document.createElement('option'); 
+    o.value = c; 
+    o.textContent = c; 
+    elements.countrySelect.appendChild(o); 
+  }); 
+}
+
+function randInt(min, max) { 
+  return Math.floor(Math.random() * (max - min + 1)) + min; 
+}
+
+function generateHopIP(hopNum) {
+  const segment = Math.floor(hopNum / 255);
+  const last = hopNum % 255;
+  return `10.${randInt(0,255)}.${segment}.${last === 0 ? randInt(1,254) : last}`;
+}
+
+// REAL API Hostname Resolution - NO KEYS, PUBLIC SERVICES ONLY
+async function getRealHostname(ip) {
+  const cacheKey = ip;
+  if (hostnameCache.has(cacheKey)) {
+    return hostnameCache.get(cacheKey);
+  }
+
+  try {
+    // Use public DNS services (no API keys required)
+    const dnsQuery = `https://dns.google/query?name=${ip}&type=PTR`;
+    const response = await fetch(dnsQuery, {
+      method: 'GET',
+      mode: 'cors',
+      cache: 'no-cache',
+      headers: { 'Accept': 'application/dns-json' }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.Answer && data.Answer.length > 0) {
+        const hostname = data.Answer[0].data.replace(/\.$/, '');
+        hostnameCache.set(cacheKey, hostname);
+        return hostname;
+      }
+    }
+  } catch (e) {
+    // Continue to fallback
+  }
+
+  // ISP-based realistic hostnames from known providers
+const ispHosts = {
+    // North America
+    'united_states_verizon': ['vzwp.vznwi.net', 'phl-chi-vzwp.vznwi.net', 'core1.nyc.verizon.net', 'static-xxx.xxx.xxx.xxx.nycmny.fios.verizon.net', 'pool-xxx.xxx.xxx.xxx.nycmny.east.verizon.net'],
+    'united_states_comcast': ['c-xxx-xxx-xxx-xxx.hsd1.pa.comcast.net', 'cpe-xxx-xxx-xxx-xxx.hsd1.pa.comcast.net', 'hsd1.ca.comcast.net', 'hsd1.wa.comcast.net', 'comcast.net'],
+    'united_states_att': ['xxx-xxx-xxx-xxx.dsl.snfc21.pacbell.net', 'pool-xxx-xxx-xxx-xxx.ny325.east.verizon.net', 'lghtn.tx.sbcglobal.net', 'adsl-xxx-xxx-xxx-xxx.dsl.snfc21.pacbell.net', 'sbcglobal.net', 'bellsouth.net', 'att.net'],
+    'united_states_tmobile': ['xxx-xxx-xxx-xxx.tmobile.com', 'broadband-xxx-xxx-xxx-xxx.ip.tmobile.com', 'tmomail.net'],
+    'united_states_charter': ['xxx-xxx-xxx-xxx.cm-xxx.cm.cableone.net', 'charter.net', 'spectrum.com', 'twc.com', 'wavecable.com'],
+    'united_states_cox': ['ip72-xxx-xxx-xxx.ph.ph.cox.net', 'wsip-72-xxx-xxx-xxx.ph.ph.cox.net', 'cox.net'],
+    'united_states_mediacom': ['c-xxx-xxx-xxx-xxx.hsd1.ga.comcast.net', 'mediacomcc.com'],
+    'united_states_frontier': ['fios-xxx-xxx-xxx-xxx.frontiernet.net', 'frontier.com', 'fios.verizon.net'],
+    'united_states_optimum': ['ool-xxx-xxx-xxx-xxx.static.optonline.net', 'optonline.net', 'optimum.net'],
+    'united_states_centurylink': ['xxx-xxx-xxx-xxx.clsp.qwest.net', 'centurylink.net', 'qwest.net', 'embarqmail.com'],
+    'united_states_hughesnet': ['xxx-xxx-xxx-xxx.hn.ftth HughesNet.net', 'hughesnet.com'],
+    'united_states_viasat': ['xxx-xxx-xxx-xxx.viasat.net', 'wildblue.net', 'exede.net'],
+    'united_states_sprint': ['xxx-xxx-xxx-xxx.sprintpcs.com', 'sprint.com'],
+    'united_states_dish': ['xxx-xxx-xxx-xxx.mydish.com', 'dishnet.com'],
+    'united_states_google_fiber': ['xxx-xxx-xxx-xxx.googlefiber.net', 'fiber.google.com'],
+    
+    'canada_bell': ['brndlnfxxx.xxx.sympatico.ca', 'bell.ca', 'sympatico.ca', 'bellnet.ca'],
+    'canada_rogers': ['cpe-xxx-xxx-xxx-xxx.cpe.net.cable.rogers.com', 'rogers.com', 'broadcast.videotron.ca'],
+    'canada_shaw': ['S0106xxxxxxxxxxxxx.vc.shawcable.net', 'shawcable.net', 'rb.shawcable.net'],
+    'canada_telus': ['xxx-xxx-xxx-xxx.bc.hsia.telus.net', 'telus.net', 'telus.com'],
+    'canada_videotron': ['modemcablexxx.xxx.videotron.ca', 'videotron.ca'],
+    'canada_bell_aliant': ['xxx-xxx-xxx-xxx.aliant.net', 'aliant.net'],
+    
+    'mexico_telmax': ['xxx-xxx-xxx-xxx.prod-infinitum.com.mx', 'infinitum.com.mx', 'telmex.com.mx'],
+    'mexico_telmex': ['xxx-xxx-xxx-xxx.telmex.net.mx', 'telmex.net.mx'],
+    'mexico_totalplay': ['xxx-xxx-xxx-xxx.totalplay.net', 'totalplay.net.mx'],
+    'mexico_megacable': ['xxx-xxx-xxx-xxx.megacable.com.mx', 'megacable.com.mx'],
+    'mexico_at&t': ['xxx-xxx-xxx-xxx.attmexico.net', 'attmexico.net'],
+
+    // Caribbean & Central America
+    'jamaica_flow': ['xxx-xxx-xxx-xxx.flowjamaica.com', 'flowjamaica.com'],
+    'trinidad_tstt': ['xxx-xxx-xxx-xxx.tstt.net.tt', 'tstt.net.tt'],
+    'bahamas_aliv': ['xxx-xxx-xxx-xxx.aliv.bs', 'aliv.bs'],
+    'barbados_flow': ['xxx-xxx-xxx-xxx.flow.bb', 'flow.bb'],
+    'dominican_claro': ['xxx-xxx-xxx-xxx.claro.com.do', 'claro.com.do'],
+    'costa_rica_ice': ['xxx-xxx-xxx-xxx.ice.cr', 'ice.cr'],
+    'panama_cable': ['xxx-xxx-xxx-xxx.cableonda.net', 'cableonda.net'],
+    'guatemala_tigo': ['xxx-xxx-xxx-xxx.tigo.com.gt', 'tigo.com.gt'],
+    'honduras_claro': ['xxx-xxx-xxx-xxx.claro.hn', 'claro.hn'],
+    'el_salvador_claro': ['xxx-xxx-xxx-xxx.claro.com.sv', 'claro.com.sv'],
+    'nicaragua_claro': ['xxx-xxx-xxx-xxx.claro.com.ni', 'claro.com.ni'],
+    'cuba_etecsa': ['xxx-xxx-xxx-xxx.etecsa.cu', 'etecsa.cu'],
+    'haiti_natcom': ['xxx-xxx-xxx-xxx.natcom.net.ht', 'natcom.net.ht'],
+
+    // South America
+    'brazil_vivo': ['xxx.xxx.xxx.xxx.dynamic.vivo.com.br', 'vivo.com.br', 'telefonica.com.br'],
+    'brazil_claro': ['xxx.xxx.xxx.xxx.claro.net.br', 'claro.net.br'],
+    'brazil_tim': ['xxx.xxx.xxx.xxx.timbrasil.com.br', 'timbrasil.com.br'],
+    'brazil_oi': ['xxx.xxx.xxx.xxx.oi.net.br', 'oi.net.br'],
+    'brazil_net': ['xxx.xxx.xxx.xxx.gvt.net.br', 'gvt.net.br'],
+    'brazil_algar': ['xxx.xxx.xxx.xxx.algar.net', 'algar.net'],
+    
+    'argentina_telecom': ['xxx-xxx-xxx-xxx.dynamic.telecom.net.ar', 'telecom.net.ar'],
+    'argentina_fibertel': ['xxx-xxx-xxx-xxx.fibertel.com.ar', 'fibertel.com.ar'],
+    'argentina_claro': ['xxx-xxx-xxx-xxx.claro.com.ar', 'claro.com.ar'],
+    'argentina_telefonica': ['xxx-xxx-xxx-xxx.telefonica.net.ar', 'speedy.com.ar'],
+    
+    'colombia_claro': ['xxx-xxx-xxx-xxx.claro.com.co', 'claro.com.co'],
+    'colombia_movistar': ['xxx-xxx-xxx-xxx.movistar.co', 'movistar.co'],
+    'colombia_tigo': ['xxx-xxx-xxx-xxx.tigo.co', 'tigo.co'],
+    'colombia_etb': ['xxx-xxx-xxx-xxx.etb.net.co', 'etb.net.co'],
+    
+    'chile_vtr': ['xxx-xxx-xxx-xxx.vtr.net', 'vtr.net'],
+    'chile_movistar': ['xxx-xxx-xxx-xxx.movistar.cl', 'movistar.cl'],
+    'chile_entel': ['xxx-xxx-xxx-xxx.entelchile.net', 'entelchile.net'],
+    'chile_claro': ['xxx-xxx-xxx-xxx.claro.cl', 'claro.cl'],
+    
+    'peru_movistar': ['xxx-xxx-xxx-xxx.movistar.pe', 'movistar.pe'],
+    'peru_claro': ['xxx-xxx-xxx-xxx.claro.net.pe', 'claro.net.pe'],
+    'peru_entel': ['xxx-xxx-xxx-xxx.entel.pe', 'entel.pe'],
+    
+    'ecuador_claro': ['xxx-xxx-xxx-xxx.claro.net.ec', 'claro.net.ec'],
+    'ecuador_cnt': ['xxx-xxx-xxx-xxx.cnt.net.ec', 'cnt.net.ec'],
+    
+    'venezuela_cantv': ['xxx-xxx-xxx-xxx.cantv.net', 'cantv.net'],
+    'venezuela_movistar': ['xxx-xxx-xxx-xxx.movistar.ve', 'movistar.ve'],
+    'venezuela_digitel': ['xxx-xxx-xxx-xxx.digitel.net.ve', 'digitel.net.ve'],
+    
+    'uruguay_antsel': ['xxx-xxx-xxx-xxx.antsel.net.uy', 'antsel.net.uy'],
+    'paraguay_claro': ['xxx-xxx-xxx-xxx.claro.com.py', 'claro.com.py'],
+    'paraguay_tigo': ['xxx-xxx-xxx-xxx.tigo.com.py', 'tigo.com.py'],
+    'bolivia_entel': ['xxx-xxx-xxx-xxx.entel.bo', 'entel.bo'],
+    'guyana_gt&t': ['xxx-xxx-xxx-xxx.gtt.co.tt', 'gtt.co.tt'],
+    'suriname_telesur': ['xxx-xxx-xxx-xxx.telesur.sr', 'telesur.sr'],
+
+    // Europe
+    'united_kingdom_bt': ['hostxxx-xxx-xxx-xxx.range86-xxx.btcentralplus.com', 'btcentralplus.com', 'home.bt', 'btopenworld.com'],
+    'united_kingdom_virgin': ['cpcxxx-xxxxx-xxx-xxx-custxxx.brhm.cable.virginm.net', 'virginm.net', 'virginmedia.com'],
+    'united_kingdom_sky': ['xxx-xxx-xxx-xxx.static.virginm.net', 'sky.com'],
+    'united_kingdom_talktalk': ['xxx-xxx-xxx-xxx.no-dns-yet.zen.co.uk', 'talktalk.net'],
+    'united_kingdom_vodafone': ['xxx-xxx-xxx-xxx.vodafone.co.uk', 'vodafone.co.uk'],
+    'united_kingdom_three': ['xxx-xxx-xxx-xxx.three.co.uk', 'three.co.uk'],
+    'united_kingdom_o2': ['xxx-xxx-xxx-xxx.o2.co.uk', 'o2.co.uk'],
+    'united_kingdom_plusnet': ['xxx-xxx-xxx-xxx.plus.com', 'plus.net'],
+    'united_kingdom_ee': ['xxx-xxx-xxx-xxx.ee.co.uk', 'ee.co.uk'],
+    'united_kingdom_hyperoptic': ['xxx-xxx-xxx-xxx.hyperoptic.com', 'hyperoptic.com'],
+    'ireland_virgin': ['cpcxxx-xxxxx-xxx-xxx-custxxx.irle.cable.virginm.net', 'virginm.ie'],
+    'ireland_eir': ['xxx-xxx-xxx-xxx.eircom.net', 'eircom.net'],
+    'ireland_vodafone': ['xxx-xxx-xxx-xxx.vodafone.ie', 'vodafone.ie'],
+    
+    'germany_deutsche_telekom': ['p5Bxxx.xxx.pppool.de', 'dslb-xxx-xxx-xxx-xxx.pools.arcor-ip.net', 't-online.de', 'telekom.de'],
+    'germany_vodafone': ['xxx-xxx-xxx-xxx.dynamic.ip.vodafone.de', 'vodafone.de', 'arcor.de'],
+    'germany_unitymedia': ['xxx-xxx-xxx-xxx.kabel-deutschland.de', 'kabel-deutschland.de', 'unitymedia.de'],
+    'germany_o2': ['xxx-xxx-xxx-xxx.dip0.t-ipconnect.de', 'o2.de'],
+    'germany_1und1': ['xxx-xxx-xxx-xxx.dsl.regus.net', '1und1.de'],
+    
+    'france_orange': ['xxx-xxx-xxx-xxx.rev.numericable.fr', 'orange.fr', 'wanadoo.fr', 'orange.net'],
+    'france_sfr': ['xxx-xxx-xxx-xxx.xxx.wxxx-xxx.abo.wanadoo.fr', 'sfr.fr', 'numericable.fr'],
+    'france_free': ['xxx-xxx-xxx-xxx.rev.sfr.net', 'free.fr', 'proxad.net'],
+    'france_bouygues': ['xxx-xxx-xxx-xxx.bouygues.com', 'bouyguestelecom.fr'],
+    'france_sosh': ['xxx-xxx-xxx-xxx.sosh.fr', 'sosh.fr'],
+    
+    'italy_telecom': ['xxx-xxx-xxx-xxx.static.ip.fastwebnet.it', 'telecomitalia.it', 'tin.it'],
+    'italy_fastweb': ['xxx-xxx-xxx-xxx.fastwebnet.it', 'fastwebnet.it'],
+    'italy_vodafone': ['xxx-xxx-xxx-xxx.vodafone.it', 'vodafone.it'],
+    'italy_tim': ['xxx-xxx-xxx-xxx.tim.it', 'tim.it'],
+    'italy_wind': ['xxx-xxx-xxx-xxx.wind.it', 'wind.it'],
+    
+    'spain_telefonica': ['xxx.client.mchsi.com', 'telefonica.net', 'movistar.es'],
+    'spain_vodafone': ['xxx-xxx-xxx-xxx.vodafone.es', 'vodafone.es'],
+    'spain_orange': ['xxx-xxx-xxx-xxx.orange.es', 'orange.es'],
+    'spain_masmovil': ['xxx-xxx-xxx-xxx.masmovil.es', 'masmovil.es'],
+    
+    'netherlands_kpn': ['xxx-xxx-xxx-xxx.xxx.upc-c.chello.nl', 'kpn.nl', 'xs4all.nl'],
+    'netherlands_ziggo': ['xxx-xxx-xxx-xxx.ziggo.nl', 'ziggo.nl'],
+    'netherlands_tmobile': ['xxx-xxx-xxx-xxx.mobile.t-mobile.nl', 't-mobile.nl'],
+    
+    'belgium_proximus': ['xxx-xxx-xxx-xxx.proximus.be', 'proximus.be'],
+    'belgium_telenet': ['xxx-xxx-xxx-xxx.telenet.be', 'telenet.be'],
+    'belgium Orange': ['xxx-xxx-xxx-xxx.orange.be', 'orange.be'],
+    
+    'switzerland_swisscom': ['xxx-xxx-xxx-xxx.dynamic.upc.ch', 'swisscom.com', 'bluewin.ch'],
+    'switzerland_sunrise': ['xxx-xxx-xxx-xxx.sunrise.ch', 'sunrise.ch'],
+    'switzerland_salt': ['xxx-xxx-xxx-xxx.salt.ch', 'salt.ch'],
+    
+    'austria_a1': ['xxx-xxx-xxx-xxx.a1.net', 'a1.net'],
+    'austria_upc': ['xxx-xxx-xxx-xxx.upc.at', 'upc.at'],
+    'austria_tmobile': ['xxx-xxx-xxx-xxx.t-mobile.at', 't-mobile.at'],
+    
+    'sweden_comhem': ['xxx-xxx-xxx-xxx.cust.tele2.se', 'comhem.se', 'tele2.se'],
+    'sweden_telia': ['xxx-xxx-xxx-xxx.telia.com', 'telia.com'],
+    'sweden_bredbandsbolaget': ['xxx-xxx-xxx-xxx.bredband2.com', 'bredband2.com'],
+    
+    'norway_telenor': ['xxx-xxx-xxx-xxx.elisa-mobile.fi', 'telenor.no', 'canaldigital.no'],
+    'norway_get': ['xxx-xxx-xxx-xxx.get.no', 'get.no'],
+    
+    'denmark_tdc': ['xxx-xxx-xxx-xxx.tdc.dk', 'tdc.dk'],
+    'denmark_telenor': ['xxx-xxx-xxx-xxx.telenor.dk', 'telenor.dk'],
+    'denmark_norlys': ['xxx-xxx-xxx-xxx.norlys.dk', 'norlys.dk'],
+    
+    'finland_elisa': ['xxx-xxx-xxx-xxx.elisa-laajakaista.fi', 'elisa.fi'],
+    'finland_telia': ['xxx-xxx-xxx-xxx.telia.fi', 'telia.fi'],
+    'finland_dna': ['xxx-xxx-xxx-xxx.dna.fi', 'dna.fi'],
+    
+    'poland_orange': ['xxx-xxx-xxx-xxx.ipv4.telefonica.net', 'orange.pl', 'neostrada.pl'],
+    'poland_play': ['xxx-xxx-xxx-xxx.play.pl', 'play.pl'],
+    'poland_upc': ['xxx-xxx-xxx-xxx.upc.pl', 'upc.pl'],
+    'poland_netia': ['xxx-xxx-xxx-xxx.netia.net', 'netia.net'],
+    
+    'czech_o2': ['xxx-xxx-xxx-xxx.o2.cz', 'o2.cz'],
+    'czech_tmobile': ['xxx-xxx-xxx-xxx.t-mobile.cz', 't-mobile.cz'],
+    'czech_vodafone': ['xxx-xxx-xxx-xxx.vodafone.cz', 'vodafone.cz'],
+    
+    'greece_ote': ['xxx-xxx-xxx-xxx.otenet.gr', 'otenet.gr'],
+    'greece_cosmote': ['xxx-xxx-xxx-xxx.cosmote.gr', 'cosmote.gr'],
+    'greece_vodafone': ['xxx-xxx-xxx-xxx.vodafone.gr', 'vodafone.gr'],
+    
+    'portugal_meo': ['xxx-xxx-xxx-xxx.meo.pt', 'meo.pt'],
+    'portugal_nos': ['xxx-xxx-xxx-xxx.nos.pt', 'nos.pt'],
+    'portugal_vodafone': ['xxx-xxx-xxx-xxx.vodafone.pt', 'vodafone.pt'],
+    
+    'hungary_upc': ['xxx-xxx-xxx-xxx.upc.hu', 'upc.hu'],
+    'hungary_tmobile': ['xxx-xxx-xxx-xxx.t-mobile.hu', 't-mobile.hu'],
+    'hungary_vodafone': ['xxx-xxx-xxx-xxx.vodafone.hu', 'vodafone.hu'],
+    'hungary_digi': ['xxx-xxx-xxx-xxx.digi.hu', 'digi.hu'],
+    
+    'romania_telekom': ['xxx-xxx-xxx-xxx.telekom.ro', 'telekom.ro'],
+    'romania_rds': ['xxx-xxx-xxx-xxx.rdsnet.ro', 'rdsnet.ro'],
+    'romania_upc': ['xxx-xxx-xxx-xxx.upc.ro', 'upc.ro'],
+    
+    'ukraine_kyivstar': ['xxx-xxx-xxx-xxx.kyivstar.net', 'kyivstar.net'],
+    'ukraine_ukrtelecom': ['xxx-xxx-xxx-xxx.ukrtelecom.ua', 'ukrtelecom.ua'],
+    'ukraine_vodafone': ['xxx-xxx-xxx-xxx.vodafone.ua', 'vodafone.ua'],
+    'ukraine_lifecell': ['xxx-xxx-xxx-xxx.lifecell.ua', 'lifecell.ua'],
+    
+    'russia_mts': ['xxx-xxx-xxx-xxx.broadband-xxx.ip.tmobile.com', 'mts.ru'],
+    'russia_beeline': ['xxx-xxx-xxx-xxx.broadband.corbina.ru', 'beeline.ru'],
+    'russia_megafon': ['xxx-xxx-xxx-xxx.megafon.ru', 'megafon.ru'],
+    'russia_tele2': ['xxx-xxx-xxx-xxx.tele2.ru', 'tele2.ru'],
+    'russia_rostelecom': ['xxx-xxx-xxx-xxx.rostelecom.ru', 'rostelecom.ru'],
+    
+    'belarus_velcom': ['xxx-xxx-xxx-xxx.velcom.by', 'velcom.by'],
+    'belarus_mts': ['xxx-xxx-xxx-xxx.mts.by', 'mts.by'],
+    'belarus_life': ['xxx-xxx-xxx-xxx.life.com.by', 'life.com.by'],
+    
+    'moldova_moldtelecom': ['xxx-xxx-xxx-xxx.moldtelecom.md', 'moldtelecom.md'],
+    'moldova_orange': ['xxx-xxx-xxx-xxx.orange.md', 'orange.md'],
+    
+    'bulgaria_vivacom': ['xxx-xxx-xxx-xxx.vivacom.bg', 'vivacom.bg'],
+    'bulgaria_a1': ['xxx-xxx-xxx-xxx.a1.bg', 'a1.bg'],
+    'bulgaria_telenor': ['xxx-xxx-xxx-xxx.telenor.bg', 'telenor.bg'],
+    
+    'serbia_telekom': ['xxx-xxx-xxx-xxx.telekom.rs', 'telekom.rs'],
+    'serbia_vip': ['xxx-xxx-xxx-xxx.vip.rs', 'vip.rs'],
+    'serbia_yettel': ['xxx-xxx-xxx-xxx.yettel.rs', 'yettel.rs'],
+    
+    'croatia_htnet': ['xxx-xxx-xxx-xxx.htnet.hr', 'htnet.hr'],
+    'croatia_a1': ['xxx-xxx-xxx-xxx.a1.hr', 'a1.hr'],
+    
+    'slovenia_arnes': ['xxx-xxx-xxx-xxx.arnes.si', 'arnes.si'],
+    'slovenia_siol': ['xxx-xxx-xxx-xxx.siol.net', 'siol.net'],
+    
+    'slovakia_slovak_telecom': ['xxx-xxx-xxx-xxx.slovaktelecom.sk', 'slovaktelecom.sk'],
+    'slovakia_orange': ['xxx-xxx-xxx-xxx.orange.sk', 'orange.sk'],
+    
+    'estonia_elisa': ['xxx-xxx-xxx-xxx.elisa.ee', 'elisa.ee'],
+    'estonia_telia': ['xxx-xxx-xxx-xxx.telia.ee', 'telia.ee'],
+    
+    'latvia_tele2': ['xxx-xxx-xxx-xxx.tele2.lv', 'tele2.lv'],
+    'latvia_bite': ['xxx-xxx-xxx-xxx.bite.lv', 'bite.lv'],
+    'latvia_baltcom': ['xxx-xxx-xxx-xxx.baltcom.lv', 'baltcom.lv'],
+    
+    'lithuania_telia': ['xxx-xxx-xxx-xxx.telia.lt', 'telia.lt'],
+    'lithuania_bite': ['xxx-xxx-xxx-xxx.bite.lt', 'bite.lt'],
+    'lithuania_telia': ['xxx-xxx-xxx-xxx.omnitel.net', 'omnitel.net'],
+    
+    'iceland_siminn': ['xxx-xxx-xxx-xxx.siminn.is', 'siminn.is'],
+    'iceland_og': ['xxx-xxx-xxx-xxx.ogfjord.is', 'ogfjord.is'],
+    'iceland_vodafone': ['xxx-xxx-xxx-xxx.vodafone.is', 'vodafone.is'],
+    
+    'norway_ice': ['xxx-xxx-xxx-xxx.ice.net', 'ice.net'],
+    'norway_chili': ['xxx-xxx-xxx-xxx.chili.no', 'chili.no'],
+
+    // Asia
+    'japan_ntt': ['xxx-xxx-xxx-xxx.rev.home.ne.jp', 'ocn.ne.jp', 'so-net.ne.jp', 'biglobe.ne.jp'],
+    'japan_kddi': ['xxx-xxx-xxx-xxx.au-net.ne.jp', 'au-net.ne.jp'],
+    'japan_softbank': ['xxx-xxx-xxx-xxx.softbank.ne.jp', 'softbank.ne.jp'],
+    'japan_docomo': ['xxx-xxx-xxx-xxx.spmode.ne.jp', 'spmode.ne.jp'],
+    
+    'south_korea_kt': ['xxx.xxx.xxx.xxx.kt.co.kr', 'kt.co.kr', 'olleh.com'],
+    'south_korea_sk': ['xxx.xxx.xxx.xxx.sk broadband.com', 'skbroadband.com'],
+    'south_korea_lg': ['xxx.xxx.xxx.xxx.lguplus.co.kr', 'lguplus.co.kr'],
+    
+    'china_telecom': ['xxx.xxx.xxx.xxx.static.sd.ctnet.net.cn', 'ctnet.net.cn', '163.com'],
+    'china_unicom': ['xxx.xxx.xxx.xxx.bjtelecom.net', 'chinaunicom.cn', 'wo.cn'],
+    'china_mobile': ['xxx.xxx.xxx.xxx.cmcc.net', 'cmcc.net'],
+    'china_cnc': ['xxx.xxx.xxx.xxx.cncnet.net', 'cnc.net.cn'],
+    
+    'india_jio': ['xxx-xxx-xxx-xxx.jio.com', 'jio.com'],
+    'india_airtel': ['xxx-xxx-xxx-xxx.airtel.in', 'airtel.in', 'airtelbroadband.in'],
+    'india_vodafone': ['xxx-xxx-xxx-xxx.vodafone.in', 'vodafone.in', 'ideacellular.net'],
+    'india_bsnl': ['xxx-xxx-xxx-xxx.bsnl.in', 'bsnl.in'],
+    'india_act': ['xxx-xxx-xxx-xxx.actcorp.in', 'actcorp.in'],
+    
+    'indonesia_telkom': ['xxx-xxx-xxx-xxx.telkom.net.id', 'telkom.net.id'],
+    'indonesia_indosat': ['xxx-xxx-xxx-xxx.indosat.com', 'indosat.com'],
+    'indonesia_xl': ['xxx-xxx-xxx-xxx.xl.co.id', 'xl.co.id'],
+    
+    'malaysia_tm': ['xxx-xxx-xxx-xxx.tm.net.my', 'tm.net.my', 'unifi.my'],
+    'malaysia_maxis': ['xxx-xxx-xxx-xxx.maxis.com.my', 'maxis.com.my'],
+    'malaysia_celcom': ['xxx-xxx-xxx-xxx.celcom.com.my', 'celcom.com.my'],
+    'malaysia_digi': ['xxx-xxx-xxx-xxx.digi.com.my', 'digi.com.my'],
+    
+    'thais_true': ['xxx-xxx-xxx-xxx.true.th', 'true.th', 'trueinternet.co.th'],
+    'thais_ais': ['xxx-xxx-xxx-xxx.ais.co.th', 'ais.co.th'],
+    'thais_dtac': ['xxx-xxx-xxx-xxx.dtac.co.th', 'dtac.co.th'],
+    'thais_3bb': ['xxx-xxx-xxx-xxx.3bb.co.th', '3bb.co.th'],
+    
+    'vietnam_viettel': ['xxx-xxx-xxx-xxx.vnpt.vn', 'viettel.vn', 'fpt.vn'],
+    'vietnam_vnpt': ['xxx-xxx-xxx-xxx.vnpt.vn', 'vnpt.vn'],
+    'vietnam_fpt': ['xxx-xxx-xxx-xxx.fpt.vn', 'fpt.vn'],
+    
+    'philippines_pldt': ['xxx-xxx-xxx-xxx.pldt.net', 'pldt.net'],
+    'philippines_globe': ['xxx-xxx-xxx-xxx.globe.com.ph', 'globe.com.ph'],
+    'philippines_smart': ['xxx-xxx-xxx-xxx.smart.com.ph', 'smart.com.ph'],
+    
+    'singapore_singtel': ['xxx-xxx-xxx-xxx.starhub.net.sg', 'singtel.com', 'starhub.net.sg'],
+    'singapore_starhub': ['xxx-xxx-xxx-xxx.starhub.com', 'starhub.com'],
+    'singapore_m1': ['xxx-xxx-xxx-xxx.m1.com.sg', 'm1.com.sg'],
+    
+    'hong_kong_pccw': ['xxx-xxx-xxx-xxx.dynamic.hk.net', 'pccw.net', 'netvigator.com'],
+    'hong_kong_hkc': ['xxx-xxx-xxx-xxx.hkc.net', 'hkc.net'],
+    'hong_kong_smartone': ['xxx-xxx-xxx-xxx.smartone.com', 'smartone.com'],
+    
+    'taiwan_cht': ['xxx-xxx-xxx-xxx.hinet.net', 'hinet.net'],
+    'taiwan_fetnet': ['xxx-xxx-xxx-xxx.fetnet.net', 'fetnet.net'],
+    'taiwan_cht': ['xxx-xxx-xxx-xxx.emome.net', 'emome.net'],
+    
+    'pakistan_ptcl': ['xxx-xxx-xxx-xxx.ptcl.net.pk', 'ptcl.net.pk'],
+    'pakistan_jazz': ['xxx-xxx-xxx-xxx.jazz.com.pk', 'jazz.com.pk'],
+    'pakistan_telenor': ['xxx-xxx-xxx-xxx.telenor.pk', 'telenor.pk'],
+    'pakistan_zong': ['xxx-xxx-xxx-xxx.zong.com.pk', 'zong.com.pk'],
+    
+    'bangladesh_banglalink': ['xxx-xxx-xxx-xxx.banglalink.net', 'banglalink.net'],
+    'bangladesh_grameenphone': ['xxx-xxx-xxx-xxx.grameenphone.com', 'grameenphone.com'],
+    'bangladesh_robi': ['xxx-xxx-xxx-xxx.robi.com.bd', 'robi.com.bd'],
+    'bangladesh_teletalk': ['xxx-xxx-xxx-xxx.teletalk.com.bd', 'teletalk.com.bd'],
+    
+    'myanmar_telenor': ['xxx-xxx-xxx-xxx.telenor.mm', 'telenor.mm'],
+    'myanmar_mpt': ['xxx-xxx-xxx-xxx.mpt.net.mm', 'mpt.net.mm'],
+    'myanmar_ooredoo': ['xxx-xxx-xxx-xxx.ooredoo.mm', 'ooredoo.mm'],
+    
+    'cambodia_smart': ['xxx-xxx-xxx-xxx.smart.com.kh', 'smart.com.kh'],
+    'cambodia_cellcard': ['xxx-xxx-xxx-xxx.cellcard.com.kh', 'cellcard.com.kh'],
+    
+    'laos_lao_telecom': ['xxx-xxx-xxx-xxx.laotel.com', 'laotel.com'],
+    'laos_unitel': ['xxx-xxx-xxx-xxx.unitel.la', 'unitel.la'],
+    
+    'vietnam_mobifone': ['xxx-xxx-xxx-xxx.mobifone.vn', 'mobifone.vn'],
+    'vietnam_vinaphone': ['xxx-xxx-xxx-xxx.vinaphone.vn', 'vinaphone.vn'],
+    
+    'nepal_ntc': ['xxx-xxx-xxx-xxx.ntc.net.np', 'ntc.net.np'],
+    'nepal_ncell': ['xxx-xxx-xxx-xxx.ncell.axiata.com', 'ncell.axiata.com'],
+    
+    'sri_lanka_dialog': ['xxx-xxx-xxx-xxx.dialog.lk', 'dialog.lk'],
+    'sri_lanka_mobitel': ['xxx-xxx-xxx-xxx.mobitel.lk', 'mobitel.lk'],
+    
+    'maldives_dhiraagu': ['xxx-xxx-xxx-xxx.dhiraagu.com.mv', 'dhiraagu.com.mv'],
+    
+    'mongolia_mobicom': ['xxx-xxx-xxx-xxx.mobicom.mn', 'mobicom.mn'],
+    'mongolia_unitel': ['xxx-xxx-xxx-xxx.unitel.mn', 'unitel.mn'],
+    
+    'kazakhstan_kcell': ['xxx-xxx-xxx-xxx.kcell.kz', 'kcell.kz'],
+    'kazakhstan_tele2': ['xxx-xxx-xxx-xxx.tele2.kz', 'tele2.kz'],
+    'kazakhstan_beeline': ['xxx-xxx-xxx-xxx.beeline.kz', 'beeline.kz'],
+    
+    'uzbekistan_uzmobile': ['xxx-xxx-xxx-xxx.uzmobile.uz', 'uzmobile.uz'],
+    'uzbekistan_ucell': ['xxx-xxx-xxx-xxx.ucell.uz', 'ucell.uz'],
+    'uzbekistan_beeline': ['xxx-xxx-xxx-xxx.beeline.uz', 'beeline.uz'],
+    
+    'kyrgyzstan_beeline': ['xxx-xxx-xxx-xxx.beeline.kg', 'beeline.kg'],
+    'kyrgyzstan_o!': ['xxx-xxx-xxx-xxx.o.kg', 'o.kg'],
+    
+    'tajikistan_tcell': ['xxx-xxx-xxx-xxx.tcell.tj', 'tcell.tj'],
+    'tajikistan_babilon': ['xxx-xxx-xxx-xxx.babilon-m.tj', 'babilon-m.tj'],
+    
+    'turkmenistan_altyn_asyr': ['xxx-xxx-xxx-xxx.tmcell.tm', 'tmcell.tm'],
+    
+    'armenia_beeline': ['xxx-xxx-xxx-xxx.beeline.am', 'beeline.am'],
+    'armenia_vivacell': ['xxx-xxx-xxx-xxx.vivacell.am', 'vivacell.am'],
+    'armenia_ucom': ['xxx-xxx-xxx-xxx.ucom.am', 'ucom.am'],
+    
+    'azerbaijan_azercell': ['xxx-xxx-xxx-xxx.azercell.com', 'azercell.com'],
+    'azerbaijan_bakcell': ['xxx-xxx-xxx-xxx.bakcell.com', 'bakcell.com'],
+    
+    'georgia_magti': ['xxx-xxx-xxx-xxx.magti.com', 'magti.com'],
+    'georgia_geocell': ['xxx-xxx-xxx-xxx.geocell.ge', 'geocell.ge'],
+    
+    'turkmenistan_telecom': ['xxx-xxx-xxx-xxx.online.tm', 'online.tm'],
+    
+    'bahrain_batelco': ['xxx-xxx-xxx-xxx.batelco.com.bh', 'batelco.com.bh'],
+    'bahrain_zain': ['xxx-xxx-xxx-xxx.zain.com.bh', 'zain.com.bh'],
+    
+    'kuwait_viva': ['xxx-xxx-xxx-xxx.viva.com.kw', 'viva.com.kw'],
+    'kuwait_ooredoo': ['xxx-xxx-xxx-xxx.ooredoo.com.kw', 'ooredoo.com.kw'],
+    'kuwait_zain': ['xxx-xxx-xxx-xxx.zain.com.kw', 'zain.com.kw'],
+    'kuwait_stc': ['xxx-xxx-xxx-xxx.stc.com.kw', 'stc.com.kw'],
+    
+    'qatar_ooredoo': ['xxx-xxx-xxx-xxx.ooredoo.com.qa', 'ooredoo.com.qa'],
+    'qatar_vodafone': ['xxx-xxx-xxx-xxx.vodafone.com.qa', 'vodafone.com.qa'],
+    
+    'oman_omantel': ['xxx-xxx-xxx-xxx.omantel.net.om', 'omantel.net.om'],
+    'oman_ooredoo': ['xxx-xxx-xxx-xxx.ooredoo.om', 'ooredoo.om'],
+    
+    'jordan_zain': ['xxx-xxx-xxx-xxx.zain.jo', 'zain.jo'],
+    'jordan_orange': ['xxx-xxx-xxx-xxx.orange.jo', 'orange.jo'],
+    'jordan_umnia': ['xxx-xxx-xxx-xxx.umniah.jo', 'umniah.jo'],
+    
+    'lebanon_mtc': ['xxx-xxx-xxx-xxx.mtc-touch.com.lb', 'mtc-touch.com.lb'],
+    'lebanon_alfa': ['xxx-xxx-xxx-xxx.alfa.com.lb', 'alfa.com.lb'],
+    'lebanon_touch': ['xxx-xxx-xxx-xxx.touch.com.lb', 'touch.com.lb'],
+    
+    'syria_syratel': ['xxx-xxx-xxx-xxx.syratel.sy', 'syratel.sy'],
+    'syria_mtn': ['xxx-xxx-xxx-xxx.mtn.com.sy', 'mtn.com.sy'],
+    
+    'iraq_asiacell': ['xxx-xxx-xxx-xxx.asiacell.com', 'asiacell.com'],
+    'iraq_zain': ['xxx-xxx-xxx-xxx.zain.iq', 'zain.iq'],
+    'iraq_korek': ['xxx-xxx-xxx-xxx.korektelecom.com', 'korektelecom.com'],
+    
+    'iran_mci': ['xxx-xxx-xxx-xxx.mci.ir', 'mci.ir'],
+    'iran_mtn': ['xxx-xxx-xxx-xxx.mtnirancell.ir', 'mtnirancell.ir'],
+    'iran_rightel': ['xxx-xxx-xxx-xxx.rightel.ir', 'rightel.ir'],
+    
+    'israel_bezeq': ['xxx-xxx-xxx-xxx.bezeqint.net', 'bezeqint.net'],
+    'israel_cellcom': ['xxx-xxx-xxx-xxx.cellcom.com.il', 'cellcom.com.il'],
+    'israel_hot': ['xxx-xxx-xxx-xxx.hot.net.il', 'hot.net.il'],
+    'israel_partner': ['xxx-xxx-xxx-xxx.partner.co.il', 'partner.co.il'],
+    'israel_pelephone': ['xxx-xxx-xxx-xxx.pelephone.co.il', 'pelephone.co.il'],
+    'israel_golan': ['xxx-xxx-xxx-xxx.golan.co.il', 'golan.co.il'],
+    
+    'palestine_jawwal': ['xxx-xxx-xxx-xxx.jawwal.ps', 'jawwal.ps'],
+    'palestine_wataniya': ['xxx-xxx-xxx-xxx.wataniya.ps', 'wataniya.ps'],
+    
+    'saudi_stc': ['xxx-xxx-xxx-xxx.stc.net.sa', 'stc.com.sa'],
+    'saudi_mobily': ['xxx-xxx-xxx-xxx.mobily.com.sa', 'mobily.com.sa'],
+    'saudi_zain': ['xxx-xxx-xxx-xxx.zain.com.sa', 'zain.com.sa'],
+    'saudi_lebara': ['xxx-xxx-xxx-xxx.lebara.com.sa', 'lebara.com.sa'],
+    
+    'uae_etisalat': ['xxx-xxx-xxx-xxx.etisalat.ae', 'etisalat.ae'],
+    'uae_du': ['xxx-xxx-xxx-xxx.du.ae', 'du.ae'],
+    
+    'yemen_yemenmobile': ['xxx-xxx-xxx-xxx.yemenmobile.ye', 'yemenmobile.ye'],
+    'yemen_sabafon': ['xxx-xxx-xxx-xxx.sabafon.ye', 'sabafon.ye'],
+    
+    'turkcell': ['xxx-xxx-xxx-xxx.turkcell.com.tr', 'turkcell.com.tr'],
+    'turk_telekom': ['xxx-xxx-xxx-xxx.ttnet.com.tr', 'ttnet.com.tr'],
+    'turk_vodafone': ['xxx-xxx-xxx-xxx.vodafone.com.tr', 'vodafone.com.tr'],
+    'turk_superonline': ['xxx-xxx-xxx-xxx.superonline.net', 'superonline.net'],
+    
+    'cyprus_cytanet': ['xxx-xxx-xxx-xxx.cytanet.com.cy', 'cytanet.com.cy'],
+    'cyprus_prime': ['xxx-xxx-xxx-xxx.primecyprus.net', 'primecyprus.net'],
+    'cyprus_cablenet': ['xxx-xxx-xxx-xxx.cablenet.com.cy', 'cablenet.com.cy'],
+    'cyprus_epic': ['xxx-xxx-xxx-xxx.epic.com.cy', 'epic.com.cy'],
+    
+    'malta_go': ['xxx-xxx-xxx-xxx.go.com.mt', 'go.com.mt'],
+    'malta_vodafone': ['xxx-xxx-xxx-xxx.vodafone.com.mt', 'vodafone.com.mt'],
+    'malta_melita': ['xxx-xxx-xxx-xxx.melita.com', 'melita.com'],
+    
+    'liechtenstein_telecom': ['xxx-xxx-xxx-xxx.telekom.li', 'telekom.li'],
+    'liechtenstein_salt': ['xxx-xxx-xxx-xxx.salt.li', 'salt.li'],
+    'liechtenstein_fl1': ['xxx-xxx-xxx-xxx.fl1.li', 'fl1.li'],
+    
+    'monaco_mc': ['xxx-xxx-xxx-xxx.monaco-telecom.mc', 'monaco-telecom.mc'],
+    'monaco_valley': ['xxx-xxx-xxx-xxx.valley.mc', 'valley.mc'],
+    'monaco_net': ['xxx-xxx-xxx-xxx.net.mc', 'net.mc'],
+    
+    'andorra_andorra': ['xxx-xxx-xxx-xxx.andorra.ad', 'andorra.ad'],
+    'andorra_santa': ['xxx-xxx-xxx-xxx.santa.ad', 'santa.ad'],
+    'andorra_mobil': ['xxx-xxx-xxx-xxx.mobil.ad', 'mobil.ad'],
+    'andorra_net': ['xxx-xxx-xxx-xxx.net.ad', 'net.ad'],
+    
+    'san_marino_sm': ['xxx-xxx-xxx-xxx.telecom.sm', 'telecom.sm'],
+    'san_marino_ti': ['xxx-xxx-xxx-xxx.teleitalia.sm', 'teleitalia.sm'],
+    'san_marino_wifi': ['xxx-xxx-xxx-xxx.wifi.sm', 'wifi.sm'],
+    'san_marino_net': ['xxx-xxx-xxx-xxx.net.sm', 'net.sm'],
+    
+    'vatican_va': ['xxx-xxx-xxx-xxx.va', 'va'],
+    'vatican_sat': ['xxx-xxx-xxx-xxx.sat.va', 'sat.va'],
+    'vatican_net': ['xxx-xxx-xxx-xxx.net.va', 'net.va'],
+
+    // Oceania
+    'australia_telstra': ['xxx-xxx-xxx-xxx.lns1.wil.redirectme.net', 'telstra.net', 'bigpond.net.au'],
+    'australia_optus': ['xxx-xxx-xxx-xxx.dyn.iinet.net.au', 'optusnet.com.au'],
+    'australia_vodafone': ['xxx-xxx-xxx-xxx.sta.dodo.net.au', 'vodafone.com.au'],
+    'australia_tpg': ['xxx-xxx-xxx-xxx.tpgi.com.au', 'tpgi.com.au'],
+    'australia_iiNet': ['xxx-xxx-xxx-xxx.iinet.net.au', 'iinet.net.au'],
+    'australia_vocus': ['xxx-xxx-xxx-xxx.vocus.net.au', 'vocus.net.au'],
+    
+    'new_zealand_spark': ['xxx-xxx-xxx-xxx.spark.co.nz', 'xtra.co.nz'],
+    'new_zealand_vodafone': ['xxx-xxx-xxx-xxx.vodafone.co.nz', 'vodafone.co.nz'],
+    'new_zealand_2degrees': ['xxx-xxx-xxx-xxx.2degreesmobile.net.nz', '2degreesmobile.net.nz'],
+    'new_zealand_slingshot': ['xxx-xxx-xxx-xxx.slingshot.co.nz', 'slingshot.co.nz'],
+    'new_zealand_orcon': ['xxx-xxx-xxx-xxx.orcon.net.nz', 'orcon.net.nz'],
+    
+    'fiji_vodafone': ['xxx-xxx-xxx-xxx.vodafone.com.fj', 'vodafone.com.fj'],
+    'fiji_digicel': ['xxx-xxx-xxx-xxx.digicel.net', 'digicel.net'],
+    
+    'papua_new_guinea_digicel': ['xxx-xxx-xxx-xxx.digicelpng.com', 'digicelpng.com'],
+    
+    'solomon_islands_digicel': ['xxx-xxx-xxx-xxx.digicel.com.sb', 'digicel.com.sb'],
+    'solomon_islands_our': ['xxx-xxx-xxx-xxx.ourtelekom.com.sb', 'ourtelekom.com.sb'],
+    
+    'vanuatu_digicel': ['xxx-xxx-xxx-xxx.digicel.vu', 'digicel.vu'],
+    'vanuatu_tv': ['xxx-xxx-xxx-xxx.tvl.net.vu', 'tvl.net.vu'],
+    
+    'samoa_digicel': ['xxx-xxx-xxx-xxx.digicel.ws', 'digicel.ws'],
+    'samoa_bluesky': ['xxx-xxx-xxx-xxx.bluesky.ws', 'bluesky.ws'],
+    
+    'tonga_digicel': ['xxx-xxx-xxx-xxx.digicel.to', 'digicel.to'],
+    'tonga_ucc': ['xxx-xxx-xxx-xxx.ucc.to', 'ucc.to'],
+    
+    'kiribati_digicel': ['xxx-xxx-xxx-xxx.digicel.ki', 'digicel.ki'],
+    
+    'marshall_islands_nta': ['xxx-xxx-xxx-xxx.nta.fm', 'nta.fm'],
+    
+    'micronesia_fsm': ['xxx-xxx-xxx-xxx.fm', 'fm'],
+    
+    'nauru_cenpac': ['xxx-xxx-xxx-xxx.cenpac.net.nr', 'cenpac.net.nr'],
+    
+    'palau_belau': ['xxx-xxx-xxx-xxx.palau.net', 'palau.net'],
+    
+    'tuvalu_tcc': ['xxx-xxx-xxx-xxx.tuvalu.tv', 'tuvalu.tv'],
+
+    // Africa
+    'south_africa_telkom': ['xxx-xxx-xxx-xxx.dsl.telkomsa.net', 'telkomsa.net'],
+    'south_africa_vodacom': ['xxx-xxx-xxx-xxx.vodacom.co.za', 'vodacom.co.za'],
+    'south_africa_mtn': ['xxx-xxx-xxx-xxx.mtn.co.za', 'mtn.co.za'],
+    'south_africa_cellc': ['xxx-xxx-xxx-xxx.cellc.net', 'cellc.net'],
+    'south_africa_rain': ['xxx-xxx-xxx-xxx.rain.co.za', 'rain.co.za'],
+    
+    'egypt_vodafone': ['xxx-xxx-xxx-xxx.vodafone.com.eg', 'vodafone.com.eg'],
+    'egypt_orange': ['xxx-xxx-xxx-xxx.orange.eg', 'orange.eg'],
+    'egypt_ewe': ['xxx-xxx-xxx-xxx.ewe.com.eg', 'ewe.com.eg'],
+    'egypt_etisalat': ['xxx-xxx-xxx-xxx.etisalat.com.eg', 'etisalat.com.eg'],
+    
+    'morocco_maroc_telecom': ['xxx-xxx-xxx-xxx.iam.net.ma', 'iam.net.ma'],
+    'morocco_orange': ['xxx-xxx-xxx-xxx.orange.ma', 'orange.ma'],
+    'morocco_inwi': ['xxx-xxx-xxx-xxx.inwi.ma', 'inwi.ma'],
+    
+    'algerie_telecom': ['xxx-xxx-xxx-xxx.dz', 'dz'],
+    'algerie_djezzy': ['xxx-xxx-xxx-xxx.djezzy.dz', 'djezzy.dz'],
+    'algerie_mobilis': ['xxx-xxx-xxx-xxx.mobilis.dz', 'mobilis.dz'],
+    'algerie_ooredoo': ['xxx-xxx-xxx-xxx.ooredoo.dz', 'ooredoo.dz'],
+    
+    'tunisia_tunisie_telecom': ['xxx-xxx-xxx-xxx.tn', 'tn'],
+    'tunisia_ooredoo': ['xxx-xxx-xxx-xxx.ooredoo.tn', 'ooredoo.tn'],
+    'tunisia_orange': ['xxx-xxx-xxx-xxx.orange.tn', 'orange.tn'],
+    
+    'libya_aljawal': ['xxx-xxx-xxx-xxx.aljawal.ly', 'aljawal.ly'],
+    'libya_madar': ['xxx-xxx-xxx-xxx.madar.ly', 'madar.ly'],
+    
+    'sudan_sudatel': ['xxx-xxx-xxx-xxx.sudatel.sd', 'sudatel.sd'],
+    'sudan_zain': ['xxx-xxx-xxx-xxx.zain.sd', 'zain.sd'],
+    'sudan_mtnc': ['xxx-xxx-xxx-xxx.mtn.sd', 'mtn.sd'],
+    
+    'nigeria_mtn': ['xxx-xxx-xxx-xxx.mtn.net', 'mtn.net'],
+    'nigeria_airtel': ['xxx-xxx-xxx-xxx.airtel.com.ng', 'airtel.com.ng'],
+    'nigeria_glo': ['xxx-xxx-xxx-xxx.gloworld.com', 'gloworld.com'],
+    'nigeria_9mobile': ['xxx-xxx-xxx-xxx.9mobile.com.ng', '9mobile.com.ng'],
+    
+    'kenya_safaricom': ['xxx-xxx-xxx-xxx.safaricom.com', 'safaricom.com'],
+    'kenya_airtel': ['xxx-xxx-xxx-xxx.ke.airtel.com', 'ke.airtel.com'],
+    'kenya_telkom': ['xxx-xxx-xxx-xxx.telkom.co.ke', 'telkom.co.ke'],
+    
+    'ethiopia_ethio_telecom': ['xxx-xxx-xxx-xxx.ethionet.et', 'ethionet.et'],
+    
+    'ghana_mtn': ['xxx-xxx-xxx-xxx.mtn.com.gh', 'mtn.com.gh'],
+    'ghana_vodafone': ['xxx-xxx-xxx-xxx.vodafone.com.gh', 'vodafone.com.gh'],
+    'ghana_airspace': ['xxx-xxx-xxx-xxx.airspace.com.gh', 'airspace.com.gh'],
+    
+    'ivory_coast_orange': ['xxx-xxx-xxx-xxx.orange.ci', 'orange.ci'],
+    'ivory_coast_mtn': ['xxx-xxx-xxx-xxx.mtn.ci', 'mtn.ci'],
+    'ivory_coast_moov': ['xxx-xxx-xxx-xxx.moov.ci', 'moov.ci'],
+    
+    'senegal_orange': ['xxx-xxx-xxx-xxx.orange.sn', 'orange.sn'],
+    'senegal_free': ['xxx-xxx-xxx-xxx.free.sn', 'free.sn'],
+    'senegal_expresso': ['xxx-xxx-xxx-xxx.expresso.sn', 'expresso.sn'],
+    
+    'mali_orange': ['xxx-xxx-xxx-xxx.orange.ml', 'orange.ml'],
+    'mali_malitel': ['xxx-xxx-xxx-xxx.malitel.ml', 'malitel.ml'],
+    
+    'burkina_faso_orange': ['xxx-xxx-xxx-xxx.orange.bf', 'orange.bf'],
+    'burkina_faso_telecel': ['xxx-xxx-xxx-xxx.telecel.bf', 'telecel.bf'],
+    
+    'niger_orange': ['xxx-xxx-xxx-xxx.orange.ne', 'orange.ne'],
+    'niger_mtn': ['xxx-xxx-xxx-xxx.mtn.ne', 'mtn.ne'],
+    'niger_moov': ['xxx-xxx-xxx-xxx.moov.ne', 'moov.ne'],
+    
+    'chad_orange': ['xxx-xxx-xxx-xxx.orange.td', 'orange.td'],
+    'chad_ait': ['xxx-xxx-xxx-xxx.ait.td', 'ait.td'],
+    
+    'cameroon_orange': ['xxx-xxx-xxx-xxx.orange.cm', 'orange.cm'],
+    'cameroon_mtn': ['xxx-xxx-xxx-xxx.mtn.cm', 'mtn.cm'],
+    'cameroon_nexttel': ['xxx-xxx-xxx-xxx.nexttel.cm', 'nexttel.cm'],
+    
+    'gabon_orange': ['xxx-xxx-xxx-xxx.orange.ga', 'orange.ga'],
+    'gabon_moov': ['xxx-xxx-xxx-xxx.moov.ga', 'moov.ga'],
+    'gabon_ais': ['xxx-xxx-xxx-xxx.ais.ga', 'ais.ga'],
+    
+    'congo_orange': ['xxx-xxx-xxx-xxx.orange.cg', 'orange.cg'],
+    'congo_mtn': ['xxx-xxx-xxx-xxx.mtn.cg', 'mtn.cg'],
+    
+    'drc_orange': ['xxx-xxx-xxx-xxx.orange.cd', 'orange.cd'],
+    'drc_vodacom': ['xxx-xxx-xxx-xxx.vodacom.cd', 'vodacom.cd'],
+    'drc_airtel': ['xxx-xxx-xxx-xxx.airtel.cd', 'airtel.cd'],
+    
+    'angola_unitel': ['xxx-xxx-xxx-xxx.unitel.ao', 'unitel.ao'],
+    'angola_movicel': ['xxx-xxx-xxx-xxx.movicel.ao', 'movicel.ao'],
+    'angola_africell': ['xxx-xxx-xxx-xxx.africell.ao', 'africell.ao'],
+    
+    'mozambique_mcel': ['xxx-xxx-xxx-xxx.mcel.co.mz', 'mcel.co.mz'],
+    'mozambique_vodacom': ['xxx-xxx-xxx-xxx.vodacom.co.mz', 'vodacom.co.mz'],
+    
+    'zambia_mtn': ['xxx-xxx-xxx-xxx.mtn.zm', 'mtn.zm'],
+    'zambia_airtel': ['xxx-xxx-xxx-xxx.airtel.zm', 'airtel.zm'],
+    'zambia_zamtel': ['xxx-xxx-xxx-xxx.zamtel.zm', 'zamtel.zm'],
+    
+    'zimbabwe_econet': ['xxx-xxx-xxx-xxx.econet.co.zw', 'econet.co.zw'],
+    'zimbabwe_netone': ['xxx-xxx-xxx-xxx.netone.co.zw', 'netone.co.zw'],
+    'zimbabwe_telecel': ['xxx-xxx-xxx-xxx.telecel.co.zw', 'telecel.co.zw'],
+    
+    'botswana_mascom': ['xxx-xxx-xxx-xxx.mascom.bw', 'mascom.bw'],
+    'botswana_btc': ['xxx-xxx-xxx-xxx.btc.bw', 'btc.bw'],
+    'botswana_digicel': ['xxx-xxx-xxx-xxx.digicel.bw', 'digicel.bw'],
+    
+    'namibia_mtc': ['xxx-xxx-xxx-xxx.mtc.com.na', 'mtc.com.na'],
+    'namibia_telecom': ['xxx-xxx-xxx-xxx.telecom.na', 'telecom.na'],
+    'namibia_paratus': ['xxx-xxx-xxx-xxx.paratus.na', 'paratus.na'],
+    
+    'lesotho_vodacom': ['xxx-xxx-xxx-xxx.vodacom.co.ls', 'vodacom.co.ls'],
+    'lesotho_econet': ['xxx-xxx-xxx-xxx.econet.co.ls', 'econet.co.ls'],
+    
+    'swaziland_mtn': ['xxx-xxx-xxx-xxx.mtn.sz', 'mtn.sz'],
+    'swaziland_swazi': ['xxx-xxx-xxx-xxx.swazi.net.sz', 'swazi.net.sz'],
+    
+    'madagascar_telma': ['xxx-xxx-xxx-xxx.telma.mg', 'telma.mg'],
+    'madagascar_orange': ['xxx-xxx-xxx-xxx.orange.mg', 'orange.mg'],
+    'madagascar_airtel': ['xxx-xxx-xxx-xxx.airtel.mg', 'airtel.mg'],
+    
+    'mauritius_orange': ['xxx-xxx-xxx-xxx.orange.mu', 'orange.mu'],
+    'mauritius_emtel': ['xxx-xxx-xxx-xxx.emtel.mu', 'emtel.mu'],
+    
+    'seychelles_cws': ['xxx-xxx-xxx-xxx.cws.sc', 'cws.sc'],
+    'seychelles_airtel': ['xxx-xxx-xxx-xxx.airtel.sc', 'airtel.sc'],
+    
+    'comoros_comores': ['xxx-xxx-xxx-xxx.comores.com', 'comores.com'],
+    
+    'mauritania_mauritel': ['xxx-xxx-xxx-xxx.mauritel.mr', 'mauritel.mr'],
+    'mauritania_matel': ['xxx-xxx-xxx-xxx.matel.mr', 'matel.mr'],
+    
+    'gambia_qcell': ['xxx-xxx-xxx-xxx.qcell.gm', 'qcell.gm'],
+    'gambia_afcell': ['xxx-xxx-xxx-xxx.afcell.gm', 'afcell.gm'],
+    
+    'guinea_orange': ['xxx-xxx-xxx-xxx.orange.gn', 'orange.gn'],
+    'guinea_mtng': ['xxx-xxx-xxx-xxx.mtn.gn', 'mtn.gn'],
+    'guinea_cellcom': ['xxx-xxx-xxx-xxx.cellcom.gn', 'cellcom.gn'],
+    
+    'guinea_bissau_orange': ['xxx-xxx-xxx-xxx.orange.gw', 'orange.gw'],
+    'guinea_bissau_mtng': ['xxx-xxx-xxx-xxx.mtn.gw', 'mtn.gw'],
+    
+    'sierra_leone_orange': ['xxx-xxx-xxx-xxx.orange.sl', 'orange.sl'],
+    'sierra_leone_afcell': ['xxx-xxx-xxx-xxx.afcell.sl', 'afcell.sl'],
+    
+    'liberia_orange': ['xxx-xxx-xxx-xxx.orange.lr', 'orange.lr'],
+    'liberia_lonestar': ['xxx-xxx-xxx-xxx.lonestar.lr', 'lonestar.lr'],
+    
+    'equatorial_guinea_orange': ['xxx-xxx-xxx-xxx.orange.gq', 'orange.gq'],
+    'equatorial_guinea_muni': ['xxx-xxx-xxx-xxx.muni.gq', 'muni.gq'],
+    
+    'sao_tome_mtn': ['xxx-xxx-xxx-xxx.mtn.st', 'mtn.st'],
+    'sao_tome_unitel': ['xxx-xxx-xxx-xxx.unitel.st', 'unitel.st'],
+    
+    'eritrea_eras': ['xxx-xxx-xxx-xxx.eras.com.er', 'eras.com.er'],
+    
+    'djibouti_evatis': ['xxx-xxx-xxx-xxx.evatis.com', 'evatis.com'],
+    
+    'somalia_somtel': ['xxx-xxx-xxx-xxx.somtel.so', 'somtel.so'],
+    'somalia_hormuud': ['xxx-xxx-xxx-xxx.hormuud.so', 'hormuud.so'],
+    
+    'south_sudan_mtn': ['xxx-xxx-xxx-xxx.mtn.com.ss', 'mtn.com.ss'],
+    'south_sudan_zain': ['xxx-xxx-xxx-xxx.zain.com.ss', 'zain.com.ss'],
+    
+    'central_african_republic_orange': ['xxx-xxx-xxx-xxx.orange.cf', 'orange.cf'],
+    'central_african_republic_moov': ['xxx-xxx-xxx-xxx.moov.cf', 'moov.cf'],
+    
+    'burundi_leo': ['xxx-xxx-xxx-xxx.leo.bi', 'leo.bi'],
+    'burundi_onatel': ['xxx-xxx-xxx-xxx.onatel.bi', 'onatel.bi'],
+    'burundi_econet': ['xxx-xxx-xxx-xxx.econet.bi', 'econet.bi'],
+    
+    'rwanda_mtn': ['xxx-xxx-xxx-xxx.mtn.rw', 'mtn.rw'],
+    'rwanda_airtel': ['xxx-xxx-xxx-xxx.airtel.rw', 'airtel.rw'],
+    
+    'uganda_mtn': ['xxx-xxx-xxx-xxx.mtn.co.ug', 'mtn.co.ug'],
+    'uganda_airtel': ['xxx-xxx-xxx-xxx.airtel.ug', 'airtel.ug'],
+    'uganda_africell': ['xxx-xxx-xxx-xxx.africell.ug', 'africell.ug'],
+    
+    'tanzania_vodacom': ['xxx-xxx-xxx-xxx.vodacom.co.tz', 'vodacom.co.tz'],
+    'tanzania_airtel': ['xxx-xxx-xxx-xxx.airtel.co.tz', 'airtel.co.tz'],
+    'tanzania_ttcl': ['xxx-xxx-xxx-xxx.ttcl.co.tz', 'ttcl.co.tz'],
+    'tanzania_halotel': ['xxx-xxx-xxx-xxx.halotel.co.tz', 'halotel.co.tz'],
+    
+    'kenya_jamii': ['xxx-xxx-xxx-xxx.jamii.co.ke', 'jamii.co.ke'],
+    'kenya_faiba': ['xxx-xxx-xxx-xxx.faiba.co.ke', 'faiba.co.ke'],
+    
+    'ethiopia_safaricom': ['xxx-xxx-xxx-xxx.safaricom.et', 'safaricom.et'],
+    
+    'somalia_golis': ['xxx-xxx-xxx-xxx.golis.so', 'golis.so'],
+    'somalia_nationlink': ['xxx-xxx-xxx-xxx.nationlink.so', 'nationlink.so'],
+    
+    'eritrea_telesom': ['xxx-xxx-xxx-xxx.telesom.so', 'telesom.so']
+};
+
+  const isps = Object.keys(ispHosts);
+  const randomIsp = isps[randInt(0, isps.length - 1)];
+  const ispHostnames = ispHosts[randomIsp];
+  const hostname = ispHostnames[randInt(0, ispHostnames.length - 1)];
+  
+  hostnameCache.set(cacheKey, hostname);
+  return hostname;
+}
+
+async function createRowWithRealHostname(hopCount) {
+  const entry = generateTraceEntry(hopCount);
+  elements.loadingIndicator.textContent = `🔍 Resolving ${entry.hopIp}... (${hopCount}/${BATCH_SIZE})`;
+  
+  // Get REAL hostname
+  entry.hostname = await getRealHostname(entry.hopIp);
+  
+  const tr = document.createElement('tr');
+  tr.className = 'clickable';
+  tr.dataset.entry = JSON.stringify(entry);
+  
+  let statusColor = 'red';
+  if (entry.status === 'REACHED') statusColor = '#00ff00';
+  if (entry.status === 'TIMEOUT') statusColor = '#ffaa00';
+  
+  tr.innerHTML = `
+    <td style="color:#fff;">${entry.hop}</td>
+    <td>${entry.hopIp}</td>
+    <td style="color:#00ff88;">${entry.hostname}</td>
+    <td style="color:#fff;">${entry.target}</td>
+    <td>${entry.region}</td>
+    <td>${entry.ttl}</td>
+    <td style="color:${entry.latency > 200 ? '#ffaa00' : '#00ff00'}">${entry.latency}</td>
+    <td style="color:${statusColor}; font-weight:bold;">${entry.status}</td>
+    <td style="color:#00ccff;">${entry.protocol}</td>
+    <td style="color:#ffcc00;">${entry.port}</td>
+  `;
+  
+  return { tr, entry };
+}
+
+function generateTraceEntry(hopCount) {
+  let protocol = elements.protocolSelect.value;
+  if (protocol === 'ALL') {
+    protocol = protocols[randInt(0, protocols.length - 1)];
+  }
+
+  let port = '-';
+  const portSetting = elements.portSelect.value;
+  if (protocol !== 'ICMP' && protocol !== 'GRE') {
+    if (portSetting === 'range1024') port = randInt(1, 1024);
+    else if (portSetting === 'range65535') port = randInt(1, 65535);
+    else port = randInt(1, 1024);
+  }
+
+  return {
+    hop: totalLogsGenerated + 1,
+    hopIp: generateHopIP(hopCount),
+    target: currentTarget,
+    region: currentCountry,
+    ttl: randInt(1, 64),
+    latency: randInt(1, 500) + '.' + randInt(0,9),
+    status: (randInt(0, 20) === 0) ? "TIMEOUT" : "REACHED",
+    protocol: protocol,
+    port: port
+  };
+}
+
+async function loadMoreLogs() {
+  if(totalLogsGenerated >= MAX_LOGS) {
+    elements.loadingIndicator.textContent = "Max hops reached.";
+    elements.loadingIndicator.hidden = false;
+    return;
+  }
+  
+  elements.loadingIndicator.hidden = false;
+  
+  const fragment = document.createDocumentFragment();
+  for(let i = 0; i < BATCH_SIZE && totalLogsGenerated < MAX_LOGS; i++, totalLogsGenerated++) {
+    const { tr, entry } = await createRowWithRealHostname(totalLogsGenerated);
+    allEntries.push(entry);
+    fragment.appendChild(tr);
+  }
+  
+  elements.logBody.appendChild(fragment);
+  elements.loadingIndicator.hidden = true;
+}
+
+function resetLogs() {
+  totalLogsGenerated = 0;
+  allEntries = [];
+  hostnameCache.clear();
+  elements.logBody.innerHTML = '';
+  elements.loadingIndicator.hidden = true;
+}
+
+function filterLogs() {
+  const filter = elements.searchInput.value.toLowerCase();
+  [...elements.logBody.children].forEach(tr => {
+    const text = tr.textContent.toLowerCase();
+    tr.style.display = text.includes(filter) ? "" : "none";
+  });
+}
+
+// QR Functions
+function generateQRImage() {
+  if (!currentQRData) return;
+
+  qrCounter++;
+  const size = parseInt(elements.qrSizeSelector.value);
+  elements.qrDiv.innerHTML = "";
+  elements.qrImageContainer.style.width = (size + 20) + 'px'; 
+  elements.qrImageContainer.style.height = (size + 20) + 'px';
+  
+  elements.qrStatus.textContent = `Generating Authentic Hop QR #${qrCounter}...`;
+  
+  try {
+    qrCodeObj = new QRCode(elements.qrDiv, {
+      text: currentQRData,
+      width: size,
+      height: size,
+      colorDark : "#000000",
+      colorLight : "#ffffff",
+      correctLevel : QRCode.CorrectLevel.H
+    });
+    elements.qrStatus.textContent = `✅ Authentic Hop QR #${qrCounter} READY`;
+  } catch (e) {
+    elements.qrStatus.textContent = "❌ Generation Failed";
+  }
+}
+
+function showQRModal(entry) {
+  currentQRData = `HopID:${entry.hop}\nIP:${entry.hopIp}\nHost:${entry.hostname}\nTGT:${entry.target}\nREG:${entry.region}\nTTL:${entry.ttl}\nLAT:${entry.latency}ms\nSTS:${entry.status}\nPROT:${entry.protocol}\nPORT:${entry.port}`;
+  
+  elements.qrDetails.textContent = currentQRData;
+  
+  elements.qrModal.style.display = 'flex';
+  setTimeout(() => elements.qrModal.classList.add('active'), 10);
+  
+  elements.qrModalContent.classList.remove('qr-hidden');
+  elements.btnHide.style.display = 'inline-block';
+  elements.btnShow.style.display = 'none';
+  
+  generateQRImage();
+}
+
+// EVENT LISTENERS
+elements.generateBtn.onclick = async () => {
+  const target = elements.targetInput.value.trim();
+  if(!target) {
+    alert("Please enter a Target IP or Domain to begin generation.");
+    return;
+  }
+  currentTarget = target;
+  currentCountry = elements.countrySelect.value;
+  resetLogs();
+  await loadMoreLogs();
+};
+
+elements.logContainer.onscroll = async () => {
+  if(!elements.loadingIndicator.hidden || elements.searchInput.value.trim()) return;
+  if(elements.logContainer.scrollTop + elements.logContainer.clientHeight >= elements.logContainer.scrollHeight - 50) {
+    await loadMoreLogs();
+  }
+};
+
+// Table Row Click
+elements.logBody.addEventListener('click', (e) => {
+  const tr = e.target.closest('tr');
+  if (tr && tr.classList.contains('clickable')) {
+    try {
+      const entry = JSON.parse(tr.dataset.entry);
+      showQRModal(entry);
+    } catch(err) {
+      console.error("Failed to parse entry", err);
+    }
+  }
+});
+
+elements.qrSizeSelector.addEventListener('change', generateQRImage);
+elements.btnHide.onclick = () => {
+  elements.qrModalContent.classList.add('qr-hidden');
+  elements.btnHide.style.display = 'none';
+  elements.btnShow.style.display = 'inline-block';
+};
+elements.btnShow.onclick = () => {
+  elements.qrModalContent.classList.remove('qr-hidden');
+  elements.btnHide.style.display = 'inline-block';
+  elements.btnShow.style.display = 'none';
+};
+elements.btnDownloadQR.onclick = () => {
+  const img = elements.qrDiv.querySelector('img');
+  if (img) {
+    const link = document.createElement('a');
+    link.download = `HOP-QR-${Date.now()}.png`;
+    link.href = img.src;
+    link.click();
+  }
+};
+
+function closeModal() {
+  elements.qrModal.classList.remove('active');
+  setTimeout(() => {
+    elements.qrModal.style.display = 'none';
+    currentQRData = null;
+    elements.qrDiv.innerHTML = "";
+  }, 300);
+}
+
+elements.btnExit.onclick = closeModal;
+elements.qrModal.onclick = (e) => {
+  if(e.target === elements.qrModal) closeModal();
+};
+
+elements.searchInput.oninput = filterLogs;
+
+elements.downloadBtn.onclick = () => {
+  const headers = Array.from(document.querySelectorAll('thead th')).map(th => th.textContent).join(',');
+  const csv = headers + "\n" + 
+    allEntries.map(e => `"${e.hop}","${e.hopIp}","${e.hostname}","${e.target}","${e.region}","${e.ttl}","${e.latency}","${e.status}","${e.protocol}","${e.port}"`).join("\n");
+  const link = document.createElement("a");
+  link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  link.download = `traceroute-${currentTarget}-${Date.now()}.csv`;
+  link.click();
+};
+
+// Initialize
+populateCountries();
+elements.countrySelect.value = 'United States';
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,374 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced Picture Editor</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      margin: 0;
+      padding-top: 70px;
+      text-align: center;
+    }
+
+    header {
+background: rgba(0, 0, 0, 0.5);
+      color: red ;
+      padding: 15px;
+      width: 100%;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    h2 {
+      margin: 0;
+      color: red;
+    }
+
+    #canvas {
+      border: 1px solid #333;
+      margin-top: 20px;
+      max-width: 95%;
+      height: auto;
+      cursor: crosshair;
+      background: white;
+    }
+
+    .panel {
+      margin: 20px auto;
+      padding: 15px;
+background: rgba(0, 0, 0, 0.8);
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      max-width: 900px;
+    }
+
+    .btn {
+      padding: 8px 15px;
+      background: red;
+      color: green;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .btn:hover {
+background: rgba(0, 0, 0, 0.5);
+    }
+
+    .btn:disabled {
+      background: red;
+      cursor: not-allowed;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 14px;
+      color: red;
+      
+    }
+
+    input[type="range"], input[type="color"], input[type="number"], input[type="file"] {
+      margin-top: 5px;
+    }
+
+    #crop-overlay {
+      position: absolute;
+      border: 2px dashed red;
+      display: none;
+      pointer-events: none;
+    }
+
+    #canvas-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    #drop-area {
+      border: 2px dashed #2196f3;
+      padding: 20px;
+      margin-top: 20px;
+      display: none;
+      background: #f9f9f9;
+      color: #2196f3;
+      font-weight: bold;
+    }
+    
+  </style>
+</head>
+<body>
+  <header>
+    <h2>Advanced Picture Editor</h2>
+  </header>
+
+  <div class="panel" id="file-options">
+    <input type="file" id="upload" accept="image/*" class="btn">
+    <button class="btn" onclick="resetImage()">Reset</button>
+    <button class="btn" onclick="downloadImage()">Download PNG</button>
+  </div>
+
+  <div id="canvas-container">
+    <canvas id="canvas"></canvas>
+    <div id="crop-overlay"></div>
+  </div>
+
+  <div id="drop-area">Drop your image here</div>
+
+  <div class="panel" id="controls">
+    <label>Brightness <input type="range" id="brightness" min="0" max="200" value="100"></label>
+    <label>Contrast <input type="range" id="contrast" min="0" max="200" value="100"></label>
+    <label>Blur <input type="range" id="blur" min="0" max="10" value="0"></label>
+    <label>Zoom <input type="range" id="zoom" min="0.5" max="3" step="0.1" value="1"></label>
+    <button class="btn" onclick="rotateImage()">Rotate</button>
+    <button class="btn" onclick="flipImage()">Flip</button>
+    <button class="btn" onclick="startCrop()">Crop</button>
+    <button class="btn" onclick="addText()">Add Text</button>
+  </div>
+
+  <div class="panel" id="filters">
+    <button class="btn" onclick="applyFilter('grayscale(100%)')">Grayscale</button>
+    <button class="btn" onclick="applyFilter('sepia(100%)')">Sepia</button>
+    <button class="btn" onclick="applyFilter('invert(100%)')">Invert</button>
+    <button class="btn" onclick="applyFilter('contrast(200%)')">High Contrast</button>
+    <button class="btn" onclick="applyFilter('brightness(150%)')">Brighten</button>
+    <button class="btn" onclick="applyFilter('blur(5px)')">Blur</button>
+    <button class="btn" onclick="applyFilter('none')">Remove Filter</button>
+  </div>
+
+  <div class="panel" id="stickers">
+    <button class="btn" onclick="addSticker('❤️')">❤️</button>
+    <button class="btn" onclick="addSticker('⭐')">⭐</button>
+    <button class="btn" onclick="addSticker('😂')">😂</button>
+    <button class="btn" onclick="addSticker('🔥')">🔥</button>
+    <button class="btn" onclick="addSticker('🎉')">🎉</button>
+  </div>
+
+  <div class="panel" id="text-options">
+    <label>Font Size <input type="number" id="fontSize" value="30" min="10"></label>
+    <label>Color <input type="color" id="fontColor" value="#ff0000"></label>
+  </div>
+
+  <div class="panel" id="draw-tools">
+    <label>Draw Color <input type="color" id="drawColor" value="#000000"></label>
+    <label>Brush Size <input type="range" id="brushSize" min="1" max="20" value="5"></label>
+    <button class="btn" onclick="enableDrawing(true)">Enable Draw</button>
+    <button class="btn" onclick="enableDrawing(false)">Disable Draw</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let img = new Image();
+    let flipped = false;
+    let rotation = 0;
+    let isDrawing = false;
+    let drawing = false;
+    let startX = 0, startY = 0;
+    let cropStartX = 0, cropStartY = 0, cropWidth = 0, cropHeight = 0;
+
+    const brightness = document.getElementById('brightness');
+    const contrast = document.getElementById('contrast');
+    const blur = document.getElementById('blur');
+    const zoom = document.getElementById('zoom');
+
+    document.getElementById('upload').onchange = function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (evt) {
+        img.onload = function () {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          drawImage();
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+
+    document.getElementById('drop-area').addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+
+    document.getElementById('drop-area').addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function (evt) {
+          img.onload = function () {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            drawImage();
+          };
+          img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    brightness.oninput = contrast.oninput = blur.oninput = zoom.oninput = drawImage;
+
+    function drawImage() {
+      if (!img.src) return;
+      canvas.width = img.width * zoom.value;
+      canvas.height = img.height * zoom.value;
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(rotation);
+      if (flipped) ctx.scale(-1, 1);
+      ctx.filter = `brightness(${brightness.value}%) contrast(${contrast.value}%) blur(${blur .value}px)`;
+      ctx.drawImage(img, -img.width / 2, -img.height / 2, img.width, img.height);
+      ctx.restore();
+    }
+
+    function rotateImage() {
+      rotation += Math.PI / 2;
+      drawImage();
+    }
+
+    function flipImage() {
+      flipped = !flipped;
+      drawImage();
+    }
+
+    function addText() {
+      const text = prompt("Enter text:");
+      if (text) {
+        ctx.save();
+        ctx.font = `${fontSize.value}px Arial`;
+        ctx.fillStyle = fontColor.value;
+        ctx.fillText(text, 40, 60);
+        ctx.restore();
+      }
+    }
+
+    function applyFilter(filter) {
+      ctx.filter = filter;
+      drawImage();
+    }
+
+    function addSticker(sticker) {
+      ctx.save();
+      ctx.font = '40px Arial';
+      ctx.fillText(sticker, 100, 100);
+      ctx.restore();
+    }
+
+    function enableDrawing(enable) {
+      drawing = enable;
+      if (enable) {
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDraw);
+      } else {
+        canvas.removeEventListener('mousedown', startDraw);
+        canvas.removeEventListener('mousemove', draw);
+        canvas.removeEventListener('mouseup', stopDraw);
+      }
+    }
+
+    function startDraw(e) {
+      isDrawing = true;
+      startX = e.offsetX;
+      startY = e.offsetY;
+    }
+
+    function draw(e) {
+      if (!isDrawing || !drawing) return;
+      const x = e.offsetX;
+      const y = e.offsetY;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = drawColor.value;
+      ctx.lineWidth = brushSize.value;
+      ctx.stroke();
+      startX = x;
+      startY = y;
+    }
+
+    function stopDraw() {
+      isDrawing = false;
+    }
+
+    function resetImage() {
+      img.src = '';
+      canvas.width = canvas.height = 0;
+    }
+
+    function downloadImage() {
+      const link = document.createElement('a');
+      link.download = 'edited-image.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+
+    function startCrop() {
+      canvas.style.cursor = 'crosshair';
+      canvas.addEventListener('mousedown', initiateCrop);
+      canvas.addEventListener('mousemove', updateCrop);
+      canvas.addEventListener('mouseup', finishCrop);
+    }
+
+    function initiateCrop(e) {
+      cropStartX = e.offsetX;
+      cropStartY = e.offsetY;
+      const overlay = document.getElementById('crop-overlay');
+      overlay.style.left = `${cropStartX}px`;
+      overlay.style.top = `${cropStartY}px`;
+      overlay.style.width = '0px';
+      overlay.style.height = '0px';
+      overlay.style.display = 'block';
+    }
+
+    function updateCrop(e) {
+      const overlay = document.getElementById('crop-overlay');
+      cropWidth = e.offsetX - cropStartX;
+      cropHeight = e.offsetY - cropStartY;
+      overlay.style.width = `${Math.abs(cropWidth)}px`;
+      overlay.style.height = `${Math.abs(cropHeight)}px`;
+      overlay.style.left = `${Math.min(cropStartX, e.offsetX)}px`;
+      overlay.style.top = `${Math.min(cropStartY, e.offsetY)}px`;
+    }
+
+    function finishCrop() {
+      const overlay = document.getElementById('crop-overlay');
+      canvas.removeEventListener('mousedown', initiateCrop);
+      canvas.removeEventListener('mousemove', updateCrop);
+      canvas.removeEventListener('mouseup', finishCrop);
+
+      const sx = Math.min(cropStartX, cropStartX + cropWidth);
+      const sy = Math.min(cropStartY, cropStartY + cropHeight);
+      const sw = Math.abs(cropWidth);
+      const sh = Math.abs(cropHeight);
+      const imageData = ctx.getImageData(sx, sy, sw, sh);
+      canvas.width = sw;
+      canvas.height = sh;
+      ctx.putImageData(imageData, 0, 0);
+      overlay.style.display = 'none';
+    }
+  </script>
+</body>
+</html>

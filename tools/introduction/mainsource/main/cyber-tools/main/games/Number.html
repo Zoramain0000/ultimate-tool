@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Guessing Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: red;
+        }
+
+        #game {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+background:rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        input {
+            padding: 10px;
+            font-size: 1em;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: red;
+            color: green;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+background:rgba(0, 0, 0, 0.5);
+        }
+
+        #message {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: red;
+        }
+
+        #score {
+            margin-top: 10px;
+            font-size: 1.2em;
+            color: red;
+        }
+
+        #reset {
+            margin-top: 20px;
+            display: none;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Number Guessing Game</h1>
+    <div id="game">
+        <label for="min">Min:</label>
+        <input type="number" id="min" value="1">
+        <label for="max">Max:</label>
+        <input type="number" id="max" value="100">
+        <button id="start">Start Game</button>
+        <div id="guessSection" style="display: none;">
+            <input type="number" id="guess" placeholder="Enter your guess">
+            <button id="submitGuess">Submit Guess</button>
+        </div>
+        <div id="message"></div>
+        <div id="score"></div>
+        <button id="reset">Play Again</button>
+    </div>
+
+    <script>
+        let randomNumber;
+        let attempts;
+        let score = 0;
+
+        const startButton = document.getElementById('start');
+        const guessSection = document.getElementById('guessSection');
+        const guessInput = document.getElementById('guess');
+        const submitGuessButton = document.getElementById('submitGuess');
+        const messageElement = document.getElementById('message');
+        const scoreElement = document.getElementById('score');
+        const resetButton = document.getElementById('reset');
+        const minInput = document.getElementById('min');
+        const maxInput = document.getElementById('max');
+
+        startButton.addEventListener('click', startGame);
+        submitGuessButton.addEventListener('click', checkGuess);
+        resetButton.addEventListener('click', resetGame);
+
+        function startGame() {
+            const min = parseInt(minInput.value);
+            const max = parseInt(maxInput.value);
+            if (min >= max) {
+                alert("Please ensure that the minimum value is less than the maximum value.");
+                return;
+            }
+            randomNumber = Math.floor(Math.random() * (max - min + 1)) + min;
+            attempts = 0;
+            score = 0;
+            guessSection.style.display = 'block';
+            messageElement.textContent = '';
+            scoreElement.textContent = '';
+            startButton.style.display = 'none';
+            resetButton.style.display = 'none';
+            guessInput.value = '';
+        }
+
+        function checkGuess() {
+            const userGuess = parseInt(guessInput.value);
+            attempts++;
+            if (userGuess === randomNumber) {
+                score += 10; // Increase score for a correct guess
+                messageElement.textContent = `Congratulations! You guessed the number ${randomNumber} in ${attempts} attempts.`;
+                scoreElement.textContent = `Your score: ${score}`;
+                guessSection.style.display = 'none';
+                resetButton.style.display = 'block';
+            } else if (userGuess < randomNumber) {
+                messageElement.textContent = 'Too low! Try again.';
+            } else {
+                messageElement.textContent = 'Too high! Try again.';
+            }
+            guessInput.value = '';
+        }
+
+        function resetGame() {
+            startButton.style.display = 'block';
+            resetButton.style.display = 'none';
+            guessSection.style.display = 'none';
+            messageElement.textContent = '';
+            scoreElement.textContent = '';
+            minInput.value = 1;
+            maxInput.value = 100;
+        }
+    </script>
+</body>
+</html>

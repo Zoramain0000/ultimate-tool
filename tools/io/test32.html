@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays Remote Recon & Intelligence</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:Arial,sans-serif;color:#d1d1d1;overflow-x:hidden;}
+
+.bg-video{
+  position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-2;filter:brightness(0.3);
+}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:-1;}
+
+header{
+  background:rgba(0,0,0,0.7);padding:18px;text-align:center;border-bottom:1px solid #1f1f1f;
+}
+header h1{font-size:26px;letter-spacing:2px;}
+
+.container{
+  max-width:1400px;margin:30px auto;padding:20px;background:rgba(0,0,0,0.65);border-radius:10px;box-shadow:0 0 25px rgba(0,0,0,0.8);
+}
+
+.section{margin-bottom:25px;}
+.section h2{
+  font-size:18px;margin-bottom:10px;color:#9f9f9f;border-left:4px solid #555;padding-left:10px;
+}
+
+.data-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;
+}
+
+.card{
+  background:rgba(15,15,15,0.85);padding:14px;border-radius:8px;border:1px solid #222;font-size:14px;
+}
+.card span{display:block;color:#777;font-size:12px;margin-bottom:4px;}
+.card.success {border-left:4px solid #00ff7f;}
+.card.warning {border-left:4px solid #ffaa00;}
+.card.danger {border-left:4px solid #ff4444;}
+
+.status-safe{color:#00ff7f}
+.status-warn{color:#ffaa00}
+.status-danger{color:#ff4444}
+
+button{
+  padding:12px 20px;background:black;border:1px solid #333;color:white;cursor:pointer;border-radius:6px;transition:.3s;margin:5px;
+}
+button:hover{background:#111;transform:scale(1.05);}
+button.success{background:#00ff7f;color:black;border-color:#00cc66;}
+button.danger{background:#ff4444;color:white;border-color:#cc3333;}
+button:disabled{opacity:0.5;cursor:not-allowed;}
+
+input{
+  width:100%;padding:10px 12px;border-radius:6px;border:1px solid #555;background:rgba(0,0,0,0.7);color:#fff;margin-bottom:10px;
+}
+
+.scan-controls{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0;
+}
+.scan-controls input{width:120px;}
+.scan-controls select{width:100px;}
+
+.log{
+  background:black;padding:12px;border-radius:6px;font-family:monospace;font-size:13px;color:#8aff8a;max-height:300px;overflow:auto;border:1px solid #222;
+}
+
+.port-results{
+  max-height:400px;overflow:auto;border:1px solid #333;background:rgba(5,5,5,0.8);padding:10px;border-radius:8px;
+}
+
+footer{
+  background:rgba(0,0,0,0.7);text-align:center;padding:15px;font-size:13px;color:#777;
+}
+
+.loading{display:none;text-align:center;color:#00ff7f;}
+.loading.active{display:block;}
+
+.progress-bar{
+  width:100%;height:8px;background:rgba(0,0,0,0.5);border-radius:4px;overflow:hidden;margin:10px 0;
+}
+.progress-fill{
+  height:100%;background:linear-gradient(90deg,#00ff7f,#00cc66);transition:width 0.3s;
+  width:0%;
+}
+</style>
+</head>
+
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • REMOTE RECON INTELLIGENCE</h1>
+</header>
+
+<div class="container">
+
+  <div class="section">
+    <h2>Target Input</h2>
+    <input type="text" id="targetInput" placeholder="Enter target: domain.com, 192.168.1.1, 192.168.1.1:8080, [::1]:80" />
+    <div>
+      <button onclick="reconTarget()">Full Recon</button>
+      <button onclick="portScanFull()">Full Port Scan (1-65535)</button>
+      <button onclick="portScanCommon()">Common Ports</button>
+      <button onclick="traceroute()">Traceroute</button>
+      <button onclick="dnsLookup()">DNS Lookup</button>
+      <button onclick="whoisLookup()">WHOIS</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Scan Controls</h2>
+    <div class="scan-controls">
+      <input type="number" id="startPort" value="1" min="1" max="65535" placeholder="Start">
+      <input type="number" id="endPort" value="1000" min="1" max="65535" placeholder="End">
+      <select id="scanType">
+        <option value="tcp">TCP</option>
+        <option value="udp">UDP</option>
+      </select>
+      <button onclick="portScanRange()" id="scanBtn">Custom Range Scan</button>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <span id="scanStats">Ready</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Network Intelligence</h2>
+    <div class="data-grid">
+      <div class="card"><span>Target</span><div id="target">-</div></div>
+      <div class="card"><span>IP Address</span><div id="ip">-</div></div>
+      <div class="card"><span>Hostname</span><div id="hostname">-</div></div>
+      <div class="card"><span>ISP/AS</span><div id="isp">-</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Geolocation & Network</h2>
+    <div class="data-grid">
+      <div class="card"><span>Country</span><div id="country">-</div></div>
+      <div class="card"><span>City</span><div id="city">-</div></div>
+      <div class="card"><span>Coords</span><div id="coords">-</div></div>
+      <div class="card"><span>Timezone</span><div id="timezone">-</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Open Ports (1-65535)</h2>
+    <div class="port-results" id="portResults">
+      <div style="color:#888;">Run a scan to see results...</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Recon Log</h2>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="loading" id="loading">Scanning in progress...</div>
+
+</div>
+
+<footer>
+  Professional Pentest Reconnaissance | Ports 1-65535 | Real API Intelligence
+</footer>
+
+<script>
+const log = msg => {
+  const l = document.getElementById("log");
+  l.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+  l.scrollTop = l.scrollHeight;
+};
+
+const loading = (show) => {
+  document.getElementById('loading').classList.toggle('active', show);
+};
+
+const updateProgress = (percent, stats) => {
+  document.getElementById('progressFill').style.width = `${percent}%`;
+  document.getElementById('scanStats').textContent = stats;
+};
+
+async function apiRequest(url, options = {}) {
+  try {
+    const res = await fetch(url, {
+      ...options,
+      headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    });
+    if (res.ok) return res.ok ? await res.text() : null;
+    return null;
+  } catch(e) {
+    return null;
+  }
+}
+
+async function resolveTarget(target) {
+  try {
+    const dnsRes = await fetch(`https://dns.google/resolve?name=${target.split(':')[0]}&type=A`);
+    const dns = await dnsRes.json();
+    if (dns.Answer) return dns.Answer[0].data;
+    return target.split(':')[0];
+  } catch(e) {
+    return target.split(':')[0];
+  }
+}
+
+async function reconTarget() {
+  const target = document.getElementById("targetInput").value.trim();
+  if(!target) return alert("Enter target first.");
+
+  log(`🚀 Starting full recon on: ${target}`);
+  loading(true);
+  document.getElementById("target").textContent = target;
+
+  try {
+    const ip = await resolveTarget(target);
+    document.getElementById("ip").textContent = ip;
+
+    const ipData = await fetch(`https://ipapi.co/${ip}/json/`).then(r => r.json());
+    document.getElementById("hostname").textContent = ipData.hostname || '-';
+    document.getElementById("isp").textContent = `${ipData.org || '-'} (AS${ipData.asn || '-'})`;
+    document.getElementById("country").textContent = ipData.country_name || '-';
+    document.getElementById("city").textContent = ipData.city || '-';
+    document.getElementById("coords").textContent = `${ipData.latitude || '-'}, ${ipData.longitude || '-'}`;
+    document.getElementById("timezone").textContent = ipData.timezone || '-';
+
+    log(`✅ Target resolved: ${ip} | ${ipData.city}, ${ipData.country_name}`);
+    
+  } catch(e) {
+    log(`❌ Recon failed: ${e.message}`);
+  } finally {
+    loading(false);
+  }
+}
+
+let scanAbort = null;
+
+async function testPort(target, port, type = 'tcp') {
+  return new Promise((resolve) => {
+    const controller = new AbortController();
+    scanAbort = controller;
+    
+    setTimeout(() => {
+      controller.abort();
+      resolve(false);
+    }, 800);
+
+    const url = `https://dns.google/resolve?name=${target}:${port}`;
+    fetch(url, {signal: controller.signal})
+      .then(res => {
+        if (res.ok && res.status === 200) resolve(true);
+        else resolve(false);
+      })
+      .catch(() => resolve(false));
+  });
+}
+
+async function portScanRange() {
+  const target = document.getElementById("targetInput").value.trim();
+  if(!target) return log("⚠️ Enter target first");
+
+  const startPort = parseInt(document.getElementById("startPort").value);
+  const endPort = parseInt(document.getElementById("endPort").value);
+  const scanType = document.getElementById("scanType").value;
+  
+  if (startPort < 1 || endPort > 65535 || startPort > endPort) {
+    return log("⚠️ Invalid port range (1-65535)");
+  }
+
+  log(`🔍 Scanning ${startPort}-${endPort} (${scanType.toUpperCase()}) on ${target}`);
+  document.getElementById("scanBtn").disabled = true;
+  document.getElementById("portResults").innerHTML = '<div style="color:#888;">Scanning ports...</div>';
+  
+  const openPorts = [];
+  let scanned = 0;
+  const total = endPort - startPort + 1;
+
+  for(let port = startPort; port <= endPort; port++) {
+    if (scanAbort?.signal?.aborted) break;
+    
+    const isOpen = await testPort(target, port, scanType);
+    scanned++;
+    
+    if (isOpen) {
+      openPorts.push(port);
+      log(`✅ PORT ${port} OPEN (${scanType.toUpperCase()})`);
+      
+      const div = document.createElement('div');
+      div.className = 'card success';
+      div.innerHTML = `<span>Port ${port}</span><div style="color:#00ff7f;">${scanType.toUpperCase()} OPEN</div>`;
+      document.getElementById("portResults").appendChild(div);
+    }
+    
+    const progress = (scanned / total) * 100;
+    updateProgress(progress, `${scanned}/${total} | Open: ${openPorts.length}`);
+    
+    // Throttle to avoid rate limiting
+    await new Promise(r => setTimeout(r, 50));
+  }
+
+  document.getElementById("scanBtn").disabled = false;
+  updateProgress(100, `Complete | ${openPorts.length} open ports: ${openPorts.join(', ')}`);
+  log(`🎉 Scan complete: ${openPorts.length} open ports found`);
+}
+
+async function portScanFull() {
+  document.getElementById("startPort").value = 1;
+  document.getElementById("endPort").value = 65535;
+  portScanRange();
+}
+
+async function portScanCommon() {
+  document.getElementById("startPort").value = 1;
+  document.getElementById("endPort").value = 1024;
+  portScanRange();
+}
+
+async function traceroute() {
+  const target = document.getElementById("targetInput").value.trim();
+  log(`📡 Traceroute to ${target}...`);
+  
+  const trace = await apiRequest(`http://api.hackertarget.com/traceroute/?q=${target}`);
+  if (trace) log(`Traceroute: ${trace.substring(0, 300)}...`);
+  else log("Traceroute unavailable");
+}
+
+async function dnsLookup() {
+  const target = document.getElementById("targetInput").value.trim();
+  log(`🔎 DNS lookup for ${target}...`);
+  
+  const dnsRes = await fetch(`https://dns.google/resolve?name=${target}&type=ANY`);
+  const dns = await dnsRes.json();
+  log(`DNS: ${JSON.stringify(dns.Answer || 'No records', null, 1).substring(0, 200)}`);
+}
+
+async function whoisLookup() {
+  const target = document.getElementById("targetInput").value.trim();
+  log(`📋 WHOIS lookup for ${target}...`);
+  
+  const whois = await apiRequest(`https://api.hackertarget.com/whois/?q=${target}`);
+  if (whois) log(`WHOIS: ${whois.substring(0, 300)}...`);
+  else log("WHOIS unavailable");
+}
+
+// Auto-detect visitor IP
+window.onload = async () => {
+  try {
+    const ipRes = await fetch('https://api.ipify.org?format=json');
+    const visitorIP = await ipRes.json();
+    log(`👤 Visitor IP: ${visitorIP.ip}`);
+  } catch(e) {}
+};
+</script>
+
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays • Chat & Dictionary Selector</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-family:Segoe UI,Arial,sans-serif;color:#d6d6d6;overflow-x:hidden;}
+
+/* BACKGROUND VIDEO */
+.bg-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:-1;}
+
+header{
+  padding:20px;text-align:center;background:rgba(255,255,255,0);
+  border-bottom:1px solid rgba(255,255,255,0.1);text-shadow:0 0 6px #000;
+}
+header h1{letter-spacing:3px;font-size:28px;}
+header span{color:gray;font-size:12px;text-shadow:0 0 6px #000;}
+
+.container{max-width:800px;margin:30px auto;padding:20px;background:rgba(255,255,255,0);display:grid;gap:30px;}
+
+.section{background:rgba(0,0,0,0.1);padding:15px;border-radius:8px;}
+.section h2{
+  font-size:18px;margin-bottom:12px;border-left:4px solid gray;
+  padding-left:10px;color:#bfbfbf;text-shadow:0 0 6px #000;
+}
+
+input, textarea{width:100%;padding:12px;background:rgba(0,0,0,0.1);
+border:1px solid rgba(255,255,255,0.2);border-radius:6px;color:#fff;
+margin-bottom:12px;font-size:14px;}
+
+button{padding:10px 18px;background:rgba(0,0,0,0.1);
+border:1px solid gray;color:gray;border-radius:6px;cursor:pointer;transition:.3s;margin-bottom:6px;margin-right:6px;}
+button:hover{background:gray;color:black;transform:scale(1.05);}
+
+.chatbox, .dictionary-box{
+  background:rgba(0,0,0,0.05);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:6px;
+  padding:12px;
+  max-height:300px;
+  overflow:auto;
+  font-family:monospace;
+  font-size:13px;
+  color:gray;
+  text-shadow:0 0 4px #000;
+  margin-bottom:12px;
+}
+
+.user-msg{color:#00ffea;margin-bottom:6px;}
+.ai-msg{color:#ffd700;margin-bottom:6px;}
+
+.typing{display:inline-block;animation:blink 1s infinite;} 
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+.api-buttons{display:flex;flex-wrap:wrap;margin-bottom:12px;}
+</style>
+</head>
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • Chat & Dictionary Selector</h1>
+  <span>Pick your dictionary API</span>
+</header>
+
+<div class="container">
+
+  <div class="section">
+    <h2>Dictionary Search</h2>
+    <input id="dictInput" placeholder="Enter a word to look up">
+
+    <!-- API Selection Buttons -->
+    <div class="api-buttons">
+      <button onclick="setAPI(0)">Free Dictionary API</button>
+      <button onclick="setAPI(1)">Datamuse</button>
+      <button onclick="setAPI(2)">OwlBot</button>
+      <button onclick="setAPI(3)">WordsAPI Proxy</button>
+      <button onclick="setAPI(4)">Datamuse 2nd</button>
+    </div>
+
+    <button onclick="lookupWord()">Search</button>
+    <div class="dictionary-box" id="dictOutput">Definition will appear here...</div>
+
+    <h2>Chat</h2>
+    <textarea id="chatInput" rows="3" placeholder="Type your message here..."></textarea>
+    <button onclick="sendMessage()">Send Message</button>
+    <div class="chatbox" id="chatOutput">Chat messages will appear here...</div>
+  </div>
+
+</div>
+
+<footer>
+  Educational & ethical tool • No backend • No tracking
+</footer>
+
+<script>
+// ------------------ FREE DICTIONARY APIs ------------------
+const freeDictionaryAPIs = [
+  async word => { // Free Dictionary API
+    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+    return await res.json();
+  },
+  async word => { // Datamuse
+    const res = await fetch(`https://api.datamuse.com/words?sp=${word}&md=d`);
+    return await res.json();
+  },
+  async word => { // OwlBot
+    const res = await fetch(`https://owlbot.info/api/v4/dictionary/${word}`);
+    return await res.json();
+  },
+  async word => { // WordsAPI Proxy (limited)
+    const res = await fetch(`https://wordsapiv1.p.rapidapi.com/words/${word}/definitions`, { 
+      method:'GET', 
+      headers:{'X-RapidAPI-Host':'wordsapiv1.p.rapidapi.com'}
+    });
+    return await res.json();
+  },
+  async word => { // Datamuse alternative
+    const res = await fetch(`https://api.datamuse.com/words?sp=${word}&md=d`);
+    return await res.json();
+  }
+];
+
+let selectedAPI = 0; // default Free Dictionary API
+
+function setAPI(index){
+  selectedAPI = index;
+  alert(`Selected API: ${document.querySelectorAll('.api-buttons button')[index].innerText}`);
+}
+
+// ------------------ DICTIONARY LOOKUP ------------------
+async function lookupWord(){
+  const word = document.getElementById("dictInput").value.trim();
+  const output = document.getElementById("dictOutput");
+  if(!word){alert("Enter a word"); return;}
+  output.textContent = "Searching...";
+
+  try{
+    const data = await freeDictionaryAPIs[selectedAPI](word);
+
+    // Free Dictionary API
+    if(data[0] && data[0].meanings){
+      const meanings = data[0].meanings.map(m=>{
+        const defs = m.definitions.map(d=>`- ${d.definition}${d.example?`\n  Example: "${d.example}"`:''}`).join("\n");
+        return `${m.partOfSpeech}:\n${defs}`;
+      }).join("\n\n");
+      output.textContent = `${data[0].word} (${data[0].phonetic || ''}):\n\n${meanings}`;
+      return;
+    }
+
+    // Datamuse
+    if(Array.isArray(data) && data.length>0 && data[0].defs){
+      output.textContent = `${word}:\n\n` + data[0].defs.join("\n");
+      return;
+    }
+
+    // OwlBot
+    if(data.definitions && data.definitions.length>0){
+      output.textContent = `${word}:\n\n` + data.definitions.map(d=>`- ${d.definition}${d.example?`\n  Example: "${d.example}"`:''}`).join("\n");
+      return;
+    }
+
+    output.textContent = "No definition found with selected API.";
+  }catch(err){
+    output.textContent = "Error fetching definition. Try another API.";
+  }
+}
+
+// ------------------ SIMULATED CHAT ------------------
+function sendMessage(){
+  const input = document.getElementById("chatInput");
+  const chatBox = document.getElementById("chatOutput");
+  const msg = input.value.trim();
+  if(!msg) return;
+
+  chatBox.innerHTML += `<div class="user-msg">You: ${msg}</div>`;
+  input.value="";
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  const typingElem = document.createElement("div");
+  typingElem.className = "ai-msg";
+  typingElem.innerHTML = `AI is typing<span class="typing">...</span>`;
+  chatBox.appendChild(typingElem);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  setTimeout(()=>{
+    const aiResponse = `AI: You said "${msg}". This is a simulated response.`;
+    typingElem.innerHTML = aiResponse;
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }, 1000);
+}
+</script>
+
+</body>
+</html>

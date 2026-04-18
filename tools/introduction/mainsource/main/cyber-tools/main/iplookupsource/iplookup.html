@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced IP Lookup Tool</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            background: #000000;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            color: #04fd63;
+        }
+
+        h1 {
+            color: #2cb81a;
+        }
+
+        input {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #0cff0c;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #ff0000; /* Red */
+            color: rgb(3, 255, 37);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838; /* Darker green */
+        }
+
+        #results {
+            margin-top: 20px;
+            text-align: left;
+            border: 1px solid #1b0202;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: #0e110e;
+            display: none; /* Initially hidden */
+            transition: all 0.3s ease; /* Smooth transition */
+            white-space: pre-wrap; /* Preserve whitespace for terminal-like output */
+            font-family: 'Courier New', Courier, monospace; /* Terminal font */
+        }
+
+        .error-message {
+            color: rgb(40, 252, 12);
+            font-weight: bold;
+        }
+
+        .info-message {
+            color: #0fff23;
+            font-weight: normal;
+        }
+
+        .result {
+            margin-bottom: 10px;
+        }
+
+        #keyLogger {
+            margin-top: 20px;
+            text-align: left;
+            border: 1px solid #1b0202;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: #0e110e;
+            display: none; /* Initially hidden */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Advanced IP Lookup Tool</h1>
+        <input type="text" id="ip" placeholder="Enter IP address or domain" />
+        <button id="lookupButton">Lookup</button>
+        <button id="clearButton">Clear</button>
+        <div id="results"></div>
+        <div id="keyLogger"></div>
+    </div>
+    <script>
+        document.getElementById('lookupButton').addEventListener('click', function() {
+            const ip = document.getElementById('ip').value;
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = ''; // Clear previous results
+
+            if (!ip) {
+                resultsDiv.innerHTML = '<p class="error-message">Please enter a valid IP address.</p>';
+                resultsDiv.style.display = 'block'; // Show the results box
+                return;
+            }
+
+            // Log the input
+            logInput(ip);
+
+            // Perform the IP lookup operation
+            lookupIP(ip);
+        });
+
+        document.getElementById('clearButton').addEventListener('click', function() {
+            document.getElementById('ip').value = ''; // Clear the input field
+            document.getElementById('results').innerHTML = ''; // Clear results
+            document.getElementById('results').style.display = 'none'; // Hide results box
+            document.getElementById('keyLogger').innerHTML = ''; // Clear key logger
+        });
+
+        async function lookupIP(ip) {
+            const resultsDiv = document.getElementById('results');
+            try {
+                const response = await fetch(`http://ip-api.com/json/${ip}`);
+                const data = await response.json();
+
+                if (data.status === "fail") {
+                    resultsDiv.innerHTML = `<p class="error-message">Invalid IP address.</p>`;
+                } else {
+                    const result = `
+                        <div class="result">IP: ${data.query}</div>
+                        <div class="result">Status: ${data.status || 'Success'}</div>
+                        <div class="result">Country: ${data.country || 'N/A'} (${data.countryCode || 'N/A'})</div>
+                        <div class="result">Region: ${data.region || 'N/A'} (${data.regionName || 'N/A'})</div>
+                        <div class="result">City: ${data.city || 'N/A'}</div>
+                        <div class="result">District: ${data.district || 'N/A'}</div>
+                        <div class="result">ZIP: ${data.zip || 'N/A'}</div>
+                        <div class="result">Latitude: ${data.lat || 'N/A'}</div>
+                        <div class="result">Longitude: ${data.lon || 'N/A'}</div>
+                        <div class="result">Timezone: ${data.timezone || 'N/A'}</div>
+                        <div class="result">ISP: ${data.isp || 'N/A'}</div>
+                        <div class="result">Organization: ${data.org || 'N/A'}</div>
+                        <div class="result">AS: ${data.as || 'N/A'}</div>
+                        <div class="result">AS Name: ${data.as_name || 'N/A'}</div>
+                        <div class="result">Date Tracked: ${new Date().toLocaleString()}</div>
+                    `;
+                    resultsDiv.innerHTML = result;
+                    await checkIPStatus(ip); // Check if the IP is alive
+                }
+                resultsDiv.style.display = 'block'; // Show the results box
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error-message">Error: ${error.message}</p>`;
+                resultsDiv.style.display = 'block'; // Show the results box
+            }
+        }
+
+        async function checkIPStatus(ip) {
+            const startTime = performance.now();
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
+
+            try {
+                const response = await fetch(`http://${ip}`, { method: 'HEAD', signal: controller.signal });
+                const endTime = performance.now();
+                clearTimeout(timeoutId);
+                const responseTime = (endTime - startTime).toFixed(2);
+                const status = response.ok ? 'Alive' : 'Dead';
+                document.getElementById('results').innerHTML += `
+                    <div class="result">Status: ${status}</div>
+                    <div class="result">Response Time: ${responseTime} ms</div>
+                `;
+            } catch (error) {
+                clearTimeout(timeoutId);
+                document.getElementById('results').innerHTML += `
+                    <div class="result">Status: Dead</div>
+                    <div class="result">Response Time: N/A</div>
+                `;
+            }
+        }
+
+        function logInput(ip) {
+            const keyLoggerDiv = document.getElementById('keyLogger');
+            keyLoggerDiv.innerHTML += `<div class="info-message">Logged Input: ${ip}</div>`;
+            keyLoggerDiv.style.display = 'block'; // Show key logger box
+        }
+    </script>
+</body>
+</html>

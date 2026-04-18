@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📍 Advanced Business Finder +  Geomap</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s');
+      color: red;
+    }
+    header {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 15px;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      color: red;
+    }
+    #controls {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      text-align: center;
+    }
+    input, button {
+      padding: 8px;
+      margin: 4px;
+      border-radius: 5px;
+      border: none;
+    }
+    input[type="text"] {
+      width: 180px;
+    }
+    button {
+      background-color: red;
+      color: green;
+      cursor: pointer;
+    }
+    #map {
+      height: 60vh;
+      width: 100%;
+    }
+    #categoryList {
+      max-height: 160px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 5px;
+    }
+    #categoryList label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    #resultsTable {
+      width: 100%;
+      margin-top: 10px;
+      background: rgba(0, 0, 0, 0.5);
+      border-collapse: collapse;
+    }
+    #resultsTable th, #resultsTable td {
+      border: 1px solid red;
+      padding: 8px;
+    }
+    #resultsTable th {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌍 Geomap Business Finder</h1>
+  </header>
+  <div id="controls">
+    <input type="text" id="location" placeholder="Enter city (optional)" />
+    <input type="number" id="radius" placeholder="Radius (meters)" value="2000" min="100" />
+    <button onclick="searchPlaces()">🔍 Search</button>
+    <button onclick="exportCSV()">⬇️ CSV</button>
+    <button onclick="exportPDF()">📄 PDF</button>
+    <button onclick="goToMyLocation()">📍 My Location</button>
+  </div>
+  <div id="categoryList"></div>
+  <div id="map"></div>
+  <table id="resultsTable" style="display:none;">
+    <thead><tr><th>Name</th><th>Address</th><th>Lat</th><th>Lon</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+const categories = [
+    "restaurant", "cafe", "bar", "pub", "fast_food", "ice_cream",
+    "school", "college", "university", "library", "kindergarten",
+    "hospital", "clinic", "pharmacy", "doctors", "dentist",
+    "bank", "atm", "post_office", "bureau_de_change",
+    "supermarket", "convenience", "mall", "marketplace",
+    "clothes", "shoes", "electronics", "computer", "furniture",
+    "toys", "books", "stationery", "jewelry", "florist", "optician",
+    "car_repair", "car_rental", "car_wash", "bicycle_rental",
+    "hairdresser", "beauty", "spa", "massage", "dry_cleaning",
+    "laundry", "tailor", "travel_agency", "hotel", "motel", "hostel",
+    "theatre", "cinema", "museum", "gallery", "nightclub",
+    "gym", "sports_centre", "swimming_pool", "park",
+    "police", "fire_station", "courthouse", "townhall", "embassy",
+    "veterinary", "animal_shelter", "dog_park", "garden_centre",
+    "hardware", "doityourself", "paint", "carpet", "bakery", "butcher",
+    "seafood", "greengrocer", "beverages", "wine", "liquor",
+    "mobile_phone", "outdoor", "photo", "newsagent", "tattoo",
+    "music", "video", "second_hand", "charity", "erotic", "weapons",
+    "funeral_directors", "insurance", "internet_cafe", "coworking_space",
+    "recycling", "waste_basket", "toilets", "drinking_water",
+    "fuel", "charging_station", "parking", "taxi", "bus_station",
+    "train_station", "subway", "tram_stop", "ferry_terminal",
+    "airport", "helipad", "bike_parking", "hunting_stand", "picnic_site"
+  ];
+    const map = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    let markers = L.markerClusterGroup();
+    let results = [];
+    map.addLayer(markers);
+
+    const categoryList = document.getElementById("categoryList");
+    categories.forEach(cat => {
+      const label = document.createElement("label");
+      label.innerHTML = `<input type="checkbox" value="${cat}"> ${cat}`;
+      categoryList.appendChild(label);
+    });
+
+    function getSelectedCategories() {
+      return Array.from(categoryList.querySelectorAll('input[type=checkbox]:checked')).map(c => c.value);
+    }
+
+    async function searchPlaces() {
+      const location = document.getElementById("location").value.trim();
+      const radius = parseInt(document.getElementById("radius").value);
+      const types = getSelectedCategories();
+      if (!types.length) return alert("Select at least one category.");
+      if (location) {
+        const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`);
+        const geoData = await geo.json();
+        if (!geoData.length) return alert("Location not found");
+        const lat = parseFloat(geoData[0].lat);
+        const lon = parseFloat(geoData[0].lon);
+        map.setView([lat, lon], 14);
+        searchNearby(lat, lon, radius, types);
+      }
+    }
+
+    async function searchNearby(lat, lon, radius, types) {
+      markers.clearLayers();
+      results = [];
+      document.querySelector("#resultsTable").style.display = "none";
+      document.querySelector("#resultsTable tbody").innerHTML = "";
+      let query = `[out:json][timeout:25];(`;
+      types.forEach(t => {
+        query += `node["amenity"="${t}"](around:${radius},${lat},${lon});`;
+      });
+      query += `);out body;`;
+      const res = await fetch("https://overpass-api.de/api/interpreter", { method: "POST", body: query });
+      const data = await res.json();
+      if (!data.elements.length) return alert("No results found.");
+      const tbody = document.querySelector("#resultsTable tbody");
+      data.elements.forEach(p => {
+        const name = p.tags.name || "(Unnamed)";
+        const addr = p.tags["addr:street"] || "";
+        const row = `<tr><td>${name}</td><td>${addr}</td><td>${p.lat}</td><td>${p.lon}</td></tr>`;
+        tbody.innerHTML += row;
+        results.push({ name, address: addr, lat: p.lat, lon: p.lon });
+        const marker = L.marker([p.lat, p.lon]).bindPopup(`<strong>${name}</strong><br>${addr}`);
+        markers.addLayer(marker);
+      });
+      document.querySelector("#resultsTable").style.display = "table";
+    }
+
+    function exportCSV() {
+      if (!results.length) return alert("No results to export.");
+      const csv = results.map(r => `"${r.name}","${r.address}",${r.lat},${r.lon}`).join("\n");
+      const blob = new Blob(["Name,Address,Lat,Lon\n" + csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "results.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function exportPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("Business Finder Results", 10, 10);
+      let y = 20;
+      results.forEach((r, i) => {
+        doc.text(`${i + 1}. ${r.name} - ${r.address}`, 10, y);
+        y += 10;
+        if (y > 280) { doc.addPage(); y = 20; }
+      });
+      doc.save("results.pdf");
+    }
+
+    function goToMyLocation() {
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        map.setView([lat, lon], 14);
+        const types = getSelectedCategories();
+        if (types.length) searchNearby(lat, lon, parseInt(document.getElementById("radius").value), types);
+      }, err => alert("Location access denied."));
+    }
+
+    window.onload = () => goToMyLocation();
+  </script>
+</body>
+</html>

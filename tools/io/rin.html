@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays • Reverse Image EXIF Extractor</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  height:100%;
+  font-family:Arial,Helvetica,sans-serif;
+  color:#d1d1d1;
+  overflow-x:hidden;
+}
+
+/* BACKGROUND VIDEO */
+.bg-video{
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  object-fit:cover;
+  z-index:-2;
+  filter:brightness(0.3);
+}
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.35);
+  z-index:-1;
+}
+
+header{
+  background:rgba(0,0,0,0.7);
+  padding:18px;
+  text-align:center;
+  border-bottom:1px solid #1f1f1f;
+}
+header h1{
+  letter-spacing:2px;
+  font-size:20px;
+}
+
+.container{
+  max-width:900px;
+  margin:30px auto;
+  padding:20px;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(8px);
+  border-radius:12px;
+  box-shadow:0 0 30px rgba(0,0,0,0.9);
+}
+
+.section{margin-bottom:25px}
+
+input[type=file],button{
+  width:100%;
+  padding:12px;
+  background:rgba(0,0,0,0.6);
+  color:#fff;
+  border:1px solid #333;
+  border-radius:6px;
+  margin-bottom:10px;
+}
+
+button:hover{
+  background:rgba(20,20,20,0.8);
+  cursor:pointer;
+}
+
+.status{
+  font-size:13px;
+  color:#aaa;
+  margin-top:5px;
+}
+
+.log{
+  background:rgba(0,0,0,0.75);
+  border:1px solid #222;
+  padding:12px;
+  max-height:350px;
+  overflow:auto;
+  font-family:monospace;
+  font-size:13px;
+}
+
+.entry{
+  padding:6px;
+  border-bottom:1px solid #111;
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.key{color:#6ecbff}
+.value{
+  color:#8aff8a;
+  word-break:break-all;
+  flex:1;
+}
+
+.copy{
+  background:#1a1a1a;
+  color:#0f0;
+  border:none;
+  padding:3px 6px;
+  border-radius:4px;
+  font-size:11px;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<!-- BACKGROUND -->
+<video class="bg-video" autoplay muted loop>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS • REVERSE IMAGE EXIF EXTRACTOR</h1>
+</header>
+
+<div class="container">
+
+  <div class="section">
+    <input type="file" id="imageInput" accept="image/jpeg">
+    <button onclick="extractEXIF()">Extract Metadata</button>
+    <div class="status" id="status">Waiting for image...</div>
+  </div>
+
+  <div class="section">
+    <div class="log" id="output"></div>
+  </div>
+
+  <div class="section">
+    <button onclick="exportTXT()">Export TXT</button>
+    <button onclick="exportJSON()">Export JSON</button>
+    <button onclick="clearAll()">Clear</button>
+  </div>
+
+</div>
+
+<script>
+let exifData = {};
+
+function extractEXIF(){
+  const file = imageInput.files[0];
+  const output = document.getElementById('output');
+  const status = document.getElementById('status');
+
+  output.innerHTML='';
+  exifData={};
+
+  if(!file){
+    status.textContent='No image selected.';
+    return;
+  }
+
+  status.textContent='Scanning EXIF metadata...';
+
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const view=new DataView(e.target.result);
+    if(view.getUint16(0,false)!==0xFFD8){
+      status.textContent='Not a valid JPEG image.';
+      return;
+    }
+
+    let offset=2;
+    while(offset<view.byteLength){
+      const marker=view.getUint16(offset,false);
+      offset+=2;
+
+      if(marker===0xFFE1){
+        offset+=2;
+        parseEXIF(view,offset);
+        status.textContent='Metadata extracted successfully.';
+        displayEXIF();
+        return;
+      }
+      offset+=view.getUint16(offset,false);
+    }
+    status.textContent='No EXIF metadata found.';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseEXIF(view,start){
+  const tags={
+    0x010F:'Camera Make',
+    0x0110:'Camera Model',
+    0x0132:'Modified',
+    0x9003:'Date Taken',
+    0x829A:'Exposure Time',
+    0x829D:'F Number',
+    0x8827:'ISO Speed',
+    0xA002:'Width',
+    0xA003:'Height',
+    0x0131:'Software'
+  };
+
+  for(let i=0;i<256;i+=12){
+    const tag=view.getUint16(start+i,false);
+    if(tags[tag]) exifData[tags[tag]]='Present';
+  }
+}
+
+function displayEXIF(){
+  const out=document.getElementById('output');
+  if(!Object.keys(exifData).length){
+    out.innerHTML='<div class="entry">No metadata available.</div>';
+    return;
+  }
+
+  for(const k in exifData){
+    const div=document.createElement('div');
+    div.className='entry';
+    div.innerHTML=`
+      <span class="key">${k}</span>
+      <span class="value">${exifData[k]}</span>
+      <button class="copy" onclick="copyText('${k}: ${exifData[k]}')">Copy</button>
+    `;
+    out.appendChild(div);
+  }
+}
+
+function copyText(t){navigator.clipboard.writeText(t)}
+
+function exportTXT(){
+  if(!Object.keys(exifData).length)return;
+  let t='';
+  for(const k in exifData)t+=`${k}: ${exifData[k]}\n`;
+  download(t,'exif.txt');
+}
+
+function exportJSON(){
+  if(!Object.keys(exifData).length)return;
+  download(JSON.stringify(exifData,null,2),'exif.json');
+}
+
+function download(data,name){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([data]));
+  a.download=name;
+  a.click();
+}
+
+function clearAll(){
+  output.innerHTML='';
+  status.textContent='Waiting for image...';
+  exifData={};
+}
+</script>
+
+</body>
+</html>

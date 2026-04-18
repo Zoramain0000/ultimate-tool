@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroDays •  Media Player</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:Segoe UI,Arial,sans-serif;color:#d6d6d6;overflow-x:hidden;}
+
+/* BACKGROUND VIDEO */
+.bg-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:-1;}
+
+header{
+  padding:20px;text-align:center;background:rgba(255,255,255,0.0);
+  border-bottom:1px solid rgba(255,255,255,0.1);text-shadow:0 0 6px #000;
+}
+header h1{letter-spacing:3px;font-size:28px;}
+header span{color:gray;font-size:12px;text-shadow:0 0 6px #000;}
+
+.container{max-width:1100px;margin:30px auto;padding:20px;background:rgba(255,255,255,0.0);}
+
+.section{margin-bottom:30px}
+.section h2{
+  font-size:18px;margin-bottom:12px;border-left:4px solid gray;
+  padding-left:10px;color:#bfbfbf;text-shadow:0 0 6px #000;
+}
+
+input{width:100%;padding:12px;background:rgba(0,0,0,0.1);
+border:1px solid rgba(255,255,255,0.2);border-radius:6px;color:#fff;
+margin-bottom:12px;font-size:14px;}
+
+button{padding:12px 22px;background:rgba(0,0,0,0.1);
+border:1px solid gray;color:gray;border-radius:6px;cursor:pointer;transition:.3s;margin-bottom:6px;}
+button:hover{background:gray;color:black;transform:scale(1.05);}
+
+.playlist{background:rgba(0,0,0,0.05);border:1px solid rgba(255,255,255,0.05);
+border-radius:6px;padding:12px;font-family:monospace;font-size:13px;
+max-height:300px;overflow:auto;color:gray;text-shadow:0 0 4px #000;}
+
+.player-controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.player-controls button{flex:1;}
+.volume-control{margin-top:6px;}
+
+audio,video,iframe{width:100%;border-radius:6px;margin-bottom:12px;}
+
+.current-track{background:rgba(0,0,0,0.2);border-radius:4px;padding:2px 4px;margin-bottom:2px;}
+
+.visualizer{width:100%;height:60px;background:rgba(0,0,0,0.1);border-radius:6px;margin-bottom:12px;}
+</style>
+</head>
+<body>
+
+<video class="bg-video" autoplay muted loop playsinline>
+  <source src="ca63eccfcf11bcd02c1a900196de630f_720w.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+
+<header>
+  <h1>ZERO DAYS •  Media Player</h1>
+  <span>Play audio/video, Spotify, YouTube previews with playlist & visualizer</span>
+</header>
+
+<div class="container">
+
+  <div class="section">
+    <h2>Add Media URL (Drag & Drop Supported)</h2>
+    <input id="mediaUrl" placeholder="Enter audio/video/Spotify preview or YouTube URL">
+    <button onclick="addMedia()">Add to Playlist</button>
+  </div>
+
+  <div class="section">
+    <h2>Playlist</h2>
+    <div class="playlist" id="playlist"></div>
+  </div>
+
+  <div class="section">
+    <h2>Player</h2>
+    <audio id="audioPlayer" controls></audio>
+    <video id="videoPlayer" controls style="display:none;"></video>
+    <iframe id="youtubePlayer" style="display:none;" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+    <canvas id="visualizer" class="visualizer"></canvas>
+
+    <div class="player-controls">
+      <button onclick="prevTrack()">Prev</button>
+      <button onclick="playMedia()">Play</button>
+      <button onclick="pauseMedia()">Pause</button>
+      <button onclick="stopMedia()">Stop</button>
+      <button onclick="nextTrack()">Next</button>
+      <button onclick="shufflePlaylist()">Shuffle</button>
+      <button onclick="toggleRepeat()">Repeat</button>
+      <button onclick="removeMedia()">Remove</button>
+    </div>
+    <div class="volume-control">
+      Volume: <input type="range" min="0" max="1" step="0.01" value="1" onchange="setVolume(this.value)">
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Educational & ethical tool • No backend • No tracking
+</footer>
+
+<script>
+let playlist = [];
+let currentIndex = -1;
+let repeat = false;
+
+const playlistDiv = document.getElementById("playlist");
+const audioPlayer = document.getElementById("audioPlayer");
+const videoPlayer = document.getElementById("videoPlayer");
+const youtubePlayer = document.getElementById("youtubePlayer");
+const canvas = document.getElementById("visualizer");
+const ctx = canvas.getContext("2d");
+
+let audioCtx, analyser, source;
+
+function addMedia(url){
+  let input = url || document.getElementById("mediaUrl").value.trim();
+  if(!input){alert("Enter a URL"); return;}
+  
+  // Spotify preview support
+  if(input.includes("spotify.com") && input.includes("preview")){
+    input = input.replace("open.spotify.com/track","p.scdn.co/mp3-preview");
+  }
+
+  playlist.push(input);
+  renderPlaylist();
+  document.getElementById("mediaUrl").value="";
+}
+
+function renderPlaylist(){
+  playlistDiv.innerHTML="";
+  playlist.forEach((url,i)=>{
+    const div=document.createElement("div");
+    div.textContent = `${i+1}. ${url}`;
+    div.className = (i===currentIndex)?"current-track":"";
+    div.style.cursor = "pointer";
+    div.onclick = ()=>playFromIndex(i);
+    playlistDiv.appendChild(div);
+  });
+}
+
+function playFromIndex(index){
+  if(index<0 || index>=playlist.length) return;
+  currentIndex = index;
+  const url = playlist[index];
+
+  // Stop others
+  audioPlayer.pause(); audioPlayer.src="";
+  videoPlayer.pause(); videoPlayer.src="";
+  youtubePlayer.style.display="none"; youtubePlayer.src="";
+
+  if(url.includes("youtube.com") || url.includes("youtu.be")){
+    youtubePlayer.style.display="block";
+    let videoId = url.split("v=")[1] || url.split("youtu.be/")[1];
+    if(videoId.includes("&")) videoId = videoId.split("&")[0];
+    youtubePlayer.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1`;
+  }else if(url.endsWith(".mp4") || url.endsWith(".webm") || url.endsWith(".ogg")){
+    videoPlayer.style.display="block";
+    videoPlayer.src=url;
+    videoPlayer.play();
+  }else{
+    audioPlayer.style.display="block";
+    audioPlayer.src=url;
+    audioPlayer.play();
+    initVisualizer(audioPlayer);
+  }
+
+  renderPlaylist();
+}
+
+function playMedia(){
+  if(currentIndex===-1 && playlist.length>0){playFromIndex(0);}
+  else{
+    if(!audioPlayer.paused) audioPlayer.play();
+    if(!videoPlayer.paused) videoPlayer.play();
+  }
+}
+
+function pauseMedia(){
+  audioPlayer.pause();
+  videoPlayer.pause();
+  // YouTube pause not supported via iframe without API
+}
+
+function stopMedia(){
+  audioPlayer.pause(); audioPlayer.currentTime=0;
+  videoPlayer.pause(); videoPlayer.currentTime=0;
+  youtubePlayer.src="";
+}
+
+function nextTrack(){
+  if(playlist.length===0) return;
+  if(repeat){playFromIndex(currentIndex); return;}
+  let nextIndex = (currentIndex+1) % playlist.length;
+  playFromIndex(nextIndex);
+}
+
+function prevTrack(){
+  if(playlist.length===0) return;
+  let prevIndex = (currentIndex-1+playlist.length) % playlist.length;
+  playFromIndex(prevIndex);
+}
+
+function shufflePlaylist(){
+  for(let i=playlist.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [playlist[i],playlist[j]]=[playlist[j],playlist[i]];
+  }
+  renderPlaylist();
+}
+
+function toggleRepeat(){
+  repeat = !repeat;
+  alert("Repeat is now " + (repeat?"ON":"OFF"));
+}
+
+function removeMedia(){
+  if(currentIndex===-1){alert("No media selected"); return;}
+  playlist.splice(currentIndex,1);
+  currentIndex=-1;
+  stopMedia();
+  renderPlaylist();
+}
+
+function setVolume(value){
+  audioPlayer.volume = value;
+  videoPlayer.volume = value;
+}
+
+// DRAG & DROP SUPPORT
+document.addEventListener("dragover", e=>e.preventDefault());
+document.addEventListener("drop", e=>{
+  e.preventDefault();
+  if(e.dataTransfer.items){
+    for(let i=0;i<e.dataTransfer.items.length;i++){
+      if(e.dataTransfer.items[i].kind==="string"){
+        e.dataTransfer.items[i].getAsString(addMedia);
+      }
+    }
+  }
+});
+
+// MINIMAL AUDIO VISUALIZER
+function initVisualizer(audio){
+  if(audioCtx) audioCtx.close();
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  source = audioCtx.createMediaElementSource(audio);
+  source.connect(analyser);
+  analyser.connect(audioCtx.destination);
+  analyser.fftSize = 256;
+  const bufferLength = analyser.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLength);
+
+  function draw(){
+    requestAnimationFrame(draw);
+    analyser.getByteFrequencyData(dataArray);
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const barWidth = canvas.width / bufferLength;
+    for(let i=0;i<bufferLength;i++){
+      const barHeight = dataArray[i];
+      ctx.fillStyle = `rgb(${barHeight+100},255,50)`;
+      ctx.fillRect(i*barWidth,canvas.height-barHeight/2,barWidth,barHeight/2);
+    }
+  }
+  draw();
+}
+
+// BACKGROUND LOOP
+audioPlayer.loop = true;
+videoPlayer.loop = true;
+
+</script>
+</body>
+</html>

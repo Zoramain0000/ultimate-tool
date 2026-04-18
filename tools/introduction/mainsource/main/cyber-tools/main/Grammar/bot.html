@@ -1,0 +1,249 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Zero Days Grammarly</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFVOZ2CsKQIPT0Lk06f5bNALaBIuEhMWppBg&s'); 
+      background-color: #f4f6f8;
+      color: #2c3e50;
+    }
+
+    .header {
+     background:rgba(0, 0, 0, 0.5);
+      color:red;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.7rem;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 30px auto;
+      background:rgba(0, 0, 0, 0.5);
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 160px;
+      resize: vertical;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      line-height: 1.6;
+      box-sizing: border-box;
+      margin-bottom: 20px;
+    }
+
+    button {
+      background-color: #ff1900; /* Red button */
+      color: #00ff6a; /* Green text */
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-right: 10px;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+        background:rgba(0, 0, 0, 0.5);
+      color: #e74c3c; /* Red text on hover */
+      border: 1px solid #e74c3c; /* Red border on hover */
+    }
+    h3 {
+        color: red;
+    }
+    .result-area {
+      margin-top: 30px;
+    }
+
+    .highlight {
+      background-color: #ff0000;
+      padding: 2px 4px;
+      border-radius: 4px;
+      cursor: help;
+    }
+
+    .correction-box {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f9f9f9;
+      border-left: 5px solid #f90606;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      font-size: 1rem;
+    }
+
+    .error {
+      color: red;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 0.9rem;
+      color: #888;
+    }
+
+    ul.suggestions {
+      list-style: none;
+      padding: 0;
+      margin-top: 10px;
+    }
+
+    ul.suggestions li::before {
+      content: '📝';
+      margin-right: 8px;
+    }
+
+    .copy-btn {
+      float: right;
+      background-color: red;
+    }
+
+    .copy-btn:hover {
+        background:rgba(0, 0, 0, 0.5);
+    }
+
+    .toggle-btn {
+      float: right;
+      background-color: red;
+    }
+
+    .toggle-btn:hover {
+        background:rgba(0, 0, 0, 0.5);
+    }
+
+    .clearfix {
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    🧠 Zero Days Grammarly – Advanced AI Grammar Checker
+  </div>
+  <div class="container">
+    <label for="textInput">Enter your text below:</label>
+    <textarea id="textInput" placeholder="Start typing or paste your content here..."></textarea>
+    <button onclick="analyzeGrammar()">Analyze & Highlight</button>
+
+    <div id="errorMessage" class="error"></div>
+
+    <div class="result-area">
+      <div class="clearfix">
+        <h3>🔍 Suggestions <button class="toggle-btn" onclick="toggleView()">Toggle View</button></h3>
+      </div>
+      <div id="highlightedText" class="correction-box">Nothing analyzed yet.</div>
+      <ul id="suggestionList" class="suggestions"></ul>
+
+      <h3>✅ Corrected Output <button class="copy-btn" onclick="copyCorrected()">Copy</button></h3>
+      <div id="correctedText" class="correction-box">No corrections yet.</div>
+    </div>
+  </div>
+  <div class="footer">© 2025 Zero Days Grammarly. Powered by HTML, CSS, and JavaScript.</div>
+
+  <script>
+    let showingCorrected = false;
+
+    function analyzeGrammar() {
+      const input = document.getElementById("textInput").value.trim();
+      const errorBox = document.getElementById("errorMessage");
+      const highlightedBox = document.getElementById("highlightedText");
+      const correctedBox = document.getElementById("correctedText");
+      const suggestionsList = document.getElementById("suggestionList");
+
+      errorBox.textContent = "";
+      if (!input) {
+        errorBox.textContent = "⚠️ Please enter some text.";
+        return;
+      }
+
+      let corrected = input;
+      let highlighted = input;
+      const suggestions = [];
+
+      // Rule 1: lowercase "i" to "I"
+      if (/\bi\b/.test(corrected)) {
+        corrected = corrected.replace(/\bi\b/g, "I");
+        highlighted = highlighted.replace(/\bi\b/g, '<span class="highlight" title="Should be capitalized.">i</span>');
+        suggestions.push("Capitalized standalone 'i'.");
+      }
+
+      // Rule 2: Remove extra spaces
+      if (/ {2,}/.test(corrected)) {
+        corrected = corrected.replace(/ {2,}/g, ' ');
+        highlighted = highlighted.replace(/ {2,}/g, match => `<span class="highlight" title="Extra space removed.">${match}</span>`);
+        suggestions.push("Removed extra spaces.");
+      }
+
+      // Rule 3: Remove space before punctuation
+      if (/\s+[,.!?]/.test(corrected)) {
+        corrected = corrected.replace(/\s+([,.!?])/g, '$1');
+        highlighted = highlighted.replace(/\s+([,.!?])/g, match => `<span class="highlight" title="Unnecessary space.">${match}</span>`);
+        suggestions.push("Removed space before punctuation.");
+      }
+
+      // Rule 4: Capitalize after punctuation
+      if (/[.!?]\s+[a-z]/.test(corrected)) {
+        corrected = corrected.replace(/([.!?])\s+([a-z])/g, (match, p1, p2) => `${p1} ${p2.toUpperCase()}`);
+        highlighted = highlighted.replace(/([.!?])\s+([a-z])/g, (match, p1, p2) => `${p1} <span class="highlight" title="Should be capitalized.">${p2}</span>`);
+        suggestions.push("Capitalized letter after punctuation.");
+      }
+
+      // Rule 5: Fix common contractions
+      if (/(\b)(dont|cant|wont|im|ive)(\b)/gi.test(corrected)) {
+        corrected = corrected.replace(/\bdont\b/gi, "don't");
+        corrected = corrected.replace(/\bcant\b/gi, "can't");
+        corrected = corrected.replace(/\bwont\b/gi, "won't");
+        corrected = corrected.replace(/\bim\b/gi, "I'm");
+        corrected = corrected.replace(/\bive\b/gi, "I've");
+
+        highlighted = highlighted.replace(/\bdont\b/gi, '<span class="highlight" title="Use contraction: don\'t.">dont</span>');
+        highlighted = highlighted.replace(/\bcant\b/gi, '<span class="highlight" title="Use contraction: can\'t.">cant</span>');
+        highlighted = highlighted.replace(/\bwont\b/gi, '<span class="highlight" title="Use contraction: won\'t.">wont</span>');
+        highlighted = highlighted.replace(/\bim\b/gi, '<span class="highlight" title="Use contraction: I\'m.">im</span>');
+        highlighted = highlighted.replace(/\bive\b/gi, '<span class="highlight" title="Use contraction: I\'ve.">ive</span>');
+
+        suggestions.push("Fixed common contractions (don't, can't, I'm, etc).");
+      }
+
+      // Output result
+      highlightedBox.innerHTML = highlighted;
+      correctedBox.textContent = corrected;
+
+      suggestionsList.innerHTML = suggestions.length
+        ? suggestions.map(item => `<li>${item}</li>`).join("")
+        : "<li>✅ No major grammar issues found.</li>";
+    }
+
+    function toggleView() {
+      showingCorrected = !showingCorrected;
+      const input = document.getElementById("textInput").value;
+      document.getElementById("textInput").value = showingCorrected
+        ? document.getElementById("correctedText").textContent
+        : input;
+    }
+
+    function copyCorrected() {
+      const corrected = document.getElementById("correctedText").textContent;
+      navigator.clipboard.writeText(corrected).then(() => {
+        alert("✅ Corrected text copied!");
+      });
+    }
+  </script>
+</body>
+</html>
